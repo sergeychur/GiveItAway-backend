@@ -12,6 +12,7 @@ type Config struct {
 	DBUser string `json:"dbuser"`
 	DBPass string `json:"dbpassword"`
 	DBName string `json:"dbname"`
+	Secret string `json:"secret"`
 }
 
 func NewConfig(pathToConfig string) (*Config, error) {

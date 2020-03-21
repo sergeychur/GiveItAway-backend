@@ -1,0 +1,1004 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "description": "API for GiveItAway vk mini app",
+    "version": "1.0.0",
+    "title": "Отдай даром"
+  },
+  "basePath": "/api",
+  "tags": [
+    {
+      "name": "ad",
+      "description": "Объявления"
+    },
+    {
+      "name": "comment",
+      "description": "Комментарии к объявлениям"
+    },
+    {
+      "name": "donat",
+      "description": "Пожертвования"
+    },
+    {
+      "name": "deal",
+      "description": "Сделка по объявлению"
+    }
+  ],
+  "schemes": [
+    "https",
+    "http"
+  ],
+  "paths": {
+    "/ad/create": {
+      "post": {
+        "tags": [
+          "ad"
+        ],
+        "summary": "Добавить новое объявление",
+        "description": "",
+        "operationId": "addAd",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "description": "Добавляем пользовательское объявление",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/Ad"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Ad created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "403": {
+            "description": "trying to create ad without auth"
+          }
+        }
+      }
+    },
+    "/ad/{ad_id}/edit": {
+      "put": {
+        "tags": [
+          "ad"
+        ],
+        "summary": "Обновить объявление",
+        "description": "",
+        "operationId": "updateAd",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "description": "Ad object to modify",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/Ad"
+            }
+          },
+          {
+            "in": "path",
+            "name": "ad_id",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Modification succeeded"
+          },
+          "400": {
+            "description": "Invalid ID supplied"
+          },
+          "403": {
+            "description": "trying to edit not user's ad"
+          },
+          "404": {
+            "description": "Ad not found"
+          }
+        }
+      }
+    },
+    "/ad/{ad_id}/details": {
+      "get": {
+        "tags": [
+          "ad"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "ad_id",
+            "type": "integer",
+            "required": true,
+            "description": "The id of required ad"
+          }
+        ],
+        "summary": "Посмотреть конкретное объявление",
+        "responses": {
+          "200": {
+            "description": "The details of ad",
+            "schema": {
+              "$ref": "#/definitions/Ad"
+            }
+          },
+          "404": {
+            "description": "Ad doesn't exist"
+          }
+        }
+      }
+    },
+    "/ad/find": {
+      "get": {
+        "tags": [
+          "ad"
+        ],
+        "summary": "Найти объявления",
+        "operationId": "findAds",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "category",
+            "in": "query",
+            "type": "string",
+            "description": "Category where to search"
+          },
+          {
+            "name": "author_id",
+            "in": "query",
+            "type": "string",
+            "description": "Ads of some user"
+          },
+          {
+            "name": "region",
+            "in": "query",
+            "type": "string",
+            "description": "Region where to search"
+          },
+          {
+            "name": "district",
+            "in": "query",
+            "type": "string",
+            "description": "District where to search"
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "type": "string",
+            "description": "Query"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "type": "string",
+            "description": "page for pagination",
+            "required": true
+          },
+          {
+            "name": "rows_per_page",
+            "in": "query",
+            "type": "string",
+            "description": "rows per page for pagination",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "found smth",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Ad"
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameters"
+          },
+          "404": {
+            "description": "Found nothing"
+          }
+        }
+      }
+    },
+    "/ad/{ad_id}/upload_image": {
+      "post": {
+        "tags": [
+          "ad"
+        ],
+        "summary": "Добавить фото к объявлению",
+        "operationId": "AdImage",
+        "consumes": [
+          "multipart/form-data"
+        ],
+        "parameters": [
+          {
+            "name": "ad_id",
+            "in": "path",
+            "required": true,
+            "type": "integer"
+          },
+          {
+            "name": "additionalMetadata",
+            "in": "formData",
+            "description": "Additional data to pass to server",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "file",
+            "in": "formData",
+            "description": "file to upload",
+            "required": false,
+            "type": "file"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Error in the path"
+          },
+          "403": {
+            "description": "trying to edit not user's ad"
+          },
+          "500": {
+            "description": "Error while uploading the file"
+          }
+        }
+      }
+    },
+    "/ad/{ad_id}/subscribe": {
+      "put": {
+        "summary": "Подписаться на объявление (быть среди тех, кто хочет забрать)",
+        "tags": [
+          "ad"
+        ],
+        "parameters": [
+          {
+            "name": "ad_id",
+            "in": "path",
+            "required": true,
+            "type": "integer"
+          },
+          {
+            "name": "user_id",
+            "schema": {
+              "type": "integer"
+            },
+            "in": "body",
+            "description": "User ID of suscriber, mb passed in some other way"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "user subscribed to ad"
+          },
+          "403": {
+            "description": "no user id or user id is the same as author's"
+          },
+          "404": {
+            "description": "ad not found"
+          }
+        }
+      }
+    },
+    "/ad/{ad_id}/close": {
+      "post": {
+        "summary": "Закрыть объявление без сделки",
+        "tags": [
+          "ad"
+        ],
+        "parameters": [
+          {
+            "name": "ad_id",
+            "in": "path",
+            "required": true,
+            "type": "integer"
+          },
+          {
+            "name": "user_id",
+            "schema": {
+              "type": "integer"
+            },
+            "in": "body",
+            "description": "User ID of suscriber, mb passed in some other way"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ad closed"
+          },
+          "403": {
+            "description": "no user id or it doesn't match with authors"
+          },
+          "404": {
+            "description": "ad not found"
+          }
+        }
+      }
+    },
+    "/ad/{ad_id}/make_deal": {
+      "post": {
+        "summary": "Выбрать пользователя, с которым заключить сделку об отдаче товара",
+        "tags": [
+          "ad"
+        ],
+        "parameters": [
+          {
+            "name": "ad_id",
+            "in": "path",
+            "required": true,
+            "type": "integer"
+          },
+          {
+            "name": "deal_details",
+            "schema": {
+              "$ref": "#/definitions/DealDetails"
+            },
+            "in": "body",
+            "description": "Author ID and subscriber id"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "deal created"
+          },
+          "403": {
+            "description": "no author id or it doesn't match with authors"
+          },
+          "404": {
+            "description": "ad not found"
+          },
+          "409": {
+            "description": "no subscriber id in subscribers list"
+          }
+        }
+      }
+    },
+    "/ad/{ad_id}/deal": {
+      "get": {
+        "summary": "Получить параметры сделки, ассоциированной с этим объявлением",
+        "tags": [
+          "deal"
+        ],
+        "parameters": [
+          {
+            "name": "ad_id",
+            "in": "path",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "there is a pending deal",
+            "schema": {
+              "$ref": "#/definitions/DealDetails"
+            }
+          },
+          "404": {
+            "description": "no pending deal for ad"
+          }
+        }
+      }
+    },
+    "/ad/{ad_id}/comments": {
+      "get": {
+        "tags": [
+          "comment"
+        ],
+        "summary": "Посмотреть комменты к объявлению",
+        "operationId": "listComments",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "ad_id",
+            "in": "path",
+            "required": true,
+            "type": "integer"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "type": "string",
+            "description": "page for pagination",
+            "required": true
+          },
+          {
+            "name": "rows_per_page",
+            "in": "query",
+            "type": "string",
+            "description": "rows per page for pagination",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "comments found",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Comment"
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameters"
+          },
+          "404": {
+            "description": "Found nothing"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "comment"
+        ],
+        "summary": "Добавить новый комментарий",
+        "description": "",
+        "operationId": "addComment",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "description": "Добавляем комментарий",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/Comment"
+            }
+          },
+          {
+            "in": "path",
+            "name": "ad_id",
+            "type": "integer",
+            "required": true
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Comment created"
+          },
+          "400": {
+            "description": "Invalid input"
+          }
+        }
+      }
+    },
+    "/comment/{comment_id}": {
+      "put": {
+        "tags": [
+          "comment"
+        ],
+        "summary": "Обновить текст комментария",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "comment_id",
+            "required": true,
+            "type": "integer"
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "description": "Обновляем комментарий",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/Comment"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "comment updated"
+          },
+          "403": {
+            "description": "wrong user"
+          },
+          "404": {
+            "description": "no comment to update"
+          }
+        }
+      }
+    },
+    "/deal/{deal_id}/cancel": {
+      "post": {
+        "tags": [
+          "deal"
+        ],
+        "summary": "Отменить сделку. Если id - id автора или id - id подписчика",
+        "parameters": [
+          {
+            "name": "deal_id",
+            "type": "integer",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "success"
+          },
+          "403": {
+            "description": "user cannot change this deal"
+          },
+          "404": {
+            "description": "no such deal"
+          }
+        }
+      }
+    },
+    "/deal/{deal_id}/fulfill": {
+      "post": {
+        "tags": [
+          "deal"
+        ],
+        "summary": "Пометить, что сделка успешна. Необходимы пометки от автора и подписчика для реального успеха",
+        "parameters": [
+          {
+            "name": "deal_id",
+            "type": "integer",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "success"
+          },
+          "403": {
+            "description": "user cannot change this deal"
+          },
+          "404": {
+            "description": "no such deal"
+          }
+        }
+      }
+    },
+    "/donat/create": {
+      "post": {
+        "tags": [
+          "donat"
+        ],
+        "summary": "Создать новую цель для сбора денег",
+        "parameters": [
+          {
+            "name": "donat",
+            "in": "body",
+            "schema": {
+              "$ref": "#/definitions/DonationRequest"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "created"
+          },
+          "400": {
+            "description": "some errors in request parameters"
+          }
+        }
+      }
+    },
+    "/donat/{donat_id}/close": {
+      "post": {
+        "tags": [
+          "donat"
+        ],
+        "summary": "Закрыть сбор средств",
+        "parameters": [
+          {
+            "name": "donat_id",
+            "in": "path",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "success"
+          },
+          "403": {
+            "description": "not an author of donation, cannot close"
+          },
+          "404": {
+            "description": "no such donation"
+          }
+        }
+      }
+    },
+    "/donat/donate": {
+      "post": {
+        "tags": [
+          "donat"
+        ],
+        "summary": "Пожертвовать",
+        "parameters": [
+          {
+            "name": "donat",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/Donation"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "success"
+          },
+          "404": {
+            "description": "no such donation"
+          }
+        }
+      }
+    },
+    "/donat/find": {
+      "get": {
+        "tags": [
+          "donat"
+        ],
+        "summary": "искать запросы на пожертвование",
+        "operationId": "findDonationRequests",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "category",
+            "in": "query",
+            "type": "string",
+            "description": "Category where to search"
+          },
+          {
+            "name": "region",
+            "in": "query",
+            "type": "string",
+            "description": "Region where to search"
+          },
+          {
+            "name": "district",
+            "in": "query",
+            "type": "string",
+            "description": "District where to search"
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "type": "string",
+            "description": "Query"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "type": "string",
+            "description": "page for pagination",
+            "required": true
+          },
+          {
+            "name": "rows_per_page",
+            "in": "query",
+            "type": "string",
+            "description": "rows per page for pagination",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "found smth",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/DonationRequest"
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameters"
+          },
+          "404": {
+            "description": "Found nothing"
+          }
+        }
+      }
+    },
+    "/user/{vk_id}": {
+      "get": {
+        "tags": [
+          "user"
+        ],
+        "summary": "Получить данные о пользователе",
+        "description": "",
+        "operationId": "getUserByName",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "vk_id",
+            "in": "path",
+            "description": "The name that needs to be fetched. Use user1 for testing. ",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$ref": "#/definitions/User"
+            }
+          },
+          "400": {
+            "description": "Invalid username supplied"
+          },
+          "404": {
+            "description": "User not found"
+          }
+        }
+      }
+    },
+    "/user/auth": {
+      "post": {
+        "tags": [
+          "user"
+        ],
+        "summary": "Авторизовать пользователя (и зарегистрировать, если он еще не разу не заходил в приложение)",
+        "parameters": [
+          {
+            "name": "auth_info",
+            "in": "body",
+            "schema": {
+              "$ref": "#/definitions/AuthInfo"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "user found",
+            "schema": {
+              "$ref": "#/definitions/User"
+            }
+          },
+//          "201": {
+//            "description": "new app user created",
+//            "schema": {
+//              "$ref": "#/definitions/User"
+//            }
+//          },
+          "403": {
+            "description": "data is invalid"
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "User": {
+      "type": "object",
+      "properties": {
+        "vk_id": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "carma": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        },
+        "surname": {
+          "type": "string"
+        },
+        "photo_url": {
+          "type": "string"
+        }
+      }
+    },
+    "AuthInfo": {
+      "type": "object",
+      "properties": {
+        "url": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "surname": {
+          "type": "string"
+        },
+        "photo_url": {
+          "type": "string"
+        }
+      }
+    },
+    "Comment": {
+      "type": "object",
+      "properties": {
+        "comment_id": {
+          "type": "integer"
+        },
+        "author_id": {
+          "type": "integer"
+        },
+        "text": {
+          "type": "string"
+        }
+      }
+    },
+    "DealDetails": {
+      "type": "object",
+      "properties": {
+        "deal_id": {
+          "type": "integer"
+        },
+        "ad_id": {
+          "type": "integer"
+        },
+        "author_id": {
+          "type": "integer"
+        },
+        "subscriber_id": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "open",
+            "submitted_by_one",
+            "success",
+            "failed"
+          ],
+          "default": "open"
+        }
+      }
+    },
+    "DonationRequest": {
+      "type": "object",
+      "properties": {
+        "donation_id": {
+          "type": "integer"
+        },
+        "author_id": {
+          "type": "integer"
+        },
+        "sum_needed": {
+          "type": "integer"
+        },
+        "expire_date": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "open",
+            "closed"
+          ],
+          "default": "closed"
+        },
+        "description": {
+          "type": "string"
+        }
+      }
+    },
+    "Donation": {
+      "type": "object",
+      "properties": {
+        "user_id": {
+          "type": "integer"
+        },
+        "donat_id": {
+          "type": "integer"
+        },
+        "region": {
+          "type": "string"
+        },
+        "district": {
+          "type": "string"
+        },
+        "sum": {
+          "type": "integer"
+        },
+        "category": {
+          "type": "string"
+        }
+      }
+    },
+    "Ad": {
+      "type": "object",
+      "properties": {
+        "ad_id": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "author_id": {
+          "type": "integer"
+        },
+        "header": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        },
+        "region": {
+          "type": "string"
+        },
+        "district": {
+          "type": "string"
+        },
+        "is_auction": {
+          "type": "boolean"
+        },
+        "feedback_type": {
+          "type": "string",
+          "enum": [
+            "ls",
+            "comments",
+            "other"
+          ]
+        },
+        "creation_date": {
+          "type": "string",
+          "example": "20-JUN-1990 08:03:00"
+        },
+        "meeting_place": {
+          "type": "string",
+          "example": "Latitude: 55.7782713 °, Longitude: 37.5444476 °"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "offer",
+            "chosen",
+            "closed"
+          ],
+          "default": "offer"
+        },
+        "pathes_to_photo": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "example": [
+            "/photo1",
+            "/photo2"
+          ]
+        },
+        "category": {
+          "type": "string"
+        },
+        "comments_count": {
+          "type": "integer"
+        }
+      }
+    }
+  }
+}

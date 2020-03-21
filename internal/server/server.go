@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/sergeychur/give_it_away/internal/config"
@@ -18,12 +19,15 @@ type Server struct {
 }
 
 func NewServer(pathToConfig string) (*Server, error) {
+	const idPattern = "^[0-9]+$"
 	server := new(Server)
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
 	subRouter := chi.NewRouter()
+	subRouter.Post("/user/auth", server.AuthUser)
+	subRouter.Get(fmt.Sprintf("/user/{user_id:%s}", idPattern), server.GetUserInfo)
 	r.Mount("/api/", subRouter)
 	server.router = r
 

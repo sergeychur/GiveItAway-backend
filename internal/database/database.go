@@ -7,12 +7,13 @@ import (
 	"time"
 )
 
-/*const (
-	OK          = 0
-	DBError     = 1
-	EmptyResult = 2
-	Conflict    = 3
-)*/
+const (
+	FOUND       = 0
+	CREATED		= 1
+	DB_ERROR     = 2
+	EMPTY_RESULT = 3
+	CONFLICT    = 4
+)
 
 
 type DB struct {
@@ -63,3 +64,4 @@ func (db *DB) Close() {
 func (db *DB) StartTransaction() (*pgx.Tx, error) {
 	return db.db.Begin()
 }
+
