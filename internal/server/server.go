@@ -6,6 +6,7 @@ import (
 	"github.com/go-chi/chi/middleware"
 	"github.com/sergeychur/give_it_away/internal/config"
 	"github.com/sergeychur/give_it_away/internal/database"
+	"github.com/sergeychur/give_it_away/internal/middlewares"
 	"log"
 	"net/http"
 	"os"
@@ -22,8 +23,16 @@ func NewServer(pathToConfig string) (*Server, error) {
 	const idPattern = "^[0-9]+$"
 	server := new(Server)
 	r := chi.NewRouter()
-	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
+
+	newConfig, err := config.NewConfig(pathToConfig)
+	if err != nil {
+		return nil, err
+	}
+	server.config = newConfig
+
+	r.Use(middleware.Logger,
+		middleware.Recoverer,
+		middlewares.CreateCorsMiddleware(server.config.AllowedHosts))
 
 	subRouter := chi.NewRouter()
 	subRouter.Post("/user/auth", server.AuthUser)
@@ -31,11 +40,6 @@ func NewServer(pathToConfig string) (*Server, error) {
 	r.Mount("/api/", subRouter)
 	server.router = r
 
-	newConfig, err := config.NewConfig(pathToConfig)
-	if err != nil {
-		return nil, err
-	}
-	server.config = newConfig
 	dbPort, err := strconv.Atoi(server.config.DBPort)
 	if err != nil {
 		return nil, err
