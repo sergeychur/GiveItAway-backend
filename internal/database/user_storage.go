@@ -8,7 +8,7 @@ import (
 
 const (
 	GetUserById = "SELECT * FROM users WHERE vk_id = $1"
-	CreateUser = "INSERT INTO users (vk_id, name, surname, photo_url) VALUES ($1, $2, $3, $4)"
+	CreateUser  = "INSERT INTO users (vk_id, name, surname, photo_url) VALUES ($1, $2, $3, $4)"
 )
 
 func (db *DB) GetUser(userId int) (models.User, int) {

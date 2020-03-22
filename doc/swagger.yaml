@@ -5,65 +5,67 @@ info:
   title: "Отдай даром"
 basePath: "/api"
 tags:
-- name: "ad"
-  description: "Объявления"
-- name: "comment"
-  description: "Комментарии к объявлениям"
-- name: "donat"
-  description: "Пожертвования"
-- name: "deal"
-  description: "Сделка по объявлению"
+  - name: "ad"
+    description: "Объявления"
+  - name: "comment"
+    description: "Комментарии к объявлениям"
+  - name: "donat"
+    description: "Пожертвования"
+  - name: "deal"
+    description: "Сделка по объявлению"
 schemes:
-- "https"
-- "http"
+  - "https"
+  - "http"
 paths:
   /ad/create:
     post:
       tags:
-      - "ad"
+        - "ad"
       summary: "Добавить новое объявление"
       description: ""
       operationId: "addAd"
       consumes:
-      - "application/json"
+        - "application/json"
       produces:
-      - "application/json"
+        - "application/json"
       parameters:
-      - in: "body"
-        name: "body"
-        description: "Добавляем пользовательское объявление"
-        required: true
-        schema:
-          $ref: "#/definitions/Ad"
+        - in: "body"
+          name: "body"
+          description: "Добавляем пользовательское объявление"
+          required: true
+          schema:
+            $ref: "#/definitions/Ad"
       responses:
         401:
           description: "trying to create ad without auth"
         201:
           description: "Ad created"
+          schema:
+            $ref: '#/definitions/AdCreationResult'
         400:
           description: "Invalid input"
   /ad/{ad_id}/edit:
     put:
       tags:
-      - "ad"
+        - "ad"
       summary: "Обновить объявление"
       description: ""
       operationId: "updateAd"
       consumes:
-      - "application/json"
+        - "application/json"
       produces:
-      - "application/json"
+        - "application/json"
       parameters:
-      - in: "body"
-        name: "body"
-        description: "Ad object to modify"
-        required: true
-        schema:
-          $ref: "#/definitions/Ad"
-      - in: "path"
-        name: "ad_id"
-        required: true
-        type: "integer"
+        - in: "body"
+          name: "body"
+          description: "Ad object to modify"
+          required: true
+          schema:
+            $ref: "#/definitions/Ad"
+        - in: "path"
+          name: "ad_id"
+          required: true
+          type: "integer"
       responses:
         403:
           description: "trying to edit not user's ad"
@@ -78,15 +80,15 @@ paths:
   /ad/{ad_id}/details:
     get:
       tags:
-      - "ad"
+        - "ad"
       produces:
-      - "application/json"
+        - "application/json"
       parameters:
-      - in: "path"
-        name: "ad_id"
-        type: integer
-        required: true
-        description: "The id of required ad"
+        - in: "path"
+          name: "ad_id"
+          type: integer
+          required: true
+          description: "The id of required ad"
       summary: "Посмотреть конкретное объявление"
       responses:
         404:
@@ -100,42 +102,42 @@ paths:
   /ad/find:
     get:
       tags:
-      - "ad"
+        - "ad"
       summary: "Найти объявления"
       operationId: "findAds"
       produces:
-      - "application/json"
+        - "application/json"
       parameters:
-      - name: "category"
-        in: "query"
-        type: "string"
-        description: "Category where to search"
-      - name: "author_id"
-        in: "query"
-        type: "string"
-        description: "Ads of some user"
-      - name: "region"
-        in: "query"
-        type: "string"
-        description: "Region where to search"
-      - name: "district"
-        in: "query"
-        type: "string"
-        description: "District where to search"
-      - name: "query"
-        in: "query"
-        type: "string"
-        description: "Query"
-      - name: "page"
-        in: "query"
-        type: "string"
-        description: "page for pagination"
-        required: true
-      - name: "rows_per_page"
-        in: "query"
-        type: "string"
-        description: "rows per page for pagination"
-        required: true
+        - name: "category"
+          in: "query"
+          type: "string"
+          description: "Category where to search"
+        - name: "author_id"
+          in: "query"
+          type: "string"
+          description: "Ads of some user"
+        - name: "region"
+          in: "query"
+          type: "string"
+          description: "Region where to search"
+        - name: "district"
+          in: "query"
+          type: "string"
+          description: "District where to search"
+        - name: "query"
+          in: "query"
+          type: "string"
+          description: "Query"
+        - name: "page"
+          in: "query"
+          type: "string"
+          description: "page for pagination"
+          required: true
+        - name: "rows_per_page"
+          in: "query"
+          type: "string"
+          description: "rows per page for pagination"
+          required: true
       responses:
         200:
           description: "found smth"
@@ -148,7 +150,7 @@ paths:
         404:
           description: "Found nothing"
   /ad/{ad_id}/upload_image:
-   post:
+    post:
       tags:
         - ad
       summary: Добавить фото к объявлению
@@ -185,17 +187,17 @@ paths:
     put:
       summary: "Подписаться на объявление (быть среди тех, кто хочет забрать)"
       tags:
-      - ad
+        - ad
       parameters:
-      - name: ad_id
-        in: path
-        required: true
-        type: integer
-      - name: user_id
-        schema:
+        - name: ad_id
+          in: path
+          required: true
           type: integer
-        in: body
-        description: User ID of suscriber, mb passed in some other way
+        - name: user_id
+          schema:
+            type: integer
+          in: body
+          description: User ID of suscriber, mb passed in some other way
       responses:
         200:
           description: "user subscribed to ad"
@@ -205,21 +207,60 @@ paths:
           description: "user id is the same as author's"
         401:
           description: "no auth"
+  /ad/{ad_id}/subscribers:
+    get:
+      summary: "Посмотреть подписавшихся на объвлениe"
+      tags:
+        - ad
+      parameters:
+        - name: ad_id
+          in: path
+          required: true
+          type: integer
+      responses:
+        200:
+          description: "users found"
+        404:
+          description: "ad or subscribers are not found"
+  /ad/{ad_id}/unsubscribe:
+    post:
+      summary: "Отписаться от объявления"
+      tags:
+        - ad
+      parameters:
+        - name: ad_id
+          in: path
+          required: true
+          type: integer
+        - name: user_id
+          schema:
+            type: integer
+          in: body
+          description: User ID of suscriber, mb passed in some other way
+      responses:
+        200:
+          description: "user unsubscribed from ad"
+        404:
+          description: "ad not found"
+        403:
+          description: "user wasn't subscribed"
+        401:
+          description: "no auth"
   /ad/{ad_id}/close:
     post:
       summary: "Закрыть объявление без сделки"
       tags:
-      - ad
+        - ad
       parameters:
-      - name: ad_id
-        in: path
-        required: true
-        type: integer
-      - name: user_id
-        schema:
+        - name: ad_id
+          in: path
+          required: true
           type: integer
-        in: body
-        description: User ID of suscriber, mb passed in some other way
+        - name: user_id
+          schema:
+            type: integer
+          in: body
+          description: User ID of suscriber, mb passed in some other way
       responses:
         200:
           description: "ad closed"
@@ -231,17 +272,17 @@ paths:
     post:
       summary: "Выбрать пользователя, с которым заключить сделку об отдаче товара"
       tags:
-      - ad
+        - ad
       parameters:
-      - name: ad_id
-        in: path
-        required: true
-        type: integer
-      - name: deal_details
-        schema:
-          $ref: "#/definitions/DealDetails"
-        in: body
-        description: Author ID and subscriber id
+        - name: ad_id
+          in: path
+          required: true
+          type: integer
+        - name: deal_details
+          schema:
+            $ref: "#/definitions/DealDetails"
+          in: body
+          description: Author ID and subscriber id
       responses:
         201:
           description: "deal created"
@@ -257,12 +298,12 @@ paths:
     get:
       summary: "Получить параметры сделки, ассоциированной с этим объявлением"
       tags:
-      - deal
+        - deal
       parameters:
-      - name: ad_id
-        in: path
-        required: true
-        type: integer
+        - name: ad_id
+          in: path
+          required: true
+          type: integer
       responses:
         200:
           description: "there is a pending deal"
@@ -273,33 +314,33 @@ paths:
   /ad/{ad_id}/comments:
     get:
       tags:
-      - "comment"
+        - "comment"
       summary: "Посмотреть комменты к объявлению"
       operationId: "listComments"
       produces:
-      - "application/json"
+        - "application/json"
       parameters:
-      - name: ad_id
-        in: path
-        required: true
-        type: integer
-      - name: "page"
-        in: "query"
-        type: "string"
-        description: "page for pagination"
-        required: true
-      - name: "rows_per_page"
-        in: "query"
-        type: "string"
-        description: "rows per page for pagination"
-        required: true
+        - name: ad_id
+          in: path
+          required: true
+          type: integer
+        - name: "page"
+          in: "query"
+          type: "string"
+          description: "page for pagination"
+          required: true
+        - name: "rows_per_page"
+          in: "query"
+          type: "string"
+          description: "rows per page for pagination"
+          required: true
       responses:
         200:
           description: "comments found"
           schema:
             type: "array"
             items:
-              $ref: "#/definitions/Comment"
+              $ref: "#/definitions/CommentForUser"
         400:
           description: "Invalid parameters"
         404:
@@ -310,20 +351,20 @@ paths:
       description: ""
       operationId: "addComment"
       consumes:
-      - "application/json"
+        - "application/json"
       produces:
-      - "application/json"
+        - "application/json"
       parameters:
-      - in: "body"
-        name: "body"
-        description: "Добавляем комментарий"
-        required: true
-        schema:
-          $ref: "#/definitions/Comment"
-      - in: "path"
-        name: "ad_id"
-        type: integer
-        required: true
+        - in: "body"
+          name: "body"
+          description: "Добавляем комментарий"
+          required: true
+          schema:
+            $ref: "#/definitions/Comment"
+        - in: "path"
+          name: "ad_id"
+          type: integer
+          required: true
       responses:
         201:
           description: "Comment created"
@@ -336,16 +377,16 @@ paths:
       tags: ["comment"]
       summary: "Обновить текст комментария"
       parameters:
-      - in: "path"
-        name: "comment_id"
-        required: true
-        type: integer
-      - in: "body"
-        name: "body"
-        description: "Обновляем комментарий"
-        required: true
-        schema:
-          $ref: "#/definitions/Comment"
+        - in: "path"
+          name: "comment_id"
+          required: true
+          type: integer
+        - in: "body"
+          name: "body"
+          description: "Обновляем комментарий"
+          required: true
+          schema:
+            $ref: "#/definitions/Comment"
       responses:
         200:
           description: "comment updated"
@@ -396,10 +437,10 @@ paths:
       tags: ["donat"]
       summary: "Создать новую цель для сбора денег"
       parameters:
-      - name: donat
-        in: body
-        schema:
-          $ref: "#/definitions/DonationRequest"
+        - name: donat
+          in: body
+          schema:
+            $ref: "#/definitions/DonationRequest"
       responses:
         201:
           description: "created"
@@ -412,16 +453,16 @@ paths:
       tags: ["donat"]
       summary: "Закрыть сбор средств"
       parameters:
-      - name: "donat_id"
-        in: path
-        required: true
-        type: integer
+        - name: "donat_id"
+          in: path
+          required: true
+          type: integer
       responses:
-        200: 
+        200:
           description: "success"
-        404: 
+        404:
           description: "no such donation"
-        403: 
+        403:
           description: "not an author of donation, cannot close"
         401:
           description: "no auth"
@@ -430,11 +471,11 @@ paths:
       tags: ["donat"]
       summary: "Пожертвовать"
       parameters:
-      - name: donat
-        in: body
-        required: true
-        schema:
-          $ref: "#/definitions/Donation"
+        - name: donat
+          in: body
+          required: true
+          schema:
+            $ref: "#/definitions/Donation"
       responses:
         200:
           description: "success"
@@ -448,34 +489,34 @@ paths:
       summary: "искать запросы на пожертвование"
       operationId: "findDonationRequests"
       produces:
-      - "application/json"
+        - "application/json"
       parameters:
-      - name: "category"
-        in: "query"
-        type: "string"
-        description: "Category where to search"
-      - name: "region"
-        in: "query"
-        type: "string"
-        description: "Region where to search"
-      - name: "district"
-        in: "query"
-        type: "string"
-        description: "District where to search"
-      - name: "query"
-        in: "query"
-        type: "string"
-        description: "Query"
-      - name: "page"
-        in: "query"
-        type: "string"
-        description: "page for pagination"
-        required: true
-      - name: "rows_per_page"
-        in: "query"
-        type: "string"
-        description: "rows per page for pagination"
-        required: true
+        - name: "category"
+          in: "query"
+          type: "string"
+          description: "Category where to search"
+        - name: "region"
+          in: "query"
+          type: "string"
+          description: "Region where to search"
+        - name: "district"
+          in: "query"
+          type: "string"
+          description: "District where to search"
+        - name: "query"
+          in: "query"
+          type: "string"
+          description: "Query"
+        - name: "page"
+          in: "query"
+          type: "string"
+          description: "page for pagination"
+          required: true
+        - name: "rows_per_page"
+          in: "query"
+          type: "string"
+          description: "rows per page for pagination"
+          required: true
       responses:
         200:
           description: "found smth"
@@ -490,18 +531,18 @@ paths:
   /user/{vk_id}:
     get:
       tags:
-      - "user"
+        - "user"
       summary: "Получить данные о пользователе"
       description: ""
       operationId: "getUserByName"
       produces:
-      - "application/json"
+        - "application/json"
       parameters:
-      - name: "vk_id"
-        in: "path"
-        description: "The name that needs to be fetched. Use user1 for testing. "
-        required: true
-        type: "string"
+        - name: "vk_id"
+          in: "path"
+          description: "The name that needs to be fetched. Use user1 for testing. "
+          required: true
+          type: "string"
       responses:
         200:
           description: "successful operation"
@@ -514,13 +555,13 @@ paths:
   /user/auth:
     post:
       tags:
-      - "user"
+        - "user"
       summary: "Авторизовать пользователя (и зарегистрировать, если он еще не разу не заходил в приложение)"
       parameters:
-      - name: "auth_info"
-        in: "body"
-        schema:
-          $ref: "#/definitions/AuthInfo"
+        - name: "auth_info"
+          in: "body"
+          schema:
+            $ref: "#/definitions/AuthInfo"
       responses:
         201:
           description: "new app user created"
@@ -550,7 +591,7 @@ definitions:
   AuthInfo:
     type: "object"
     properties:
-      url: 
+      url:
         type: "string"
       name:
         type: "string"
@@ -565,6 +606,15 @@ definitions:
         type: integer
       author_id:
         type: integer
+      text:
+        type: string
+  CommentForUser:
+    type: "object"
+    properties:
+      comment_id:
+        type: integer
+      author:
+        $ref: '#/definitions/User'
       text:
         type: string
   DealDetails:
@@ -615,7 +665,7 @@ definitions:
         type: "string"
       district:
         type: "string"
-      sum: 
+      sum:
         type: integer
       category:
         type: "string"
@@ -639,16 +689,17 @@ definitions:
         type: "boolean"
       feedback_type:
         type: "string"
-        enum: 
-        - "ls"
-        - "comments"
-        - "other"
+        enum:
+          - "ls"
+          - "comments"
+          - "other"
+      extra_field:
+        type: "string"
       creation_date:
         type: "string"
         example: "20-JUN-1990 08:03:00"
-      meeting_place:
-        type: "string"
-        example: "Latitude: 55.7782713 °, Longitude: 37.5444476 °"
+      geo_position:
+        $ref: "#/definitions/GeoPosition"
       status:
         type: "string"
         enum: ["offer", "chosen", "closed"]
@@ -661,4 +712,19 @@ definitions:
       category:
         type: "string"
       comments_count:
+        type: integer
+  GeoPosition:
+    type: "object"
+    properties:
+      available:
+        type: "boolean"
+      long:
+        type: "number"
+      lat:
+        type: "number"
+
+  AdCreationResult:
+    type: "object"
+    properties:
+      ad_id:
         type: integer

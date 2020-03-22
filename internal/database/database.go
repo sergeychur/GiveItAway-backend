@@ -8,13 +8,12 @@ import (
 )
 
 const (
-	FOUND       = 0
-	CREATED		= 1
+	FOUND        = 0
+	CREATED      = 1
 	DB_ERROR     = 2
 	EMPTY_RESULT = 3
-	CONFLICT    = 4
+	CONFLICT     = 4
 )
-
 
 type DB struct {
 	db           *pgx.ConnPool
@@ -64,4 +63,3 @@ func (db *DB) Close() {
 func (db *DB) StartTransaction() (*pgx.Tx, error) {
 	return db.db.Begin()
 }
-

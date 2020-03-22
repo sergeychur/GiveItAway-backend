@@ -42,13 +42,13 @@ func ReadFromBody(r *http.Request, w http.ResponseWriter, v interface{}) error {
 	return nil
 }
 
-func CheckUserAuth(info models.AuthInfo, secret string)  (int, bool) {
+func CheckUserAuth(info models.AuthInfo, secret string) (int, bool) {
 	// This verifies by url of app
 	// TODO(sergeychur): check if works
 	const vkSign = "vk_"
 	const signKey = "sign"
 	const userIdKey = "vk_user_id"
-	urlObject, err := url.Parse(info.Url)	// parsed url
+	urlObject, err := url.Parse(info.Url) // parsed url
 	if err != nil {
 		return 0, false
 	}
@@ -70,14 +70,14 @@ func CheckUserAuth(info models.AuthInfo, secret string)  (int, bool) {
 	}
 	// we find only fields starting with "vk_"
 	for key := range queryMap {
-		if key[0:3] !=  vkSign {
+		if key[0:3] != vkSign {
 			queryMap.Del(key)
 		}
 	}
-	queryString := queryMap.Encode()	// we build new quert string
-	h := hmac.New(sha256.New, []byte(secret))	// HMAC init
-	h.Write([]byte(queryString))	// HMAC counting
-	str := base64.StdEncoding.EncodeToString(h.Sum(nil))		// base64 encoding
+	queryString := queryMap.Encode()                     // we build new quert string
+	h := hmac.New(sha256.New, []byte(secret))            // HMAC init
+	h.Write([]byte(queryString))                         // HMAC counting
+	str := base64.StdEncoding.EncodeToString(h.Sum(nil)) // base64 encoding
 
 	// because of RFC 4648 which says these symbols are changed during encoding
 	str = strings.ReplaceAll(str, "+", "-")

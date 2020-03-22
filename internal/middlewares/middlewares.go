@@ -1,7 +1,7 @@
 package middlewares
 
 import (
-	"github.com/go-chi/cors"	// here was rs instead of go-chi
+	"github.com/go-chi/cors" // here was rs instead of go-chi
 	"net/http"
 )
 

@@ -9,7 +9,7 @@ import (
 	"strconv"
 )
 
-func (serv* Server) AuthUser(w http.ResponseWriter, r *http.Request) {
+func (serv *Server) AuthUser(w http.ResponseWriter, r *http.Request) {
 	info := models.AuthInfo{}
 	err := ReadFromBody(r, w, &info)
 	if err != nil {
@@ -36,7 +36,7 @@ func (serv* Server) AuthUser(w http.ResponseWriter, r *http.Request) {
 	DealRequestFromDB(w, &user, status)
 }
 
-func (serv* Server) GetUserInfo(w http.ResponseWriter, r *http.Request) {
+func (serv *Server) GetUserInfo(w http.ResponseWriter, r *http.Request) {
 	userIdStr := chi.URLParam(r, "user_id")
 	userId, err := strconv.Atoi(userIdStr)
 	if err != nil {

@@ -35,8 +35,15 @@ func NewServer(pathToConfig string) (*Server, error) {
 		middlewares.CreateCorsMiddleware(server.config.AllowedHosts))
 
 	subRouter := chi.NewRouter()
+	// ad
+	subRouter.Post("/ad/create", server.CreateAd)
+	subRouter.Get(fmt.Sprintf("/ad/{ad_id:%s}", idPattern), server.GetAdInfo)
+	subRouter.Get("/ad/find", server.FindAds)
+
+	// user
 	subRouter.Post("/user/auth", server.AuthUser)
 	subRouter.Get(fmt.Sprintf("/user/{user_id:%s}", idPattern), server.GetUserInfo)
+
 	r.Mount("/api/", subRouter)
 	server.router = r
 

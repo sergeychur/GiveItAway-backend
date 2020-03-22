@@ -1,7 +1,6 @@
 package models
 
 type DealDetails struct {
-
 	DealId int32 `json:"deal_id,omitempty"`
 
 	AdId int32 `json:"ad_id,omitempty"`
