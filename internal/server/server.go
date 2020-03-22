@@ -34,17 +34,26 @@ func NewServer(pathToConfig string) (*Server, error) {
 		middleware.Recoverer,
 		middlewares.CreateCorsMiddleware(server.config.AllowedHosts))
 
+	// upload
+	r.Get("/upload/{dir:.+}/{file:.+\\..+$}", http.StripPrefix("/upload/",
+		http.FileServer(http.Dir(server.config.UploadPath))).ServeHTTP)
+
 	subRouter := chi.NewRouter()
 	// ad
 	subRouter.Post("/ad/create", server.CreateAd)
 	subRouter.Get(fmt.Sprintf("/ad/{ad_id:%s}", idPattern), server.GetAdInfo)
 	subRouter.Get("/ad/find", server.FindAds)
+	subRouter.Post(fmt.Sprintf("/ad/{ad_id:%s}/upload_image", idPattern), server.AddPhotoToAd)
 
 	// user
 	subRouter.Post("/user/auth", server.AuthUser)
 	subRouter.Get(fmt.Sprintf("/user/{user_id:%s}", idPattern), server.GetUserInfo)
 
+
+
 	r.Mount("/api/", subRouter)
+
+
 	server.router = r
 
 	dbPort, err := strconv.Atoi(server.config.DBPort)

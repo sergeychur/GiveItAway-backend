@@ -13,10 +13,28 @@ tags:
     description: "Пожертвования"
   - name: "deal"
     description: "Сделка по объявлению"
+  - name: "upload"
+    description: "Доступ к фото объявлений"
 schemes:
   - "https"
   - "http"
 paths:
+  /upload/{path_to_file}:
+    get:
+      tags: ["upload"]
+      summary: "Получить файл"
+      description: "хранится в БД, там со слешами, коды ответа как у обычного файлового сервера"
+      parameters:
+        - name: "path_to_file"
+          in: "path"
+          type: "string"
+          required: true
+      responses:
+        200:
+          description: OK
+        404:
+          description: Not Found
+
   /ad/create:
     post:
       tags:
@@ -98,7 +116,7 @@ paths:
           description:
             "The details of ad"
           schema:
-            $ref: "#/definitions/Ad"
+            $ref: "#/definitions/AdForUsers"
   /ad/find:
     get:
       tags:
@@ -144,7 +162,7 @@ paths:
           schema:
             type: "array"
             items:
-              $ref: "#/definitions/Ad"
+              $ref: "#/definitions/AdForUsers"
         400:
           description: "Invalid parameters"
         404:
@@ -677,6 +695,50 @@ definitions:
         format: "int64"
       author_id:
         type: "integer"
+      header:
+        type: "string"
+      text:
+        type: "string"
+      region:
+        type: "string"
+      district:
+        type: "string"
+      is_auction:
+        type: "boolean"
+      feedback_type:
+        type: "string"
+        enum:
+          - "ls"
+          - "comments"
+          - "other"
+      extra_field:
+        type: "string"
+      creation_date:
+        type: "string"
+        example: "20-JUN-1990 08:03:00"
+      geo_position:
+        $ref: "#/definitions/GeoPosition"
+      status:
+        type: "string"
+        enum: ["offer", "chosen", "closed"]
+        default: "offer"
+      pathes_to_photo:
+        type: "array"
+        items:
+          type: "string"
+        example: ["/photo1", "/photo2"]
+      category:
+        type: "string"
+      comments_count:
+        type: integer
+  AdForUsers:
+    type: "object"
+    properties:
+      ad_id:
+        type: "integer"
+        format: "int64"
+      author:
+        $ref: '#/definitions/User'
       header:
         type: "string"
       text:

@@ -108,4 +108,10 @@ func DealRequestFromDB(w http.ResponseWriter, v interface{}, status int) {
 		WriteToResponse(w, http.StatusNotFound, errText)
 		return
 	}
+
+	if status == database.CONFLICT {
+		errText := models.Error{Message: "This action is forbidden"}
+		WriteToResponse(w, http.StatusForbidden, errText)
+		return
+	}
 }

@@ -8,10 +8,12 @@ import (
 )
 
 const (
+	// constants
 	LS = "ls"
 	Comments = "comments"
 	Other = "other"
 
+	// create ad query
 	CreateAd = "INSERT INTO ad (author_id, header, text, region, district, is_auction, feedback_type, category%s)" +
 		" VALUES($1, $2, $3, $4, $5, $6, $7, $8%s) RETURNING ad_id"
 	ExtraField = ", extra_field"
@@ -21,7 +23,13 @@ const (
 	NoExtraFieldGeoPosition = ", ST_POINT($9, $10)"
 	ExtraFieldNoGeoPosition = ", $9"
 	ExtraFieldGeoPosition = ", $9, ST_POINT($10, $11)"
-	
+
+	// add photo to ad query
+	checkAdExist = "SELECT author_id FROM ad WHERE ad_id = $1"
+	AddPhotoToAd = "INSERT INTO ad_photos (ad_id, photo_url) VALUES ($1, $2)"
+
+	// get ad query
+	GetAdById = "SELECT "
 )
 
 func (db *DB) CreateAd(ad models.Ad) (int, models.AdCreationResult) {
@@ -60,8 +68,30 @@ func (db *DB) CreateAd(ad models.Ad) (int, models.AdCreationResult) {
 	return CREATED, res
 }
 
+func (db *DB) AddPhotoToAd(pathToPhoto string, adId int, userId int) int {
+	tx, err := db.StartTransaction()
+	if err != nil {
+		return DB_ERROR
+	}
+	authorId :=0
+	err = tx.QueryRow(checkAdExist).Scan(&authorId)
+	if err != nil {
+		return DB_ERROR
+	}
+	// TODO: uncomment when we can take userId from cookies
+	/*if authorId != userId {
+		return CONFLICT
+	}*/
+	_, err = tx.Exec(AddPhotoToAd, adId, pathToPhoto)
+	if err != nil {
+		return DB_ERROR
+	}
+	return FOUND
+}
+
 func (db *DB) GetAd(adId int) (models.Ad, int) {
-	row := db.db.QueryRow(GetUserById, adId)
+	// TODO: implement
+	row := db.db.QueryRow(GetAdById, adId)
 	ad := models.Ad{}
 	err := row.Scan()
 	if err == pgx.ErrNoRows {

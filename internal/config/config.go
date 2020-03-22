@@ -13,7 +13,9 @@ type Config struct {
 	DBPass       string   `json:"dbpassword"`
 	DBName       string   `json:"dbname"`
 	Secret       string   `json:"secret"`
-	AllowedHosts []string `json:"AllowedHosts,omitempty"`
+	AllowedHosts []string `json:"allowedHosts,omitempty"`
+	UploadPath string `json:"uploadPath,omitempty"`
+
 }
 
 func NewConfig(pathToConfig string) (*Config, error) {
