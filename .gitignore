@@ -17,7 +17,7 @@
 .idea*
 
 # config files
-*config.json
+*config*.json
 go.sum
 *todo.txt*
 upload*
