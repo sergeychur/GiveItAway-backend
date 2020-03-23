@@ -41,7 +41,7 @@ func NewServer(pathToConfig string) (*Server, error) {
 	subRouter := chi.NewRouter()
 	// ad
 	subRouter.Post("/ad/create", server.CreateAd)
-	subRouter.Get(fmt.Sprintf("/ad/{ad_id:%s}", idPattern), server.GetAdInfo)
+	subRouter.Get(fmt.Sprintf("/ad/{ad_id:%s}/details", idPattern), server.GetAdInfo)
 	subRouter.Get("/ad/find", server.FindAds)
 	subRouter.Post(fmt.Sprintf("/ad/{ad_id:%s}/upload_image", idPattern), server.AddPhotoToAd)
 

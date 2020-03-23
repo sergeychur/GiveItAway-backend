@@ -1,4 +1,6 @@
-DROP TABLE IF EXISTS user;
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS ad;
+DROP TABLE IF EXISTS ad_photos;
 
 CREATE EXTENSION IF NOT EXISTS citext;
 CREATE EXTENSION IF NOT EXISTS postgis;
@@ -11,6 +13,8 @@ CREATE TABLE users (
     photo_url text
 );
 
+DROP TYPE IF EXISTS feedback;
+DROP TYPE IF EXISTS ad_status;
 CREATE TYPE feedback AS ENUM ('ls', 'comments', 'other');
 CREATE TYPE ad_status AS ENUM ('offer', 'chosen', 'closed');
 
@@ -27,6 +31,8 @@ CREATE TABLE ad (
     feedback_type feedback,
     extra_field citext,
     creation_datetime TIMESTAMP WITH TIME ZONE default now(),
+    lat float,
+    long float,
     geo_position geography,
     status ad_status DEFAULT 'offer',
     category citext,    -- mb change for enum of categories too

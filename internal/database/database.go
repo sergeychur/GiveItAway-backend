@@ -52,6 +52,7 @@ func (db *DB) Start() error {
 	if err != nil {
 		return err
 	}
+
 	db.db = dataBase
 	return nil
 }

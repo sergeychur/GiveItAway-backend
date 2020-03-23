@@ -17,7 +17,7 @@ type Ad struct {
 
 	FeedbackType string `json:"feedback_type"`
 
-	ExtraField string `json:"extra_field"`
+	ExtraField string `json:"extra_field,omitempty"`
 
 	CreationDate string `json:"creation_date,omitempty"`
 
@@ -39,7 +39,7 @@ type AdCreationResult struct {
 type AdForUsers struct {
 	AdId int64 `json:"ad_id,omitempty"`
 
-	Author User `json:"author,omitempty"`
+	Author *User `json:"author,omitempty"`
 
 	Header string `json:"header"`
 
@@ -53,7 +53,7 @@ type AdForUsers struct {
 
 	FeedbackType string `json:"feedback_type"`
 
-	ExtraField string `json:"extra_field"`
+	ExtraField string `json:"extra_field,omitempty"`
 
 	CreationDate string `json:"creation_date,omitempty"`
 

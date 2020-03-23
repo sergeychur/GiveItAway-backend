@@ -28,7 +28,35 @@ func (serv *Server) CreateAd(w http.ResponseWriter, r *http.Request) {
 }
 
 func (serv *Server) FindAds(w http.ResponseWriter, r *http.Request) {
-
+	params := r.URL.Query()
+	pageArr, ok := params["page"]
+	if !ok {
+		WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("page and rows per page have to be in get params and int"))
+		return
+	}
+	page, err := strconv.Atoi(pageArr[0])
+	if err != nil {
+		WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("page and rows per page have to be in get params and int"))
+	}
+	rowsPerPageArr, ok := params["rows_per_page"]
+	if !ok || len(rowsPerPageArr) != 1 {
+		WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("page and rows per page have to be in get params and int"))
+		return
+	}
+	rowsPerPage, err := strconv.Atoi(rowsPerPageArr[0])
+	if err != nil {
+		WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("page and rows per page have to be in get params and int"))
+	}
+	queryArr, ok := params["query"]
+	status := 0
+	ads := make([]models.AdForUsers, 0)
+	if ok && len(queryArr) == 1 {
+		query := queryArr[0]
+		ads, status = serv.db.FindAds(query, page, rowsPerPage, params)
+	} else {
+		ads, status = serv.db.GetAds(page, rowsPerPage, params)
+	}
+	DealRequestFromDB(w, ads, status)
 }
 
 func (serv *Server) GetAdInfo(w http.ResponseWriter, r *http.Request) {
@@ -37,7 +65,7 @@ func (serv *Server) GetAdInfo(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("id should be int"))
 	}
-	ad := models.Ad{}
+	//ad := models.AdForUsers{}
 	ad, status := serv.db.GetAd(adId)
 	DealRequestFromDB(w, &ad, status)
 }

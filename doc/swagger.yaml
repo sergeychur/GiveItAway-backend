@@ -715,7 +715,7 @@ definitions:
         type: "string"
       creation_date:
         type: "string"
-        example: "20-JUN-1990 08:03:00"
+        example: "2006-01-02T15:04:05.999999999Z07:00"
       geo_position:
         $ref: "#/definitions/GeoPosition"
       status:
