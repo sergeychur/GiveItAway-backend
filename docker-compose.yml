@@ -1,0 +1,36 @@
+version: "3.4"
+
+networks:
+  uniting_net:
+
+
+services:
+  db:
+    build:
+      context: .
+      dockerfile: deploy/db.Dockerfile
+    restart: always
+    expose:
+      - 5432
+    ports:
+      - 5432:5432
+    networks:
+      - uniting_net
+    volumes:
+      - ./data:/var/lib/postgresql/data
+  api:
+    build:
+      context: .
+      dockerfile: deploy/api.Dockerfile
+      target: release
+    ports:
+      - 8091:8091
+    restart: always
+    networks:
+      - uniting_net
+    depends_on:
+      - db
+    command:
+      /bin/bash -c "/home/app/wait_for_it.sh -t 600 db:5432 && ls && /home/app/api.out /home/app/config_deploy.json"
+    volumes:
+      - ./upload:/home/app/upload

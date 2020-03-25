@@ -7,13 +7,13 @@ import (
 	"time"
 )
 
-/*const (
-	OK          = 0
-	DBError     = 1
-	EmptyResult = 2
-	Conflict    = 3
-)*/
-
+const (
+	FOUND        = 0
+	CREATED      = 1
+	DB_ERROR     = 2
+	EMPTY_RESULT = 3
+	CONFLICT     = 4
+)
 
 type DB struct {
 	db           *pgx.ConnPool
@@ -52,6 +52,7 @@ func (db *DB) Start() error {
 	if err != nil {
 		return err
 	}
+
 	db.db = dataBase
 	return nil
 }

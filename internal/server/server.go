@@ -1,10 +1,12 @@
 package server
 
 import (
+	"fmt"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/sergeychur/give_it_away/internal/config"
 	"github.com/sergeychur/give_it_away/internal/database"
+	"github.com/sergeychur/give_it_away/internal/middlewares"
 	"log"
 	"net/http"
 	"os"
@@ -18,20 +20,42 @@ type Server struct {
 }
 
 func NewServer(pathToConfig string) (*Server, error) {
+	const idPattern = "^[0-9]+$"
 	server := new(Server)
 	r := chi.NewRouter()
-	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
-
-	subRouter := chi.NewRouter()
-	r.Mount("/api/", subRouter)
-	server.router = r
 
 	newConfig, err := config.NewConfig(pathToConfig)
 	if err != nil {
 		return nil, err
 	}
 	server.config = newConfig
+
+	r.Use(middleware.Logger,
+		middleware.Recoverer,
+		middlewares.CreateCorsMiddleware(server.config.AllowedHosts))
+
+	// upload
+	r.Get("/upload/{dir:.+}/{file:.+\\..+$}", http.StripPrefix("/upload/",
+		http.FileServer(http.Dir(server.config.UploadPath))).ServeHTTP)
+
+	subRouter := chi.NewRouter()
+	// ad
+	subRouter.Post("/ad/create", server.CreateAd)
+	subRouter.Get(fmt.Sprintf("/ad/{ad_id:%s}/details", idPattern), server.GetAdInfo)
+	subRouter.Get("/ad/find", server.FindAds)
+	subRouter.Post(fmt.Sprintf("/ad/{ad_id:%s}/upload_image", idPattern), server.AddPhotoToAd)
+
+	// user
+	subRouter.Post("/user/auth", server.AuthUser)
+	subRouter.Get(fmt.Sprintf("/user/{user_id:%s}", idPattern), server.GetUserInfo)
+
+
+
+	r.Mount("/api/", subRouter)
+
+
+	server.router = r
+
 	dbPort, err := strconv.Atoi(server.config.DBPort)
 	if err != nil {
 		return nil, err
