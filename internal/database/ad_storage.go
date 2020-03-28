@@ -90,7 +90,7 @@ func (db *DB) AddPhotoToAd(pathToPhoto string, adId int, userId int) int {
 		return DB_ERROR
 	}
 	authorId :=0
-	err = tx.QueryRow(checkAdExist).Scan(&authorId)
+	err = tx.QueryRow(checkAdExist, adId).Scan(&authorId)
 	if err != nil {
 		return DB_ERROR
 	}
@@ -99,6 +99,10 @@ func (db *DB) AddPhotoToAd(pathToPhoto string, adId int, userId int) int {
 		return CONFLICT
 	}*/
 	_, err = tx.Exec(AddPhotoToAd, adId, pathToPhoto)
+	if err != nil {
+		return DB_ERROR
+	}
+	err = tx.Commit()
 	if err != nil {
 		return DB_ERROR
 	}
