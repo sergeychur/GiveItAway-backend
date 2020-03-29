@@ -67,7 +67,7 @@ paths:
       tags:
         - "ad"
       summary: "Обновить объявление"
-      description: ""
+      description: "Можно изменять header, text, region, ditrict, is_auction, feedback_type, extra_field, geo_position, category, "
       operationId: "updateAd"
       consumes:
         - "application/json"

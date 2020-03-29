@@ -18,6 +18,17 @@ const (
 	ExtraFieldNoGeoPosition = ", $9"
 	ExtraFieldGeoPosition = ", $9, ST_POINT($10, $11), $10, $11"
 
+	// edit ad query
+	/*
+	ad.Header, ad.Text, ad.Region, ad.District, ad.IsAuction,
+				ad.FeedbackType, ad.Category, ad.ExtraField, ad.GeoPosition.Latitude, ad.GeoPosition.Longitude
+	*/
+	EditAd = "UPDATE ad SET header=$1, text=$2, region=$3, district=$4, is_auction=$5, feedback_type=$6, category=$7%s where ad_id=$%d"
+	NoExtraFieldNoGeoPositionEdit = ", extra_field=NULL"
+	NoExtraFieldGeoPositionEdit = ", geo_position=ST_POINT($8, $9), lat=$8, long=$9"
+	ExtraFieldNoGeoPositionEdit = ", extra_field=$8"
+	ExtraFieldGeoPositionEdit = ", extra_field=$8, geo_position=ST_POINT($9, $10), lat=$9, long=$10"
+
 	// add photo to ad query
 	checkAdExist = "SELECT author_id FROM ad WHERE ad_id = $1"
 	AddPhotoToAd = "INSERT INTO ad_photos (ad_id, photo_url) VALUES ($1, $2)"
@@ -31,8 +42,7 @@ const (
 
 func (db *DB) CreateAd(ad models.Ad) (int, models.AdCreationResult) {
 	query := ""
-	var err error
-	err = nil
+	var err error = nil
 	res := models.AdCreationResult{}
 	sign := 0
 	if ad.FeedbackType == Other {
@@ -174,4 +184,58 @@ func (db *DB) DeletePhotosFromAd(adId int, userId int, photoIds []string) (int, 
 		return DB_ERROR, nil
 	}
 	return FOUND, photoUrls
+}
+
+func (db *DB) EditAd(adId int, userId int, ad models.Ad) int {
+	tx, err := db.StartTransaction()
+	if err != nil {
+		return DB_ERROR
+	}
+	authorId := 0
+	err = tx.QueryRow(checkAdExist, adId).Scan(&authorId)
+	if err == pgx.ErrNoRows {
+		return EMPTY_RESULT
+	}
+	if err != nil {
+		return DB_ERROR
+	}
+	// TODO: uncomment when we can take userId from cookies
+	/*if authorId != userId {
+		return CONFLICT
+	}*/
+	sign := 0
+	query := ""
+	err = nil
+	if ad.FeedbackType == Other {
+		sign = 10
+	}
+	if ad.GeoPosition != nil {
+		sign += 1
+	}
+	switch sign {
+	case 0:
+		query = fmt.Sprintf(EditAd, NoExtraFieldNoGeoPositionEdit, 8)
+		_, err = tx.Exec(query, ad.Header, ad.Text, ad.Region, ad.District, ad.IsAuction,
+			ad.FeedbackType, ad.Category, adId)
+	case 1:
+		query = fmt.Sprintf(EditAd, NoExtraFieldGeoPositionEdit, 10)
+		_, err = tx.Exec(query, ad.Header, ad.Text, ad.Region, ad.District, ad.IsAuction,
+			ad.FeedbackType, ad.Category, ad.GeoPosition.Latitude, ad.GeoPosition.Longitude, adId)
+	case 10:
+		query = fmt.Sprintf(EditAd, ExtraFieldNoGeoPositionEdit, 9)
+		_, err = tx.Exec(query, ad.Header, ad.Text, ad.Region, ad.District, ad.IsAuction,
+			ad.FeedbackType, ad.Category, ad.ExtraField, adId)
+	case 11:
+		query = fmt.Sprintf(EditAd, ExtraFieldGeoPositionEdit, 11)
+		_, err = tx.Exec(query, ad.Header, ad.Text, ad.Region, ad.District, ad.IsAuction,
+			ad.FeedbackType, ad.Category, ad.ExtraField, ad.GeoPosition.Latitude, ad.GeoPosition.Longitude, adId)
+	}
+	if err != nil {
+		return DB_ERROR
+	}
+	err = tx.Commit()
+	if err != nil {
+		return DB_ERROR
+	}
+	return FOUND
 }
