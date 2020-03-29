@@ -19,10 +19,6 @@ const (
 	ExtraFieldGeoPosition = ", $9, ST_POINT($10, $11), $10, $11"
 
 	// edit ad query
-	/*
-	ad.Header, ad.Text, ad.Region, ad.District, ad.IsAuction,
-				ad.FeedbackType, ad.Category, ad.ExtraField, ad.GeoPosition.Latitude, ad.GeoPosition.Longitude
-	*/
 	EditAd = "UPDATE ad SET header=$1, text=$2, region=$3, district=$4, is_auction=$5, feedback_type=$6, category=$7%s where ad_id=$%d"
 	NoExtraFieldNoGeoPositionEdit = ", extra_field=NULL"
 	NoExtraFieldGeoPositionEdit = ", geo_position=ST_POINT($8, $9), lat=$8, long=$9"
@@ -103,7 +99,7 @@ func (db *DB) AddPhotoToAd(pathToPhoto string, adId int, userId int) int {
 	if err != nil {
 		return DB_ERROR
 	}
-	return FOUND
+	return OK
 }
 
 func (db *DB) DeleteAd(adId int, userId int) int {
@@ -134,7 +130,7 @@ func (db *DB) DeleteAd(adId int, userId int) int {
 	if err != nil {
 		return DB_ERROR
 	}
-	return FOUND
+	return OK
 }
 
 func (db *DB) DeletePhotosFromAd(adId int, userId int, photoIds []string) (int, []string) {
@@ -183,7 +179,7 @@ func (db *DB) DeletePhotosFromAd(adId int, userId int, photoIds []string) (int, 
 	if err != nil {
 		return DB_ERROR, nil
 	}
-	return FOUND, photoUrls
+	return OK, photoUrls
 }
 
 func (db *DB) EditAd(adId int, userId int, ad models.Ad) int {
@@ -191,6 +187,9 @@ func (db *DB) EditAd(adId int, userId int, ad models.Ad) int {
 	if err != nil {
 		return DB_ERROR
 	}
+	defer func() {
+		_ = tx.Rollback()
+	}()
 	authorId := 0
 	err = tx.QueryRow(checkAdExist, adId).Scan(&authorId)
 	if err == pgx.ErrNoRows {
@@ -237,5 +236,5 @@ func (db *DB) EditAd(adId int, userId int, ad models.Ad) int {
 	if err != nil {
 		return DB_ERROR
 	}
-	return FOUND
+	return OK
 }

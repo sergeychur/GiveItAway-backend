@@ -202,7 +202,7 @@ paths:
         '500':
           description: Error while uploading the file
   /ad/{ad_id}/subscribe:
-    put:
+    post:
       summary: "Подписаться на объявление (быть среди тех, кто хочет забрать)"
       tags:
         - ad
@@ -235,9 +235,21 @@ paths:
           in: path
           required: true
           type: integer
+        - name: "page"
+          in: "query"
+          type: "string"
+          description: "page for pagination"
+          required: true
+        - name: "rows_per_page"
+          in: "query"
+          type: "string"
+          description: "rows per page for pagination"
+          required: true
       responses:
         200:
           description: "users found"
+        400:
+          description: "some parameters are bad"
         404:
           description: "ad or subscribers are not found"
   /ad/{ad_id}/unsubscribe:

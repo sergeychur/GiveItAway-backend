@@ -1,6 +1,7 @@
 DROP TABLE IF EXISTS users;
 DROP TABLE IF EXISTS ad;
 DROP TABLE IF EXISTS ad_photos;
+DROP TABLE IF EXISTS ad_subscribers;
 
 CREATE EXTENSION IF NOT EXISTS citext;
 CREATE EXTENSION IF NOT EXISTS postgis;
@@ -45,4 +46,14 @@ CREATE TABLE ad_photos (
     CONSTRAINT ad_photos_ad FOREIGN KEY (ad_id)
         REFERENCES ad (ad_id) ON UPDATE CASCADE ON DELETE CASCADE,
     photo_url text
+);
+
+CREATE TABLE ad_subscribers (
+    ad_subscribers_id bigserial CONSTRAINT ad_subscribers_pk PRIMARY KEY ,
+    ad_id bigint,
+    CONSTRAINT ad_subscribers_ad FOREIGN KEY (ad_id)
+        REFERENCES ad (ad_id) ON UPDATE CASCADE ON DELETE CASCADE,
+    subscriber_id bigint,
+    CONSTRAINT ad_subscribers_user FOREIGN KEY (subscriber_id)
+        REFERENCES users (vk_id) ON UPDATE CASCADE ON DELETE NO ACTION
 );

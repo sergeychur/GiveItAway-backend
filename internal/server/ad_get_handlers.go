@@ -16,8 +16,9 @@ func (serv *Server) FindAds(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	page, err := strconv.Atoi(pageArr[0])
-	if err != nil {
+	if err != nil || page < 1 {
 		WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("page and rows per page have to be in get params and int"))
+		return
 	}
 	rowsPerPageArr, ok := params["rows_per_page"]
 	if !ok || len(rowsPerPageArr) != 1 {
@@ -25,8 +26,9 @@ func (serv *Server) FindAds(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	rowsPerPage, err := strconv.Atoi(rowsPerPageArr[0])
-	if err != nil {
+	if err != nil || rowsPerPage < 1 {
 		WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("page and rows per page have to be in get params and int"))
+		return
 	}
 	queryArr, ok := params["query"]
 	status := 0

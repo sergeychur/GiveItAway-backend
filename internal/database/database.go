@@ -8,6 +8,7 @@ import (
 )
 
 const (
+	OK = 0
 	FOUND        = 0
 	CREATED      = 1
 	DB_ERROR     = 2
