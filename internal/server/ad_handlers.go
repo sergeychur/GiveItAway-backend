@@ -96,3 +96,22 @@ func (serv *Server) AddPhotoToAd(w http.ResponseWriter, r *http.Request) {
 	status := serv.db.AddPhotoToAd(pathToPhoto, adId, userId)
 	DealRequestFromDB(w, "OK", status)
 }
+
+func (serv *Server) DeleteAd(w http.ResponseWriter, r *http.Request) {
+	adIdStr := chi.URLParam(r, "ad_id")
+	adId, err := strconv.Atoi(adIdStr)
+	if err != nil {
+		WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("id should be int"))
+	}
+	userId := 0
+	// TODO: take it from cookies later
+	status:= serv.db.DeleteAd(adId, userId)
+	DealRequestFromDB(w, "OK", status)
+
+	if status != database.CONFLICT {
+		err = filesystem.DeleteAdPhotos(serv.config.UploadPath, adId)
+		if err != nil {
+			log.Printf("Didn't delete photos for ad %d\n", adId)
+		}
+	}
+}

@@ -44,6 +44,7 @@ func NewServer(pathToConfig string) (*Server, error) {
 	subRouter.Get(fmt.Sprintf("/ad/{ad_id:%s}/details", idPattern), server.GetAdInfo)
 	subRouter.Get("/ad/find", server.FindAds)
 	subRouter.Post(fmt.Sprintf("/ad/{ad_id:%s}/upload_image", idPattern), server.AddPhotoToAd)
+	subRouter.Post(fmt.Sprintf("/ad/{ad_id:%s}/delete", idPattern), server.DeleteAd)
 
 	// user
 	subRouter.Post("/user/auth", server.AuthUser)

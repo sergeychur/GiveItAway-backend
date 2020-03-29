@@ -264,7 +264,7 @@ paths:
           description: "user wasn't subscribed"
         401:
           description: "no auth"
-  /ad/{ad_id}/close:
+  /ad/{ad_id}/delete:
     post:
       summary: "Закрыть объявление без сделки"
       tags:
@@ -278,7 +278,7 @@ paths:
           schema:
             type: integer
           in: body
-          description: User ID of suscriber, mb passed in some other way
+          description: User ID of suscriber, !!!! будет передаваться в куке
       responses:
         200:
           description: "ad closed"
@@ -286,6 +286,8 @@ paths:
           description: "ad not found"
         403:
           description: "no user id or it doesn't match with authors"
+        400:
+          description: "bad parameters"
   /ad/{ad_id}/make_deal:
     post:
       summary: "Выбрать пользователя, с которым заключить сделку об отдаче товара"
