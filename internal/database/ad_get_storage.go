@@ -30,7 +30,7 @@ const (
 	AuthorClause = " author_id = $%d "
 	RegionClause = " region = $%d "
 	DistrictClause = " district = $%d "
-	GetAdPhotos = "SELECT photo_url FROM ad_photos WHERE ad_id = $1"
+	GetAdPhotos = "SELECT ad_photos_id, photo_url FROM ad_photos WHERE ad_id = $1"
 )
 
 
@@ -72,12 +72,12 @@ func (db *DB) GetAd(adId int) (models.AdForUsers, int) {
 	}
 	defer photosRows.Close()
 	for photosRows.Next() {
-		path := ""
-		err = photosRows.Scan(&path)
+		adPhoto := models.AdPhoto{}
+		err = photosRows.Scan(&adPhoto.AdPhotoId, &adPhoto.PhotoUrl)
 		if err != nil {
 			return ad, DB_ERROR
 		}
-		ad.PathesToPhoto = append(ad.PathesToPhoto, path)
+		ad.PathesToPhoto = append(ad.PathesToPhoto, adPhoto)
 	}
 	return ad, FOUND
 }
@@ -184,12 +184,12 @@ func (db *DB) WorkWithOneAd(rows *pgx.Rows, ads Ads) (Ads, error) {
 	}
 	defer photosRows.Close()
 	for photosRows.Next() {
-		path := ""
-		err = photosRows.Scan(&path)
+		adPhoto := models.AdPhoto{}
+		err = photosRows.Scan(&adPhoto.AdPhotoId, &adPhoto.PhotoUrl)
 		if err != nil {
 			return nil, err
 		}
-		ad.PathesToPhoto = append(ad.PathesToPhoto, path)
+		ad.PathesToPhoto = append(ad.PathesToPhoto, adPhoto)
 	}
 	ads = append(ads, *ad)
 	return ads, nil

@@ -24,6 +24,9 @@ const (
 
 	// deleteAd query
 	deleteAd = "DELETE FROM ad WHERE ad_id = $1"
+
+	// deletePhotos from ad query
+	deleteAdPhotos = "DELETE FROM ad_photos WHERE ad_photos_id IN (%s) RETURNING photo_url"
 )
 
 func (db *DB) CreateAd(ad models.Ad) (int, models.AdCreationResult) {
@@ -75,6 +78,9 @@ func (db *DB) AddPhotoToAd(pathToPhoto string, adId int, userId int) int {
 	if err != nil {
 		return DB_ERROR
 	}
+	if err == pgx.ErrNoRows {
+		return EMPTY_RESULT
+	}
 	// TODO: uncomment when we can take userId from cookies
 	/*if authorId != userId {
 		return CONFLICT
@@ -119,4 +125,53 @@ func (db *DB) DeleteAd(adId int, userId int) int {
 		return DB_ERROR
 	}
 	return FOUND
+}
+
+func (db *DB) DeletePhotosFromAd(adId int, userId int, photoIds []string) (int, []string) {
+	tx, err := db.StartTransaction()
+	if err != nil {
+		return DB_ERROR, nil
+	}
+	defer func() {
+		_ = tx.Rollback()
+	}()
+	authorId := 0
+	err = tx.QueryRow(checkAdExist, adId).Scan(&authorId)
+	if err == pgx.ErrNoRows {
+		return EMPTY_RESULT, nil
+	}
+	if err != nil {
+		return DB_ERROR, nil
+	}
+	// TODO: uncomment when we can take userId from cookies
+	/*if authorId != userId {
+		return CONFLICT
+	}*/
+	photoIdsInterface := make([]interface{}, len(photoIds))
+	for i := range photoIds {
+		photoIdsInterface[i] = photoIds[i]
+	}
+	placeHolders := "$1"
+	for i := 2; i <= len(photoIds); i++ {
+		placeHolders += fmt.Sprintf(", $%d", i)
+	}
+	query := fmt.Sprintf(deleteAdPhotos, placeHolders)
+	rows, err := tx.Query(query, photoIdsInterface...)
+	photoUrls := make([]string, 0)
+	defer func() {
+		rows.Close()
+	}()
+	for rows.Next() {
+		path := ""
+		err = rows.Scan(&path)
+		if err != nil {
+			return DB_ERROR, nil
+		}
+		photoUrls = append(photoUrls, path)
+	}
+	err = tx.Commit()
+	if err != nil {
+		return DB_ERROR, nil
+	}
+	return FOUND, photoUrls
 }

@@ -115,3 +115,29 @@ func (serv *Server) DeleteAd(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 }
+
+func (serv *Server) DeleteAdPhoto(w http.ResponseWriter, r *http.Request) {
+	adIdStr := chi.URLParam(r, "ad_id")
+	adId, err := strconv.Atoi(adIdStr)
+	if err != nil {
+		WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("id should be int"))
+	}
+	userId := 0
+	// TODO: take it from cookies later
+	params := r.URL.Query()
+	photoIds, ok := params["ad_photo_id"]
+	if !ok || len(photoIds) < 1 {
+		WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("photo id has to be int "))
+		return
+	}
+	status, photoUrls:= serv.db.DeletePhotosFromAd(adId, userId, photoIds)
+	DealRequestFromDB(w, "OK", status)
+	if status != database.CONFLICT {
+		for _, photoUrl := range photoUrls  {
+			err = filesystem.DeleteAdPhoto(serv.config.UploadPath, photoUrl)
+			if err != nil {
+				log.Printf("Didn't delete photo: %s\nbecause of %v", photoUrl, err)
+			}
+		}
+	}
+}

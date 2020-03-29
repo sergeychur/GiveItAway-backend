@@ -1,11 +1,13 @@
 package filesystem
 
 import (
+	"fmt"
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 func saveFile(file multipart.File, handle *multipart.FileHeader, path string) (string, error) {
@@ -14,15 +16,17 @@ func saveFile(file multipart.File, handle *multipart.FileHeader, path string) (s
 	if err != nil {
 		return "", err
 	}
+
+	filename := getFileName(path, handle.Filename)
 	err = CreateDir(path)
 	if err != nil {
 		return "", err
 	}
-	err = ioutil.WriteFile(filepath.Join(path, handle.Filename), data, 0644)
+	err = ioutil.WriteFile(filepath.Join(path, filename), data, 0644)
 	if err != nil {
 		return "", err
 	}
-	return handle.Filename, nil
+	return filename, nil
 }
 
 func UploadFile(w http.ResponseWriter, r *http.Request, callback func(header multipart.FileHeader) error,
@@ -59,4 +63,20 @@ func CreateDir(path string) error {
 		return err
 	}
 	return nil
+}
+
+func getFileName(path string, initFilename string) string {
+	_, errNotFound := os.Stat(filepath.Join(path, initFilename))
+	curFileName := initFilename
+	index := 0
+	for ; !os.IsNotExist(errNotFound);  {
+		index++
+		extension := filepath.Ext(curFileName)
+		name := strings.Trim(initFilename, extension)
+		name += fmt.Sprintf("_(%d)", index)
+		curFileName = name + extension
+		_, errNotFound = os.Stat(filepath.Join(path, curFileName))
+	}
+
+	return curFileName
 }

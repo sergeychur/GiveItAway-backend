@@ -25,7 +25,7 @@ type Ad struct {
 
 	Status string `json:"status,omitempty"`
 
-	PathesToPhoto []string `json:"pathes_to_photo,omitempty"`
+	PathesToPhoto []AdPhoto `json:"pathes_to_photo,omitempty"`
 
 	Category string `json:"category"`
 
@@ -61,9 +61,14 @@ type AdForUsers struct {
 
 	Status string `json:"status,omitempty"`
 
-	PathesToPhoto []string `json:"pathes_to_photo,omitempty"`
+	PathesToPhoto []AdPhoto `json:"pathes_to_photo,omitempty"`
 
 	Category string `json:"category"`
 
 	CommentsCount int32 `json:"comments_count,omitempty"`
+}
+
+type AdPhoto struct {
+	AdPhotoId int
+	PhotoUrl string
 }

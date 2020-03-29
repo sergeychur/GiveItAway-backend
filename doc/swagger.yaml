@@ -266,7 +266,7 @@ paths:
           description: "no auth"
   /ad/{ad_id}/delete:
     post:
-      summary: "Закрыть объявление без сделки"
+      summary: "Закрыть объявление без сделки(удалить его насовсем)"
       tags:
         - ad
       parameters:
@@ -288,6 +288,39 @@ paths:
           description: "no user id or it doesn't match with authors"
         400:
           description: "bad parameters"
+
+  /ad/{ad_id}/delete_photo:
+    post:
+      summary: "Удалить фото, принадлежащее объявлению"
+      tags:
+        - ad
+      parameters:
+        - name: ad_id
+          in: path
+          required: true
+          type: integer
+        - name: user_id
+          schema:
+            type: integer
+          in: body
+          description: User ID of suscriber, !!!! будет передаваться в куке
+        - name: ad_photo_id
+          in: query
+          type: array
+          items:
+            type: integer
+          required: true
+          description: Id записи о пути к фото, хранящийся в модели объявления
+      responses:
+        200:
+          description: "photos deleted"
+        404:
+          description: "ad not found"
+        403:
+          description: "no user id or it doesn't match with authors"
+        400:
+          description: "bad parameters"
+
   /ad/{ad_id}/make_deal:
     post:
       summary: "Выбрать пользователя, с которым заключить сделку об отдаче товара"
@@ -727,8 +760,7 @@ definitions:
       pathes_to_photo:
         type: "array"
         items:
-          type: "string"
-        example: ["/photo1", "/photo2"]
+          $ref: "#/definitions/AdPhoto"
       category:
         type: "string"
       comments_count:
@@ -771,8 +803,7 @@ definitions:
       pathes_to_photo:
         type: "array"
         items:
-          type: "string"
-        example: ["/photo1", "/photo2"]
+          $ref: "#/definitions/AdPhoto"
       category:
         type: "string"
       comments_count:
@@ -792,3 +823,12 @@ definitions:
     properties:
       ad_id:
         type: integer
+
+  AdPhoto:
+    type: "object"
+    properties:
+      ad_photo_id:
+        type: integer
+      photo_url:
+        type: string
+        example: "photo1"
