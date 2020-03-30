@@ -31,7 +31,7 @@ func saveFile(file multipart.File, handle *multipart.FileHeader, path string) (s
 
 func UploadFile(w http.ResponseWriter, r *http.Request, callback func(header multipart.FileHeader) error,
 	basePath string, path string) (string, error) {
-		// takes base path to all uploads and directory to where save the current file
+	// takes base path to all uploads and directory to where save the current file
 	file, handle, err := r.FormFile("file")
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -69,7 +69,7 @@ func getFileName(path string, initFilename string) string {
 	_, errNotFound := os.Stat(filepath.Join(path, initFilename))
 	curFileName := initFilename
 	index := 0
-	for ; !os.IsNotExist(errNotFound);  {
+	for !os.IsNotExist(errNotFound) {
 		index++
 		extension := filepath.Ext(curFileName)
 		name := strings.Trim(initFilename, extension)

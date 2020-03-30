@@ -109,9 +109,15 @@ func DealRequestFromDB(w http.ResponseWriter, v interface{}, status int) {
 		return
 	}
 
-	if status == database.CONFLICT {
+	if status == database.FORBIDDEN {
 		errText := models.Error{Message: "This action is forbidden"}
 		WriteToResponse(w, http.StatusForbidden, errText)
+		return
+	}
+
+	if status == database.CONFLICT {
+		WriteToResponse(w, http.StatusConflict,
+			fmt.Errorf("conflict happened while performing these actions"))
 		return
 	}
 }

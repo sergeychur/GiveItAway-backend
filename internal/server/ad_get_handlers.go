@@ -47,6 +47,7 @@ func (serv *Server) GetAdInfo(w http.ResponseWriter, r *http.Request) {
 	adId, err := strconv.Atoi(adIdStr)
 	if err != nil {
 		WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("id should be int"))
+		return
 	}
 	ad, status := serv.db.GetAd(adId)
 	DealRequestFromDB(w, &ad, status)

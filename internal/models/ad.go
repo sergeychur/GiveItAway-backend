@@ -70,5 +70,5 @@ type AdForUsers struct {
 
 type AdPhoto struct {
 	AdPhotoId int
-	PhotoUrl string
+	PhotoUrl  string
 }

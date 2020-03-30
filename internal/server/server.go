@@ -45,19 +45,25 @@ func NewServer(pathToConfig string) (*Server, error) {
 	subRouter.Get(fmt.Sprintf("/ad/{ad_id:%s}/details", idPattern), server.GetAdInfo)
 	subRouter.Get("/ad/find", server.FindAds)
 	subRouter.Post(fmt.Sprintf("/ad/{ad_id:%s}/upload_image", idPattern), server.AddPhotoToAd)
-	subRouter.Post(fmt.Sprintf("/ad/{ad_id:%s}/subscribe", idPattern), server.SubscribeToAd)
-	subRouter.Get(fmt.Sprintf("/ad/{ad_id:%s}/subscribers", idPattern), server.GetAdSubscribers)
 	subRouter.Post(fmt.Sprintf("/ad/{ad_id:%s}/delete", idPattern), server.DeleteAd)
 	subRouter.Post(fmt.Sprintf("/ad/{ad_id:%s}/delete_photo", idPattern), server.DeleteAdPhoto)
+
+	// deal
+	subRouter.Post(fmt.Sprintf("/ad/{ad_id:%s}/subscribe", idPattern), server.SubscribeToAd)
+	subRouter.Get(fmt.Sprintf("/ad/{ad_id:%s}/subscribers", idPattern), server.GetAdSubscribers)
+	subRouter.Post(fmt.Sprintf("/ad/{ad_id:%s}/unsubscribe", idPattern), server.UnsubscribeFromAd)
+	subRouter.Put(fmt.Sprintf("/ad/{ad_id:%s}/make_deal", idPattern), server.MakeDeal)
+	subRouter.Get(fmt.Sprintf("/ad/{ad_id:%s}/deal", idPattern), server.CancelDeal)
+
+	subRouter.Post(fmt.Sprintf("/deal/{deal_id:%s}/fulfill", idPattern), server.FulfillDeal)
+	subRouter.Post(fmt.Sprintf("/deal/{deal_id:%s}/cancel", idPattern), server.CancelDeal)
+	subRouter.Get(fmt.Sprintf("/ad/{ad_id:%s}/deal", idPattern), server.GetDealForAd)
 
 	// user
 	subRouter.Post("/user/auth", server.AuthUser)
 	subRouter.Get(fmt.Sprintf("/user/{user_id:%s}", idPattern), server.GetUserInfo)
 
-
-
 	r.Mount("/api/", subRouter)
-
 
 	server.router = r
 

@@ -41,6 +41,7 @@ func (serv *Server) GetUserInfo(w http.ResponseWriter, r *http.Request) {
 	userId, err := strconv.Atoi(userIdStr)
 	if err != nil {
 		WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("id should be int"))
+		return
 	}
 	user := models.User{}
 	user, status := serv.db.GetUser(userId)

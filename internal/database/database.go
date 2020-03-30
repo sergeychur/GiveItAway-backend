@@ -8,12 +8,13 @@ import (
 )
 
 const (
-	OK = 0
+	OK           = 0
 	FOUND        = 0
 	CREATED      = 1
 	DB_ERROR     = 2
 	EMPTY_RESULT = 3
-	CONFLICT     = 4
+	FORBIDDEN    = 4
+	CONFLICT     = 5
 )
 
 type DB struct {

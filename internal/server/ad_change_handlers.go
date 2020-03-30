@@ -59,13 +59,14 @@ func (serv *Server) DeleteAd(w http.ResponseWriter, r *http.Request) {
 	adId, err := strconv.Atoi(adIdStr)
 	if err != nil {
 		WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("id should be int"))
+		return
 	}
 	userId := 0
 	// TODO: take it from cookies later
-	status:= serv.db.DeleteAd(adId, userId)
+	status := serv.db.DeleteAd(adId, userId)
 	DealRequestFromDB(w, "OK", status)
 
-	if status != database.CONFLICT {
+	if status != database.FORBIDDEN {
 		err = filesystem.DeleteAdPhotos(serv.config.UploadPath, adId)
 		if err != nil {
 			log.Printf("Didn't delete photos for ad %d\n", adId)
@@ -78,6 +79,7 @@ func (serv *Server) DeleteAdPhoto(w http.ResponseWriter, r *http.Request) {
 	adId, err := strconv.Atoi(adIdStr)
 	if err != nil {
 		WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("id should be int"))
+		return
 	}
 	userId := 0
 	// TODO: take it from cookies later
@@ -87,10 +89,10 @@ func (serv *Server) DeleteAdPhoto(w http.ResponseWriter, r *http.Request) {
 		WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("photo id has to be int "))
 		return
 	}
-	status, photoUrls:= serv.db.DeletePhotosFromAd(adId, userId, photoIds)
+	status, photoUrls := serv.db.DeletePhotosFromAd(adId, userId, photoIds)
 	DealRequestFromDB(w, "OK", status)
-	if status != database.CONFLICT {
-		for _, photoUrl := range photoUrls  {
+	if status != database.FORBIDDEN {
+		for _, photoUrl := range photoUrls {
 			err = filesystem.DeleteAdPhoto(serv.config.UploadPath, photoUrl)
 			if err != nil {
 				log.Printf("Didn't delete photo: %s\nbecause of %v", photoUrl, err)
@@ -104,6 +106,7 @@ func (serv *Server) EditAd(w http.ResponseWriter, r *http.Request) {
 	adId, err := strconv.Atoi(adIdStr)
 	if err != nil {
 		WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("id should be int"))
+		return
 	}
 	userId := 0
 	// TODO: take it from cookies later
