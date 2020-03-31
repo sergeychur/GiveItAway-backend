@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+service Auth {
+    rpc IsLogined(AuthCookie) returns (BoolResult) {}
+    rpc GetUserId(AuthCookie) returns (IdResult) {}
+}
+
+message AuthCookie {
+    string Data = 1;
+    string Secret = 2;
+}
+
+message BoolResult {
+    bool BoolResult = 1;
+}
+
+message IdResult {
+    int64 Id = 1;
+}
+

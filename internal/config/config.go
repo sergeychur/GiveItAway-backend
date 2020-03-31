@@ -7,6 +7,8 @@ import (
 
 type Config struct {
 	Port         string   `json:"port"`
+	AuthHost string `json:"auth_host"`
+	AuthPort string `json:"auth_port"`
 	DBHost       string   `json:"dbhost"`
 	DBPort       string   `json:"dbport"`
 	DBUser       string   `json:"dbuser"`

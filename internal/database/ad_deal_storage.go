@@ -52,11 +52,10 @@ func (db *DB) SubscribeToAd(adId int, userId int) int {
 	if err != nil {
 		return DB_ERROR
 	}
-	// TODO: uncomment when we can take userId from cookies
 
-	/*if authorId == userId {
+	if authorId == userId {
 		 return FORBIDDEN
-	}*/
+	}
 	_, err = tx.Exec(SubscribeToAd, adId, userId)
 	if err != nil {
 		return DB_ERROR
@@ -119,10 +118,10 @@ func (db *DB) MakeDeal(adId int, subscriberId int, initiatorId int) (int, int) {
 	if err != nil {
 		return DB_ERROR, 0
 	}
-	// TODO: uncomment when we can take userId from cookies
-	/*if authorId != initiatorId {
-		return FORBIDDEN
-	}*/
+
+	if authorId != initiatorId {
+		return FORBIDDEN, 0
+	}
 	isSubscriber := false
 	err = tx.QueryRow(CheckIfSubscriber, adId, subscriberId).Scan(&isSubscriber)
 	if err != nil {

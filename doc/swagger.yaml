@@ -62,6 +62,8 @@ paths:
             $ref: '#/definitions/AdCreationResult'
         400:
           description: "Invalid input"
+        404:
+          description: "user doesn't exist"
   /ad/{ad_id}/edit:
     put:
       tags:

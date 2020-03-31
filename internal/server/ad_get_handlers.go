@@ -8,7 +8,7 @@ import (
 	"strconv"
 )
 
-func (serv *Server) FindAds(w http.ResponseWriter, r *http.Request) {
+func (server *Server) FindAds(w http.ResponseWriter, r *http.Request) {
 	params := r.URL.Query()
 	pageArr, ok := params["page"]
 	if !ok {
@@ -35,20 +35,20 @@ func (serv *Server) FindAds(w http.ResponseWriter, r *http.Request) {
 	ads := make([]models.AdForUsers, 0)
 	if ok && len(queryArr) == 1 {
 		query := queryArr[0]
-		ads, status = serv.db.FindAds(query, page, rowsPerPage, params)
+		ads, status = server.db.FindAds(query, page, rowsPerPage, params)
 	} else {
-		ads, status = serv.db.GetAds(page, rowsPerPage, params)
+		ads, status = server.db.GetAds(page, rowsPerPage, params)
 	}
 	DealRequestFromDB(w, ads, status)
 }
 
-func (serv *Server) GetAdInfo(w http.ResponseWriter, r *http.Request) {
+func (server *Server) GetAdInfo(w http.ResponseWriter, r *http.Request) {
 	adIdStr := chi.URLParam(r, "ad_id")
 	adId, err := strconv.Atoi(adIdStr)
 	if err != nil {
 		WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("id should be int"))
 		return
 	}
-	ad, status := serv.db.GetAd(adId)
+	ad, status := server.db.GetAd(adId)
 	DealRequestFromDB(w, &ad, status)
 }

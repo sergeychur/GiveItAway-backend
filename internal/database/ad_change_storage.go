@@ -34,11 +34,21 @@ const (
 
 	// deletePhotos from ad query
 	deleteAdPhotos = "DELETE FROM ad_photos WHERE ad_photos_id IN (%s) RETURNING photo_url"
+
+	// check user exists
+	checkUserExists = "SELECT EXISTS(SELECT 1 FROM users WHERE vk_id = $1)"
 )
 
 func (db *DB) CreateAd(ad models.Ad) (int, models.AdCreationResult) {
+	exists := false
+	err := db.db.QueryRow(checkUserExists, ad.AuthorId).Scan(&exists)
+	if err == pgx.ErrNoRows {
+		return EMPTY_RESULT, models.AdCreationResult{}
+	}
+	if err != nil {
+		return DB_ERROR, models.AdCreationResult{}
+	}
 	query := ""
-	var err error = nil
 	res := models.AdCreationResult{}
 	sign := 0
 	if ad.FeedbackType == Other {
@@ -47,6 +57,7 @@ func (db *DB) CreateAd(ad models.Ad) (int, models.AdCreationResult) {
 	if ad.GeoPosition != nil {
 		sign += 1
 	}
+
 	switch sign {
 	case 0:
 		query = fmt.Sprintf(CreateAd, Blank, NoExtraFieldNoGeoPosition)
@@ -87,10 +98,9 @@ func (db *DB) AddPhotoToAd(pathToPhoto string, adId int, userId int) int {
 	if err != nil {
 		return DB_ERROR
 	}
-	// TODO: uncomment when we can take userId from cookies
-	/*if authorId != userId {
+	if authorId != userId {
 		return FORBIDDEN
-	}*/
+	}
 	_, err = tx.Exec(AddPhotoToAd, adId, pathToPhoto)
 	if err != nil {
 		return DB_ERROR
@@ -118,10 +128,10 @@ func (db *DB) DeleteAd(adId int, userId int) int {
 	if err != nil {
 		return DB_ERROR
 	}
-	// TODO: uncomment when we can take userId from cookies
-	/*if authorId != userId {
+
+	if authorId != userId {
 		return FORBIDDEN
-	}*/
+	}
 	_, err = tx.Exec(deleteAd, adId)
 	if err != nil {
 		return DB_ERROR
@@ -149,10 +159,10 @@ func (db *DB) DeletePhotosFromAd(adId int, userId int, photoIds []string) (int, 
 	if err != nil {
 		return DB_ERROR, nil
 	}
-	// TODO: uncomment when we can take userId from cookies
-	/*if authorId != userId {
-		return FORBIDDEN
-	}*/
+
+	if authorId != userId {
+		return FORBIDDEN, nil
+	}
 	photoIdsInterface := make([]interface{}, len(photoIds))
 	for i := range photoIds {
 		photoIdsInterface[i] = photoIds[i]
@@ -198,10 +208,10 @@ func (db *DB) EditAd(adId int, userId int, ad models.Ad) int {
 	if err != nil {
 		return DB_ERROR
 	}
-	// TODO: uncomment when we can take userId from cookies
-	/*if authorId != userId {
+
+	if authorId != userId {
 		return FORBIDDEN
-	}*/
+	}
 	sign := 0
 	query := ""
 	err = nil

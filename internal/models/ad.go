@@ -3,7 +3,7 @@ package models
 type Ad struct {
 	AdId int64 `json:"ad_id,omitempty"`
 
-	AuthorId int32 `json:"author_id"`
+	AuthorId int `json:"author_id"`
 
 	Header string `json:"header"`
 
