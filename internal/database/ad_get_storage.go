@@ -56,8 +56,8 @@ func (db *DB) GetAd(adId int) (models.AdForUsers, int) {
 		ad.ExtraField = extraFieldTry.String
 	}
 	if lat.Valid && long.Valid {
-		ad.GeoPosition.Latitude = fmt.Sprintf("%f", lat.Float64)
-		ad.GeoPosition.Longitude = fmt.Sprintf("%f", long.Float64)
+		ad.GeoPosition.Latitude = lat.Float64
+		ad.GeoPosition.Longitude = long.Float64
 	} else {
 		ad.GeoPosition = nil
 	}
@@ -207,8 +207,8 @@ func (db *DB) WorkWithOneAd(rows *pgx.Rows, ads Ads) (Ads, error) {
 		ad.ExtraField = extraFieldTry.String
 	}
 	if lat.Valid && long.Valid {
-		ad.GeoPosition.Latitude = fmt.Sprintf("%f", lat.Float64)
-		ad.GeoPosition.Longitude = fmt.Sprintf("%f", long.Float64)
+		ad.GeoPosition.Latitude = lat.Float64
+		ad.GeoPosition.Longitude = long.Float64
 	} else {
 		ad.GeoPosition = nil
 	}

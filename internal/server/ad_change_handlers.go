@@ -22,6 +22,7 @@ func (server *Server) CreateAd(w http.ResponseWriter, r *http.Request) {
 	ad.AuthorId, err = server.GetUserIdFromCookie(r)
 	if err != nil {
 		WriteToResponse(w, http.StatusInternalServerError, fmt.Errorf("server cannot get userId from cookie"))
+		return
 	}
 	if ad.FeedbackType != database.Comments && ad.FeedbackType != database.LS && ad.FeedbackType != database.Other {
 		WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("wrong feedback type"))

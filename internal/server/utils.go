@@ -166,8 +166,8 @@ func (server *Server) IsLogined(r *http.Request, secret []byte, cookieField stri
 func (server *Server) GetUserIdFromCookie(r *http.Request) (int, error) {
 	//return 51000329, nil
 	cookie, err := r.Cookie(server.CookieField)
-	coockies := r.Cookies()
-	log.Println(coockies)
+	/*coockies := r.Cookies()
+	log.Println(coockies)*/
 	if err != nil {
 		return 0, err
 	}
