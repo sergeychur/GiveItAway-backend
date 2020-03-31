@@ -5,6 +5,7 @@ import (
 	"github.com/sergeychur/give_it_away/internal/models"
 	"gopkg.in/jackc/pgx.v2"
 	"log"
+	"strconv"
 	"time"
 )
 
@@ -23,7 +24,7 @@ const (
 	GetAds = "SELECT a.ad_id, u.vk_id, u.carma, u.name, u.surname, u.photo_url, a.header, a.text, a.region," +
 		" a.district, a.is_auction, a.feedback_type, a.extra_field, a.creation_datetime, a.lat, a.long, a.status," +
 		" a.category, a.comments_count FROM ad a JOIN users u ON (a.author_id = u.vk_id) " +
-		"JOIN (SELECT ad_id FROM ad%s ORDER BY ad_id LIMIT $%d OFFSET $%d) l ON (l.ad_id = a.ad_id) ORDER BY ad_id"
+		"JOIN (SELECT ad_id FROM ad%s ORDER BY %s LIMIT $%d OFFSET $%d) l ON (l.ad_id = a.ad_id) ORDER BY %s"
 	And            = "AND"
 	Where          = " WHERE "
 	CategoryClause = " category = $%d "
@@ -55,8 +56,8 @@ func (db *DB) GetAd(adId int) (models.AdForUsers, int) {
 		ad.ExtraField = extraFieldTry.String
 	}
 	if lat.Valid && long.Valid {
-		ad.GeoPosition.Latitude = lat.Float64
-		ad.GeoPosition.Longitude = long.Float64
+		ad.GeoPosition.Latitude = fmt.Sprintf("%f", lat.Float64)
+		ad.GeoPosition.Longitude = fmt.Sprintf("%f", long.Float64)
 	} else {
 		ad.GeoPosition = nil
 	}
@@ -88,6 +89,8 @@ func (db *DB) GetAds(page int, rowsPerPage int, params map[string][]string) ([]m
 	offset := rowsPerPage * (page - 1)
 	query := GetAds
 	whereClause := ""
+	innerSortByClause := "ad_id DESC"
+	outerSortByClause := "ad_id DESC"
 	strArr := make([]interface{}, 0)
 	categoryArr, ok := params["category"]
 	if ok && len(categoryArr) == 1 {
@@ -125,7 +128,40 @@ func (db *DB) GetAds(page int, rowsPerPage int, params map[string][]string) ([]m
 		}
 		strArr = append(strArr, districtArr[0])
 	}
-	query = fmt.Sprintf(GetAds, whereClause, len(strArr)+1, len(strArr)+2)
+
+	sortByArr, ok := params["sort_by"]
+	if ok && len(sortByArr) == 1 {
+		if sortByArr[0] == "time" {
+			log.Println("got order by time")
+			innerSortByClause = "creation_datetime DESC"
+			outerSortByClause = innerSortByClause
+		} else if sortByArr[0] == "geo" {
+			latArr, ok := params["lat"]
+			if !ok || len(latArr) != 1 {
+				return nil, WRONG_INPUT
+			}
+
+			longArr, ok := params["long"]
+			if !ok || len(longArr) != 1 {
+				return nil, WRONG_INPUT
+			}
+			lat, err := strconv.ParseFloat(latArr[0], 64)
+			if err != nil {
+				return nil, WRONG_INPUT
+			}
+			long, err := strconv.ParseFloat(longArr[0], 64)
+			if err != nil {
+				return nil, WRONG_INPUT
+			}
+			innerSortByClause = fmt.Sprintf("ST_Distance(geo_position, ST_POINT($%d, $%d))",
+				len(strArr) + 1, len(strArr) + 2)
+			outerSortByClause = fmt.Sprintf("ST_Distance(a.geo_position, ST_POINT($%d, $%d))",
+				len(strArr) + 1, len(strArr) + 2)
+			strArr = append(strArr, lat, long)
+			//perform some sort by distance(ad geo, given geo)
+		}
+	}
+	query = fmt.Sprintf(GetAds, whereClause, innerSortByClause, len(strArr) + 1, len(strArr) + 2, outerSortByClause)
 	strArr = append(strArr, rowsPerPage, offset)
 	ads := make([]models.AdForUsers, 0)
 	rows, err := db.db.Query(query, strArr...)
@@ -171,8 +207,8 @@ func (db *DB) WorkWithOneAd(rows *pgx.Rows, ads Ads) (Ads, error) {
 		ad.ExtraField = extraFieldTry.String
 	}
 	if lat.Valid && long.Valid {
-		ad.GeoPosition.Latitude = lat.Float64
-		ad.GeoPosition.Longitude = long.Float64
+		ad.GeoPosition.Latitude = fmt.Sprintf("%f", lat.Float64)
+		ad.GeoPosition.Longitude = fmt.Sprintf("%f", long.Float64)
 	} else {
 		ad.GeoPosition = nil
 	}

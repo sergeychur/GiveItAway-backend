@@ -6,6 +6,7 @@ import (
 )
 
 type Config struct {
+	Host string `json:"host"`
 	Port         string   `json:"port"`
 	AuthHost string `json:"auth_host"`
 	AuthPort string `json:"auth_port"`

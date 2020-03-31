@@ -56,7 +56,7 @@ func (server *Server) AddPhotoToAd(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		WriteToResponse(w, http.StatusInternalServerError, fmt.Errorf("server cannot get userId from cookie"))
 	}
-	status := server.db.AddPhotoToAd(pathToPhoto, adId, userId)
+	status := server.db.AddPhotoToAd(server.config.Host + pathToPhoto, adId, userId)
 	DealRequestFromDB(w, "OK", status)
 }
 

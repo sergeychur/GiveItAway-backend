@@ -158,6 +158,22 @@ paths:
           type: "string"
           description: "rows per page for pagination"
           required: true
+        - name: "sort_by"
+          in: "query"
+          description: "sort by time (\"time\") or distance to current geoposition (\"geo\")"
+          type: "string"
+          # enum:
+          #   - "time"
+          #   - "geo"
+          # default: "time"
+        - name: lat
+          description: "lattitude of user's geoposition"
+          in: "query"
+          type: "number"
+        - name: long
+          in: "query"
+          type: "number"
+          description: "longitude of user's geoposition"
       responses:
         200:
           description: "found smth"
@@ -828,9 +844,11 @@ definitions:
       available:
         type: "boolean"
       long:
-        type: "number"
+        type: "string"
+        example: "0"
       lat:
-        type: "number"
+        type: "string"
+        example: "0"
 
   AdCreationResult:
     type: "object"
