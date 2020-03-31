@@ -42,7 +42,7 @@ const (
 func (db *DB) CreateAd(ad models.Ad) (int, models.AdCreationResult) {
 	exists := false
 	err := db.db.QueryRow(checkUserExists, ad.AuthorId).Scan(&exists)
-	if err == pgx.ErrNoRows {
+	if err == pgx.ErrNoRows || !exists {
 		return EMPTY_RESULT, models.AdCreationResult{}
 	}
 	if err != nil {

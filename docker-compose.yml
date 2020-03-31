@@ -18,6 +18,22 @@ services:
       - uniting_net
     volumes:
       - ./data:/var/lib/postgresql/data
+
+  auth:
+    build:
+      context: .
+      dockerfile: deploy/auth.Dockerfile
+      target: release
+    ports:
+      - 8092:8092
+    restart: always
+    networks:
+      - uniting_net
+    depends_on:
+      - db
+    command:
+      /bin/bash -c "/home/app/auth.out /home/app/config_deploy.json"
+
   api:
     build:
       context: .
@@ -25,12 +41,15 @@ services:
       target: release
     ports:
       - 8091:8091
+    expose:
+      - 8091
     restart: always
     networks:
       - uniting_net
     depends_on:
       - db
+      - auth
     command:
-      /bin/bash -c "/home/app/wait_for_it.sh -t 600 db:5432 && ls && /home/app/api.out /home/app/config_deploy.json"
+      /bin/bash -c "/home/app/wait_for_it.sh -t 600 db:5432 && /home/app/wait_for_it.sh -t 600 auth:8092 && /home/app/api.out /home/app/config_deploy.json"
     volumes:
       - ./upload:/home/app/upload
