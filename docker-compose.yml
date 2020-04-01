@@ -53,3 +53,18 @@ services:
       /bin/bash -c "/home/app/wait_for_it.sh -t 600 db:5432 && /home/app/wait_for_it.sh -t 600 auth:8092 && /home/app/api.out /home/app/config_deploy.json"
     volumes:
       - ./upload:/home/app/upload
+
+  nginx:
+    build:
+      context: .
+      dockerfile: deploy/nginx.Dockerfile
+    ports:
+      - "80:80"
+      - "443:443"
+    expose:
+      - 80
+      - 443
+    volumes:
+      - /etc/ssl:/etc/ssl
+    networks:
+      - uniting_net
