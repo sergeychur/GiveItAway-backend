@@ -3,6 +3,7 @@ DROP TABLE IF EXISTS ad_subscribers;
 DROP TABLE IF EXISTS ad_photos;
 DROP TABLE IF EXISTS ad;
 DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS ad_view;
 
 
 CREATE EXTENSION IF NOT EXISTS citext;
@@ -39,7 +40,17 @@ CREATE TABLE ad (
     geo_position geography,
     status ad_status DEFAULT 'offer',
     category citext,    -- mb change for enum of categories too
-    comments_count int DEFAULT 0
+    comments_count int DEFAULT 0,
+    hidden BOOLEAN NOT NULL DEFAULT FALSE
+);
+
+CREATE TABLE ad_view (
+    ad_view_id bigserial CONSTRAINT ad_view_pk PRIMARY KEY ,
+    ad_id bigint,
+    CONSTRAINT ad_view_ad FOREIGN KEY (ad_id)
+        REFERENCES ad (ad_id) ON UPDATE CASCADE ON DELETE CASCADE,
+    views_count bigint,
+    CONSTRAINT ad_view_unique UNIQUE (ad_id)
 );
 
 CREATE TABLE ad_photos (
@@ -103,4 +114,3 @@ CREATE OR REPLACE FUNCTION close_deal_fail_by_author(deal_id_to_cls INT) RETURNS
         DELETE FROM deal WHERE deal_id = deal_id_to_cls;
     END;
 $$ LANGUAGE 'plpgsql';
-

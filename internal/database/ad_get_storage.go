@@ -18,11 +18,12 @@ const (
 	// get ad query
 	GetAdById = "SELECT a.ad_id, u.vk_id, u.carma, u.name, u.surname, u.photo_url, a.header, a.text, a.region," +
 		" a.district, a.is_auction, a.feedback_type, a.extra_field, a.creation_datetime, a.lat, a.long, a.status," +
-		" a.category, a.comments_count FROM ad a JOIN users u ON (a.author_id = u.vk_id) WHERE a.ad_id = $1"
+		" a.category, a.comments_count, aw.views_count FROM ad a JOIN users u ON (a.author_id = u.vk_id) " +
+		"JOIN ad_view aw ON (a.ad_id = aw.ad_id) WHERE a.ad_id = $1"
 
 	// get ads query
-	GetAds = "SELECT a.ad_id, u.vk_id, u.carma, u.name, u.surname, u.photo_url, a.header, a.text, a.region," +
-		" a.district, a.is_auction, a.feedback_type, a.extra_field, a.creation_datetime, a.lat, a.long, a.status," +
+	GetAds = "SELECT a.ad_id, u.vk_id, u.carma, u.name, u.surname, u.photo_url, a.header, a.region," +
+		" a.district, a.is_auction, a.feedback_type, a.extra_field, a.creation_datetime, a.status," +
 		" a.category, a.comments_count FROM ad a JOIN users u ON (a.author_id = u.vk_id) " +
 		"JOIN (SELECT ad_id FROM ad%s ORDER BY %s LIMIT $%d OFFSET $%d) l ON (l.ad_id = a.ad_id) ORDER BY %s"
 	And            = "AND"
@@ -32,21 +33,28 @@ const (
 	RegionClause   = " region = $%d "
 	DistrictClause = " district = $%d "
 	GetAdPhotos    = "SELECT ad_photos_id, photo_url FROM ad_photos WHERE ad_id = $1"
+
+	ViewAd = "INSERT INTO ad_view (ad_id, views_count) VALUES ($1, 1)" +
+		" ON CONFLICT (ad_id) DO UPDATE SET views_count = ad_view.views_count + 1"
 )
 
-func (db *DB) GetAd(adId int) (models.AdForUsers, int) {
+func (db *DB) GetAd(adId int) (models.AdForUsersDetailed, int) {
+	_, err := db.db.Exec(ViewAd, adId)
+	if err != nil {
+		return models.AdForUsersDetailed{}, DB_ERROR
+	}
 	row := db.db.QueryRow(GetAdById, adId)
-	ad := models.AdForUsers{}
+	ad := models.AdForUsersDetailed{}
 	ad.GeoPosition = new(models.GeoPosition)
 	ad.Author = new(models.User)
 	extraFieldTry := pgx.NullString{}
 	lat := pgx.NullFloat64{}
 	long := pgx.NullFloat64{}
 	timeStamp := time.Time{}
-	err := row.Scan(&ad.AdId, &ad.Author.VkId, &ad.Author.Carma, &ad.Author.Name, &ad.Author.Surname,
+	err = row.Scan(&ad.AdId, &ad.Author.VkId, &ad.Author.Carma, &ad.Author.Name, &ad.Author.Surname,
 		&ad.Author.PhotoUrl, &ad.Header, &ad.Text, &ad.Region, &ad.District, &ad.IsAuction, &ad.FeedbackType,
 		&extraFieldTry, &timeStamp, &lat, &long, &ad.Status, &ad.Category,
-		&ad.CommentsCount)
+		&ad.CommentsCount, &ad.ViewsCount)
 	if err == pgx.ErrNoRows {
 		return ad, EMPTY_RESULT
 	}
@@ -189,29 +197,29 @@ type Ads []models.AdForUsers
 func (db *DB) WorkWithOneAd(rows *pgx.Rows, ads Ads) (Ads, error) {
 	ad := new(models.AdForUsers)
 	ad.Author = new(models.User)
-	ad.GeoPosition = new(models.GeoPosition)
+	//ad.GeoPosition = new(models.GeoPosition)
 	extraFieldTry := pgx.NullString{}
-	lat := pgx.NullFloat64{}
-	long := pgx.NullFloat64{}
+	/*lat := pgx.NullFloat64{}
+	long := pgx.NullFloat64{}*/
 	timeStamp := time.Time{}
 	err := rows.Scan(&ad.AdId, &ad.Author.VkId, &ad.Author.Carma, &ad.Author.Name, &ad.Author.Surname,
-		&ad.Author.PhotoUrl, &ad.Header, &ad.Text, &ad.Region, &ad.District, &ad.IsAuction, &ad.FeedbackType,
-		&extraFieldTry, &timeStamp, &lat, &long, &ad.Status, &ad.Category,
+		&ad.Author.PhotoUrl, &ad.Header, /*&ad.Text,*/ &ad.Region, &ad.District, &ad.IsAuction, &ad.FeedbackType,
+		&extraFieldTry, &timeStamp, /*&lat, &long,*/ &ad.Status, &ad.Category,
 		&ad.CommentsCount)
 	if err != nil {
 		return nil, err
 	}
-	ad.GeoPosition.Available = true
+	//ad.GeoPosition.Available = true
 	ad.CreationDate = timeStamp.Format("2006-01-02T15:04:05.999999999Z07:00")
 	if extraFieldTry.Valid {
 		ad.ExtraField = extraFieldTry.String
 	}
-	if lat.Valid && long.Valid {
+	/*if lat.Valid && long.Valid {
 		ad.GeoPosition.Latitude = lat.Float64
 		ad.GeoPosition.Longitude = long.Float64
 	} else {
 		ad.GeoPosition = nil
-	}
+	}*/
 	photosRows, err := db.db.Query(GetAdPhotos, ad.AdId)
 	if err != nil {
 		return nil, err
