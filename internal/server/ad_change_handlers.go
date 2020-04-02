@@ -135,3 +135,18 @@ func (server *Server) EditAd(w http.ResponseWriter, r *http.Request) {
 	status := server.db.EditAd(adId, userId, ad)
 	DealRequestFromDB(w, "OK", status)
 }
+
+func (server *Server) SetHidden(w http.ResponseWriter, r *http.Request) {
+	adIdStr := chi.URLParam(r, "ad_id")
+	adId, err := strconv.Atoi(adIdStr)
+	if err != nil {
+		WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("id should be int"))
+		return
+	}
+	userId, err := server.GetUserIdFromCookie(r)
+	if err != nil {
+		WriteToResponse(w, http.StatusInternalServerError, fmt.Errorf("server cannot get userId from cookie"))
+	}
+	status := server.db.SetAdHidden(adId, userId)
+	DealRequestFromDB(w, "OK", status)
+}

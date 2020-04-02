@@ -118,7 +118,31 @@ paths:
           description:
             "The details of ad"
           schema:
-            $ref: "#/definitions/AdForUsers"
+            $ref: "#/definitions/AdForUsersDetailed"
+  /ad/{ad_id}/set_hidden:
+    post:
+      tags:
+        - "ad"
+      parameters:
+        - in: "path"
+          name: "ad_id"
+          type: integer
+          required: true
+          description: "The id of required ad"
+      summary: "Сделать объявление скрытым(доступно только для автора)"
+      responses:
+        404:
+          description:
+            "Ad doesn't exist"
+        200:
+          description:
+            "Hidden status was set"
+        403:
+          description:
+            "user is not author"
+        400:
+          description:
+            "bad parameters"
   /ad/find:
     get:
       tags:
@@ -795,7 +819,7 @@ definitions:
         type: "string"
       comments_count:
         type: integer
-  AdForUsers:
+  AdForUsersDetailed:
     type: "object"
     properties:
       ad_id:
@@ -826,6 +850,45 @@ definitions:
         example: "20-JUN-1990 08:03:00"
       geo_position:
         $ref: "#/definitions/GeoPosition"
+      status:
+        type: "string"
+        enum: ["offer", "chosen", "closed"]
+        default: "offer"
+      pathes_to_photo:
+        type: "array"
+        items:
+          $ref: "#/definitions/AdPhoto"
+      category:
+        type: "string"
+      comments_count:
+        type: integer
+  AdForUsers:
+    type: "object"
+    properties:
+      ad_id:
+        type: "integer"
+        format: "int64"
+      author:
+        $ref: '#/definitions/User'
+      header:
+        type: "string"
+      region:
+        type: "string"
+      district:
+        type: "string"
+      is_auction:
+        type: "boolean"
+      feedback_type:
+        type: "string"
+        enum:
+          - "ls"
+          - "comments"
+          - "other"
+      extra_field:
+        type: "string"
+      creation_date:
+        type: "string"
+        example: "20-JUN-1990 08:03:00"
       status:
         type: "string"
         enum: ["offer", "chosen", "closed"]

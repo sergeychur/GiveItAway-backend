@@ -19,7 +19,7 @@ const (
 	GetAdById = "SELECT a.ad_id, u.vk_id, u.carma, u.name, u.surname, u.photo_url, a.header, a.text, a.region," +
 		" a.district, a.is_auction, a.feedback_type, a.extra_field, a.creation_datetime, a.lat, a.long, a.status," +
 		" a.category, a.comments_count, aw.views_count FROM ad a JOIN users u ON (a.author_id = u.vk_id) " +
-		"JOIN ad_view aw ON (a.ad_id = aw.ad_id) WHERE a.ad_id = $1"
+		"JOIN ad_view aw ON (a.ad_id = aw.ad_id) WHERE a.ad_id = $1 AND (a.author_id = $2 OR hidden = false)"
 
 	// get ads query
 	GetAds = "SELECT a.ad_id, u.vk_id, u.carma, u.name, u.surname, u.photo_url, a.header, a.region," +
@@ -38,12 +38,12 @@ const (
 		" ON CONFLICT (ad_id) DO UPDATE SET views_count = ad_view.views_count + 1"
 )
 
-func (db *DB) GetAd(adId int) (models.AdForUsersDetailed, int) {
+func (db *DB) GetAd(adId int, userId int) (models.AdForUsersDetailed, int) {
 	_, err := db.db.Exec(ViewAd, adId)
 	if err != nil {
 		return models.AdForUsersDetailed{}, DB_ERROR
 	}
-	row := db.db.QueryRow(GetAdById, adId)
+	row := db.db.QueryRow(GetAdById, adId, userId)
 	ad := models.AdForUsersDetailed{}
 	ad.GeoPosition = new(models.GeoPosition)
 	ad.Author = new(models.User)
@@ -89,11 +89,11 @@ func (db *DB) GetAd(adId int) (models.AdForUsersDetailed, int) {
 	return ad, FOUND
 }
 
-func (db *DB) FindAds(query string, page int, rowsPerPage int, params map[string][]string) ([]models.AdForUsers, int) {
+func (db *DB) FindAds(query string, page int, rowsPerPage int, params map[string][]string, userId int) ([]models.AdForUsers, int) {
 	panic("not implemented")
 }
 
-func (db *DB) GetAds(page int, rowsPerPage int, params map[string][]string) ([]models.AdForUsers, int) {
+func (db *DB) GetAds(page int, rowsPerPage int, params map[string][]string, userId int) ([]models.AdForUsers, int) {
 	offset := rowsPerPage * (page - 1)
 	query := GetAds
 	whereClause := ""
@@ -169,6 +169,14 @@ func (db *DB) GetAds(page int, rowsPerPage int, params map[string][]string) ([]m
 			//perform some sort by distance(ad geo, given geo)
 		}
 	}
+
+	if len(strArr) == 0 {
+		whereClause += Where + fmt.Sprintf("(hidden = false OR author_id = $%d)", len(strArr) + 1)
+	} else {
+		whereClause += And + fmt.Sprintf("(hidden = false OR author_id = $%d)", len(strArr) + 1)
+	}
+
+	strArr = append(strArr, userId)
 	query = fmt.Sprintf(GetAds, whereClause, innerSortByClause, len(strArr) + 1, len(strArr) + 2, outerSortByClause)
 	strArr = append(strArr, rowsPerPage, offset)
 	ads := make([]models.AdForUsers, 0)

@@ -9,6 +9,10 @@ import (
 )
 
 func (server *Server) FindAds(w http.ResponseWriter, r *http.Request) {
+	userId, err := server.GetUserIdFromCookie(r)
+	if err != nil {
+		WriteToResponse(w, http.StatusInternalServerError, fmt.Errorf("server cannot get userId from cookie"))
+	}
 	params := r.URL.Query()
 	pageArr, ok := params["page"]
 	if !ok {
@@ -35,20 +39,24 @@ func (server *Server) FindAds(w http.ResponseWriter, r *http.Request) {
 	ads := make([]models.AdForUsers, 0)
 	if ok && len(queryArr) == 1 {
 		query := queryArr[0]
-		ads, status = server.db.FindAds(query, page, rowsPerPage, params)
+		ads, status = server.db.FindAds(query, page, rowsPerPage, params, userId)
 	} else {
-		ads, status = server.db.GetAds(page, rowsPerPage, params)
+		ads, status = server.db.GetAds(page, rowsPerPage, params, userId)
 	}
 	DealRequestFromDB(w, ads, status)
 }
 
 func (server *Server) GetAdInfo(w http.ResponseWriter, r *http.Request) {
+	userId, err := server.GetUserIdFromCookie(r)
+	if err != nil {
+		WriteToResponse(w, http.StatusInternalServerError, fmt.Errorf("server cannot get userId from cookie"))
+	}
 	adIdStr := chi.URLParam(r, "ad_id")
 	adId, err := strconv.Atoi(adIdStr)
 	if err != nil {
 		WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("id should be int"))
 		return
 	}
-	ad, status := server.db.GetAd(adId)
+	ad, status := server.db.GetAd(adId, userId)
 	DealRequestFromDB(w, &ad, status)
 }
