@@ -4,6 +4,9 @@ DROP TABLE IF EXISTS ad_photos;
 DROP TABLE IF EXISTS ad;
 DROP TABLE IF EXISTS users;
 DROP TABLE IF EXISTS ad_view;
+DROP TABLE IF EXISTS notifications;
+
+DROP INDEX IF EXISTS ad_geos;
 
 
 CREATE EXTENSION IF NOT EXISTS citext;
@@ -114,3 +117,18 @@ CREATE OR REPLACE FUNCTION close_deal_fail_by_author(deal_id_to_cls INT) RETURNS
         DELETE FROM deal WHERE deal_id = deal_id_to_cls;
     END;
 $$ LANGUAGE 'plpgsql';
+
+CREATE INDEX ad_geos
+    ON ad
+        USING GIST (geo_position);
+
+CREATE TABLE notifications (
+    notification_id bigserial CONSTRAINT notification_pk PRIMARY KEY,
+    user_id bigint,
+    CONSTRAINT notification_user FOREIGN KEY (user_id)
+        REFERENCES users (vk_id) ON UPDATE CASCADE ON DELETE NO ACTION,
+    notification_type citext,
+    creation_datetime TIMESTAMP WITH TIME ZONE default now(),
+    payload bytea,
+    is_read boolean NOT NULL DEFAULT false
+);

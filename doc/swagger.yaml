@@ -15,6 +15,8 @@ tags:
     description: "Сделка по объявлению"
   - name: "upload"
     description: "Доступ к фото объявлений"
+  - name: "notification"
+    description: "Вкладка обновлений, запросы на них"
 schemes:
   - "https"
   - "http"
@@ -682,6 +684,36 @@ paths:
             $ref: "#/definitions/User"
         401:
           description: "data is invalid, though unauthorized"
+  /notifications:
+    get:
+      tags:
+        - "notification"
+      summary: "Получить уведомления для пользователя"
+      parameters:
+        - name: "page"
+          in: "query"
+          type: "string"
+          description: "page for pagination"
+          required: true
+        - name: "rows_per_page"
+          in: "query"
+          type: "string"
+          description: "rows per page for pagination"
+          required: true
+      responses:
+        200:
+          description: "got notifications"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/Notification"
+        400:
+          description: "bad parameters"
+        401:
+          description: "unauthaurized"
+        404:
+          description: "no notifications were found"
+
 definitions:
   User:
     type: "object"
@@ -847,7 +879,7 @@ definitions:
         type: "string"
       creation_date:
         type: "string"
-        example: "20-JUN-1990 08:03:00"
+        example: "2006-01-02T15:04:05.999999999Z07:00"
       geo_position:
         $ref: "#/definitions/GeoPosition"
       status:
@@ -888,7 +920,7 @@ definitions:
         type: "string"
       creation_date:
         type: "string"
-        example: "20-JUN-1990 08:03:00"
+        example: "2006-01-02T15:04:05.999999999Z07:00"
       status:
         type: "string"
         enum: ["offer", "chosen", "closed"]
@@ -927,3 +959,16 @@ definitions:
       photo_url:
         type: string
         example: "photo1"
+  Notification:
+    type: "object"
+    properties:
+      notification_type:
+        type: string
+        enum: ["ad_close"]
+      creation_date_time:
+        type: string
+        example: "2006-01-02T15:04:05.999999999Z07:00"
+      payload:
+        type: object
+      is_read:
+        type: "boolean"
