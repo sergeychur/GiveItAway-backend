@@ -3,7 +3,7 @@ package models
 type Ad struct {
 	AdId int64 `json:"ad_id,omitempty"`
 
-	AuthorId int32 `json:"author_id"`
+	AuthorId int `json:"author_id"`
 
 	Header string `json:"header"`
 
@@ -25,7 +25,7 @@ type Ad struct {
 
 	Status string `json:"status,omitempty"`
 
-	PathesToPhoto []string `json:"pathes_to_photo,omitempty"`
+	PathesToPhoto []AdPhoto `json:"pathes_to_photo,omitempty"`
 
 	Category string `json:"category"`
 
@@ -61,9 +61,14 @@ type AdForUsers struct {
 
 	Status string `json:"status,omitempty"`
 
-	PathesToPhoto []string `json:"pathes_to_photo,omitempty"`
+	PathesToPhoto []AdPhoto `json:"pathes_to_photo,omitempty"`
 
 	Category string `json:"category"`
 
 	CommentsCount int32 `json:"comments_count,omitempty"`
+}
+
+type AdPhoto struct {
+	AdPhotoId int
+	PhotoUrl  string
 }

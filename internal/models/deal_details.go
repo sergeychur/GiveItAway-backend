@@ -5,9 +5,7 @@ type DealDetails struct {
 
 	AdId int32 `json:"ad_id,omitempty"`
 
-	AuthorId int32 `json:"author_id,omitempty"`
-
-	SubscriberId string `json:"subscriber_id,omitempty"`
+	SubscriberId int32 `json:"subscriber_id,omitempty"`
 
 	Status string `json:"status,omitempty"`
 }

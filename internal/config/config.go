@@ -6,7 +6,10 @@ import (
 )
 
 type Config struct {
+	Host string `json:"host"`
 	Port         string   `json:"port"`
+	AuthHost string `json:"auth_host"`
+	AuthPort string `json:"auth_port"`
 	DBHost       string   `json:"dbhost"`
 	DBPort       string   `json:"dbport"`
 	DBUser       string   `json:"dbuser"`
@@ -14,8 +17,7 @@ type Config struct {
 	DBName       string   `json:"dbname"`
 	Secret       string   `json:"secret"`
 	AllowedHosts []string `json:"allowedHosts,omitempty"`
-	UploadPath string `json:"uploadPath,omitempty"`
-
+	UploadPath   string   `json:"uploadPath,omitempty"`
 }
 
 func NewConfig(pathToConfig string) (*Config, error) {

@@ -62,12 +62,14 @@ paths:
             $ref: '#/definitions/AdCreationResult'
         400:
           description: "Invalid input"
+        404:
+          description: "user doesn't exist"
   /ad/{ad_id}/edit:
     put:
       tags:
         - "ad"
       summary: "Обновить объявление"
-      description: ""
+      description: "Можно изменять header, text, region, ditrict, is_auction, feedback_type, extra_field, geo_position, category, "
       operationId: "updateAd"
       consumes:
         - "application/json"
@@ -156,6 +158,22 @@ paths:
           type: "string"
           description: "rows per page for pagination"
           required: true
+        - name: "sort_by"
+          in: "query"
+          description: "sort by time (\"time\") or distance to current geoposition (\"geo\")"
+          type: "string"
+          # enum:
+          #   - "time"
+          #   - "geo"
+          # default: "time"
+        - name: lat
+          description: "lattitude of user's geoposition"
+          in: "query"
+          type: "number"
+        - name: long
+          in: "query"
+          type: "number"
+          description: "longitude of user's geoposition"
       responses:
         200:
           description: "found smth"
@@ -202,7 +220,7 @@ paths:
         '500':
           description: Error while uploading the file
   /ad/{ad_id}/subscribe:
-    put:
+    post:
       summary: "Подписаться на объявление (быть среди тех, кто хочет забрать)"
       tags:
         - ad
@@ -235,9 +253,21 @@ paths:
           in: path
           required: true
           type: integer
+        - name: "page"
+          in: "query"
+          type: "string"
+          description: "page for pagination"
+          required: true
+        - name: "rows_per_page"
+          in: "query"
+          type: "string"
+          description: "rows per page for pagination"
+          required: true
       responses:
         200:
           description: "users found"
+        400:
+          description: "some parameters are bad"
         404:
           description: "ad or subscribers are not found"
   /ad/{ad_id}/unsubscribe:
@@ -266,7 +296,7 @@ paths:
           description: "no auth"
   /ad/{ad_id}/delete:
     post:
-      summary: "Закрыть объявление без сделки"
+      summary: "Закрыть объявление без сделки(удалить его насовсем)"
       tags:
         - ad
       parameters:
@@ -288,8 +318,41 @@ paths:
           description: "no user id or it doesn't match with authors"
         400:
           description: "bad parameters"
-  /ad/{ad_id}/make_deal:
+
+  /ad/{ad_id}/delete_photo:
     post:
+      summary: "Удалить фото, принадлежащее объявлению"
+      tags:
+        - ad
+      parameters:
+        - name: ad_id
+          in: path
+          required: true
+          type: integer
+        - name: user_id
+          schema:
+            type: integer
+          in: body
+          description: User ID of suscriber, !!!! будет передаваться в куке
+        - name: ad_photo_id
+          in: query
+          type: array
+          items:
+            type: integer
+          required: true
+          description: Id записи о пути к фото, хранящийся в модели объявления
+      responses:
+        200:
+          description: "photos deleted"
+        404:
+          description: "ad not found"
+        403:
+          description: "no user id or it doesn't match with authors"
+        400:
+          description: "bad parameters"
+
+  /ad/{ad_id}/make_deal:
+    put:
       summary: "Выбрать пользователя, с которым заключить сделку об отдаче товара"
       tags:
         - ad
@@ -298,11 +361,10 @@ paths:
           in: path
           required: true
           type: integer
-        - name: deal_details
-          schema:
-            $ref: "#/definitions/DealDetails"
-          in: body
-          description: Author ID and subscriber id
+        - name: subscriber_id
+          in: query
+          required: true
+          type: integer
       responses:
         201:
           description: "deal created"
@@ -311,7 +373,7 @@ paths:
         403:
           description: "author id doesn't match with authors"
         409:
-          description: "no subscriber id in subscribers list"
+          description: "no subscriber id in subscribers list or deal already exists"
         401:
           description: "no auth"
   /ad/{ad_id}/deal:
@@ -329,6 +391,8 @@ paths:
           description: "there is a pending deal"
           schema:
             $ref: "#/definitions/DealDetails"
+        400:
+          description: "wrong parameters"
         404:
           description: "no pending deal for ad"
   /ad/{ad_id}/comments:
@@ -419,7 +483,8 @@ paths:
   /deal/{deal_id}/cancel:
     post:
       tags: ["deal"]
-      summary: "Отменить сделку. Если id - id автора или id - id подписчика"
+      summary: "Отменить сделку."
+      description: "Если id - id автора, то объявление остается открытым и сделка удаляется; если id - id подписчика, то сделка удаляется, а объявление становится aborted"
       parameters:
         - name: "deal_id"
           type: "integer"
@@ -437,7 +502,7 @@ paths:
   /deal/{deal_id}/fulfill:
     post:
       tags: ["deal"]
-      summary: "Пометить, что сделка успешна. Необходимы пометки от автора и подписчика для реального успеха"
+      summary: "Пометить, что сделка успешна. Производится только пользователем(не автором объявления)"
       parameters:
         - name: "deal_id"
           type: "integer"
@@ -644,13 +709,11 @@ definitions:
         type: integer
       ad_id:
         type: integer
-      author_id:
-        type: integer
       subscriber_id:
-        type: string
+        type: integer
       status:
         type: string
-        enum: ["open", "submitted_by_one", "success", "failed"]
+        enum: ["open", "success"]
         default: "open"
   DonationRequest:
     type: object
@@ -727,8 +790,7 @@ definitions:
       pathes_to_photo:
         type: "array"
         items:
-          type: "string"
-        example: ["/photo1", "/photo2"]
+          $ref: "#/definitions/AdPhoto"
       category:
         type: "string"
       comments_count:
@@ -771,8 +833,7 @@ definitions:
       pathes_to_photo:
         type: "array"
         items:
-          type: "string"
-        example: ["/photo1", "/photo2"]
+          $ref: "#/definitions/AdPhoto"
       category:
         type: "string"
       comments_count:
@@ -783,12 +844,23 @@ definitions:
       available:
         type: "boolean"
       long:
-        type: "number"
+        type: "string"
+        example: "0"
       lat:
-        type: "number"
+        type: "string"
+        example: "0"
 
   AdCreationResult:
     type: "object"
     properties:
       ad_id:
         type: integer
+
+  AdPhoto:
+    type: "object"
+    properties:
+      ad_photo_id:
+        type: integer
+      photo_url:
+        type: string
+        example: "photo1"

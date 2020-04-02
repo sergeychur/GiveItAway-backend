@@ -1,11 +1,14 @@
 package server
 
 import (
+	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/dgrijalva/jwt-go"
+	"github.com/sergeychur/give_it_away/internal/auth"
 	"github.com/sergeychur/give_it_away/internal/database"
 	"github.com/sergeychur/give_it_away/internal/models"
 	"io/ioutil"
@@ -14,6 +17,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 )
 
 func WriteToResponse(w http.ResponseWriter, status int, v interface{}) {
@@ -109,9 +113,73 @@ func DealRequestFromDB(w http.ResponseWriter, v interface{}, status int) {
 		return
 	}
 
-	if status == database.CONFLICT {
+	if status == database.FORBIDDEN {
 		errText := models.Error{Message: "This action is forbidden"}
 		WriteToResponse(w, http.StatusForbidden, errText)
 		return
 	}
+
+	if status == database.CONFLICT {
+		WriteToResponse(w, http.StatusConflict,
+			fmt.Errorf("conflict happened while performing these actions"))
+		return
+	}
+
+	if status == database.WRONG_INPUT {
+		WriteToResponse(w, http.StatusBadRequest,
+			fmt.Errorf("input is incorrect"))
+		return
+	}
+}
+
+/*type Claims struct {
+	UserId int `json:"user_id"`
+	jwt.StandardClaims
+}*/
+
+func SetJWTToCookie(secret []byte, userId int, w http.ResponseWriter, minutes int, cookieField string) error {
+	expirationTime := time.Now().Add(time.Duration(minutes) * time.Minute)
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"expires": expirationTime.Unix(),
+		"userId": userId,
+	})
+	tokenString, err := token.SignedString(secret)
+	if err != nil {
+		return err
+	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name:    cookieField,
+		Value:   tokenString,
+		Expires: expirationTime,
+		HttpOnly: true,
+		Path:"/",
+	})
+	return nil
+}
+
+func (server *Server) IsLogined(r *http.Request, secret []byte, cookieField string) bool {
+	_, err := server.GetUserIdFromCookie(r)
+	return err == nil
+}
+
+func (server *Server) GetUserIdFromCookie(r *http.Request) (int, error) {
+	//return 51000329, nil
+	cookie, err := r.Cookie(server.CookieField)
+	/*coockies := r.Cookies()
+	log.Println(coockies)*/
+	if err != nil {
+		return 0, err
+	}
+	ctx := context.Background()
+	StrUserId, err := server.AuthClient.GetUserId(ctx,
+		&auth.AuthCookie{
+			Data:   cookie.Value,
+			Secret: server.config.Secret,
+		})
+	if err != nil {
+		log.Println("GetUserIdFromCookie ", err)
+		return int(0), err
+	}
+	return int(StrUserId.Id), nil
 }
