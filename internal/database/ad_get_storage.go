@@ -39,10 +39,6 @@ const (
 )
 
 func (db *DB) GetAd(adId int, userId int) (models.AdForUsersDetailed, int) {
-	_, err := db.db.Exec(ViewAd, adId)
-	if err != nil {
-		return models.AdForUsersDetailed{}, DB_ERROR
-	}
 	row := db.db.QueryRow(GetAdById, adId, userId)
 	ad := models.AdForUsersDetailed{}
 	ad.GeoPosition = new(models.GeoPosition)
@@ -51,12 +47,20 @@ func (db *DB) GetAd(adId int, userId int) (models.AdForUsersDetailed, int) {
 	lat := pgx.NullFloat64{}
 	long := pgx.NullFloat64{}
 	timeStamp := time.Time{}
-	err = row.Scan(&ad.AdId, &ad.Author.VkId, &ad.Author.Carma, &ad.Author.Name, &ad.Author.Surname,
+	err := row.Scan(&ad.AdId, &ad.Author.VkId, &ad.Author.Carma, &ad.Author.Name, &ad.Author.Surname,
 		&ad.Author.PhotoUrl, &ad.Header, &ad.Text, &ad.Region, &ad.District, &ad.IsAuction, &ad.FeedbackType,
 		&extraFieldTry, &timeStamp, &lat, &long, &ad.Status, &ad.Category,
 		&ad.CommentsCount, &ad.ViewsCount)
 	if err == pgx.ErrNoRows {
 		return ad, EMPTY_RESULT
+	}
+	if err != nil {
+		log.Println(err.Error())
+		return ad, DB_ERROR
+	}
+	_, err = db.db.Exec(ViewAd, adId)
+	if err != nil {
+		return models.AdForUsersDetailed{}, DB_ERROR
 	}
 	ad.GeoPosition.Available = true
 	ad.CreationDate = timeStamp.Format("01.02.2006 15:04")
@@ -69,10 +73,7 @@ func (db *DB) GetAd(adId int, userId int) (models.AdForUsersDetailed, int) {
 	} else {
 		ad.GeoPosition = nil
 	}
-	if err != nil {
-		log.Println(err.Error())
-		return ad, DB_ERROR
-	}
+
 	photosRows, err := db.db.Query(GetAdPhotos, ad.AdId)
 	if err != nil {
 		return ad, DB_ERROR
