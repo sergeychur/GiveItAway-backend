@@ -41,7 +41,7 @@ func (db *DB) GetNotifications(userId int, page int, rowsPerPage int) ([]models.
 		if err != nil {
 			return nil, DB_ERROR
 		}
-		notification.CreationDateTime = timeStamp.Format("2006-01-02T15:04:05.999999999Z07:00")
+		notification.CreationDateTime = timeStamp.Format("01.02.2006 15:04")
 		notification.Payload, err = notifications.FormPayLoad(payload, notification.NotificationType)
 		if err != nil {
 			return nil, DB_ERROR
@@ -58,7 +58,7 @@ func (db *DB) GetNotifications(userId int, page int, rowsPerPage int) ([]models.
 func (db *DB) FormAdClosedNotification(dealId int, initiatorId int, subscriberId int) (models.Notification, error) {
 	note := models.Notification{}
 	note.NotificationType = notifications.AD_CLOSE
-	note.CreationDateTime = time.Now().Format("2006-01-02T15:04:05.999999999Z07:00")
+	note.CreationDateTime = time.Now().Format("01.02.2006 15:04")
 	note.IsRead = false
 	val := &models.AuthorClosedAd{}
 	val.DealId = dealId
@@ -72,7 +72,7 @@ func (db *DB) FormAdClosedNotification(dealId int, initiatorId int, subscriberId
 }
 
 func (db *DB) InsertNotification(whomId int, notification models.Notification) error {
-	creation, err := time.Parse("2006-01-02T15:04:05.999999999Z07:00", notification.CreationDateTime)
+	creation, err := time.Parse("01.02.2006 15:04", notification.CreationDateTime)
 	if err != nil {
 		return err
 	}

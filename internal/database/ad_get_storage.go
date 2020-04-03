@@ -59,7 +59,7 @@ func (db *DB) GetAd(adId int, userId int) (models.AdForUsersDetailed, int) {
 		return ad, EMPTY_RESULT
 	}
 	ad.GeoPosition.Available = true
-	ad.CreationDate = timeStamp.Format("2006-01-02T15:04:05.999999999Z07:00")
+	ad.CreationDate = timeStamp.Format("01.02.2006 15:04")
 	if extraFieldTry.Valid {
 		ad.ExtraField = extraFieldTry.String
 	}
@@ -218,7 +218,7 @@ func (db *DB) WorkWithOneAd(rows *pgx.Rows, ads Ads) (Ads, error) {
 		return nil, err
 	}
 	//ad.GeoPosition.Available = true
-	ad.CreationDate = timeStamp.Format("2006-01-02T15:04:05.999999999Z07:00")
+	ad.CreationDate = timeStamp.Format("01.02.2006 15:04")
 	if extraFieldTry.Valid {
 		ad.ExtraField = extraFieldTry.String
 	}

@@ -836,7 +836,7 @@ definitions:
         type: "string"
       creation_date:
         type: "string"
-        example: "2006-01-02T15:04:05.999999999Z07:00"
+        example: "01.02.2006 15:04"
       geo_position:
         $ref: "#/definitions/GeoPosition"
       status:
@@ -879,7 +879,7 @@ definitions:
         type: "string"
       creation_date:
         type: "string"
-        example: "2006-01-02T15:04:05.999999999Z07:00"
+        example: "01.02.2006 15:04"
       geo_position:
         $ref: "#/definitions/GeoPosition"
       status:
@@ -920,7 +920,7 @@ definitions:
         type: "string"
       creation_date:
         type: "string"
-        example: "2006-01-02T15:04:05.999999999Z07:00"
+        example: "01.02.2006 15:04"
       status:
         type: "string"
         enum: ["offer", "chosen", "closed"]
@@ -967,7 +967,7 @@ definitions:
         enum: ["ad_close"]
       creation_date_time:
         type: string
-        example: "2006-01-02T15:04:05.999999999Z07:00"
+        example: "01.02.2006 15:04"
       payload:
         type: object
       is_read:
