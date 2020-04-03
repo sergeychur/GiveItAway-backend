@@ -56,6 +56,11 @@ func (db *DB) SubscribeToAd(adId int, userId int) int {
 	if authorId == userId {
 		 return FORBIDDEN
 	}
+	isSubscribed := false
+	err = tx.QueryRow(CheckIfSubscriber, adId, userId).Scan(&isSubscribed)
+	if isSubscribed {
+		return FORBIDDEN
+	}
 	_, err = tx.Exec(SubscribeToAd, adId, userId)
 	if err != nil {
 		return DB_ERROR
