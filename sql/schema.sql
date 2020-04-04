@@ -5,12 +5,21 @@ DROP TABLE IF EXISTS ad;
 DROP TABLE IF EXISTS users;
 DROP TABLE IF EXISTS ad_view;
 DROP TABLE IF EXISTS notifications;
+DROP TABLE IF EXISTS comment;
+
+DROP FUNCTION IF EXISTS make_deal;
+DROP FUNCTION IF EXISTS close_deal_success;
+DROP FUNCTION IF EXISTS close_deal_fail_by_author;
+DROP TRIGGER IF EXISTS update_comments_count ON comment;
+DROP FUNCTION IF EXISTS update_comments_count;
+
 
 DROP INDEX IF EXISTS ad_geos;
 
 
 CREATE EXTENSION IF NOT EXISTS citext;
 CREATE EXTENSION IF NOT EXISTS postgis;
+
 
 CREATE TABLE users (
     vk_id bigint NOT NULL CONSTRAINT user_pk PRIMARY KEY,
@@ -132,3 +141,29 @@ CREATE TABLE notifications (
     payload bytea,
     is_read boolean NOT NULL DEFAULT false
 );
+
+CREATE TABLE comment (
+    comment_id bigserial CONSTRAINT comment_pk PRIMARY KEY,
+    ad_id bigint,
+    CONSTRAINT comment_ad FOREIGN KEY (ad_id)
+        REFERENCES ad (ad_id) ON UPDATE CASCADE ON DELETE CASCADE,
+    text citext,
+    creation_datetime TIMESTAMP WITH TIME ZONE default now(),
+    author_id bigint,
+    CONSTRAINT comment_user FOREIGN KEY (author_id)
+        REFERENCES users (vk_id) ON UPDATE CASCADE ON DELETE NO ACTION
+);
+
+CREATE FUNCTION update_comments_count() RETURNS trigger AS $update_comments_count$
+    BEGIN
+        IF (TG_OP = 'DELETE') THEN
+            UPDATE ad SET comments_count = comments_count - 1 WHERE ad_id = OLD.ad_id;
+        ELSEIF (TG_OP = 'INSERT') THEN
+            UPDATE ad SET comments_count = comments_count + 1 WHERE ad_id = NEW.ad_id;
+        end if;
+        RETURN NULL;
+    END;
+$update_comments_count$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_comments_count AFTER INSERT OR DELETE ON comment
+    FOR EACH ROW EXECUTE PROCEDURE update_comments_count();

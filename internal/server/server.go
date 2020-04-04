@@ -74,6 +74,12 @@ func NewServer(pathToConfig string) (*Server, error) {
 	subRouter.Post("/user/auth", server.AuthUser)
 	subRouter.Get(fmt.Sprintf("/user/{user_id:%s}", idPattern), server.GetUserInfo)
 
+	// comments
+	subRouter.Get(fmt.Sprintf("/ad/{ad_id:%s}/comments", idPattern), server.GetAdComments)
+	needLogin.Post(fmt.Sprintf("/ad/{ad_id:%s}/comments", idPattern), server.CommentAd)
+	needLogin.Put(fmt.Sprintf("/comment/{comment_id:%s}", idPattern), server.EditComment)
+	needLogin.Delete(fmt.Sprintf("/comment/{comment_id:%s}", idPattern), server.DeleteComment)
+
 	r.Mount("/api/", subRouter)
 	subRouter.Mount("/", needLogin)
 
