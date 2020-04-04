@@ -54,6 +54,7 @@ func NewServer(pathToConfig string) (*Server, error) {
 	needLogin.Post(fmt.Sprintf("/ad/{ad_id:%s}/delete", idPattern), server.DeleteAd)
 	needLogin.Post(fmt.Sprintf("/ad/{ad_id:%s}/delete_photo", idPattern), server.DeleteAdPhoto)
 	needLogin.Post(fmt.Sprintf("/ad/{ad_id:%s}/set_hidden", idPattern), server.SetHidden)
+	needLogin.Post(fmt.Sprintf("/ad/{ad_id:%s}/set_visible", idPattern), server.SetVisible)
 
 	// deal
 	needLogin.Post(fmt.Sprintf("/ad/{ad_id:%s}/subscribe", idPattern), server.SubscribeToAd)

@@ -145,6 +145,31 @@ paths:
         400:
           description:
             "bad parameters"
+
+  /ad/{ad_id}/set_visible:
+    post:
+      tags:
+        - "ad"
+      parameters:
+        - in: "path"
+          name: "ad_id"
+          type: integer
+          required: true
+          description: "The id of required ad"
+      summary: "Сделать объявление открытым(доступным всем)"
+      responses:
+        404:
+          description:
+            "Ad doesn't exist"
+        200:
+          description:
+            "Hidden status was set"
+        403:
+          description:
+            "user is not author"
+        400:
+          description:
+            "bad parameters"
   /ad/find:
     get:
       tags:
