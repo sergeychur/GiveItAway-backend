@@ -167,3 +167,12 @@ $update_comments_count$ LANGUAGE plpgsql;
 
 CREATE TRIGGER update_comments_count AFTER INSERT OR DELETE ON comment
     FOR EACH ROW EXECUTE PROCEDURE update_comments_count();
+
+CREATE FUNCTION ad_view_create() RETURNS trigger AS $ad_view_create$
+    BEGIN
+        INSERT INTO ad_view (ad_id, views_count) VALUES (new.ad_id, 0);
+    END;
+$ad_view_create$ LANGUAGE plpgsql;
+
+CREATE TRIGGER ad_view_create AFTER INSERT ON ad
+    FOR EACH ROW EXECUTE PROCEDURE ad_view_create();
