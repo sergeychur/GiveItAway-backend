@@ -66,6 +66,7 @@ type AdForUsers struct {
 	Category string `json:"category"`
 
 	CommentsCount int32 `json:"comments_count,omitempty"`
+	Hidden bool `json:"hidden"`
 }
 
 type AdForUsersDetailed struct {
@@ -99,6 +100,7 @@ type AdForUsersDetailed struct {
 
 	CommentsCount int32 `json:"comments_count,omitempty"`
 	ViewsCount int32 `json:"views_count"`
+	Hidden bool `json:"hidden"`
 }
 
 type AdPhoto struct {
