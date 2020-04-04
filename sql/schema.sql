@@ -179,3 +179,4 @@ $ad_view_create$ LANGUAGE plpgsql;
 
 CREATE TRIGGER ad_view_create AFTER INSERT ON ad
     FOR EACH ROW EXECUTE PROCEDURE ad_view_create();
+
