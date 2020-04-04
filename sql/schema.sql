@@ -129,6 +129,15 @@ CREATE OR REPLACE FUNCTION close_deal_fail_by_author(deal_id_to_cls INT) RETURNS
     END;
 $$ LANGUAGE 'plpgsql';
 
+CREATE OR REPLACE FUNCTION close_deal_fail_by_subscriber(deal_id_to_cls INT) RETURNS void AS $$
+DECLARE _ad_id INT;
+BEGIN
+    _ad_id := (SELECT ad_id FROM deal WHERE deal_id = deal_id_to_cls);
+    UPDATE ad SET status = 'aborted' WHERE ad_id = _ad_id;
+    DELETE FROM deal WHERE deal_id = deal_id_to_cls;
+END;
+$$ LANGUAGE 'plpgsql';
+
 CREATE INDEX ad_geos
     ON ad
         USING GIST (geo_position);
