@@ -525,8 +525,35 @@ paths:
       responses:
         200:
           description: "comment updated"
+          schema:
+            $ref: "#/definitions/Comment"
         404:
           description: "no comment to update"
+        403:
+          description: "wrong user"
+        401:
+          description: "no auth"
+    delete:
+      summary: "Удалить комментарий"
+      tags: ["comment"]
+      parameters:
+        - in: "path"
+          name: "comment_id"
+          required: true
+          type: integer
+        - in: "body"
+          name: "body"
+          description: "Удаляем комментарий"
+          required: true
+          schema:
+            $ref: "#/definitions/Comment"
+      responses:
+        200:
+          description: "comment deleted"
+          schema:
+            $ref: "#/definitions/Comment"
+        404:
+          description: "no comment to delete"
         403:
           description: "wrong user"
         401:
@@ -779,6 +806,9 @@ definitions:
     properties:
       comment_id:
         type: integer
+      creation_date:
+        type: "string"
+        example: "01.02.2006 15:04"
       author:
         $ref: '#/definitions/User'
       text:

@@ -14,4 +14,6 @@ type CommentForUser struct {
 	Author User `json:"author"`
 
 	Text string `json:"text"`
+	
+	CreationDateTime string `json:"creation_date_time"`
 }
