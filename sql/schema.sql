@@ -12,6 +12,8 @@ DROP FUNCTION IF EXISTS close_deal_success;
 DROP FUNCTION IF EXISTS close_deal_fail_by_author;
 DROP TRIGGER IF EXISTS update_comments_count ON comment;
 DROP FUNCTION IF EXISTS update_comments_count;
+drop trigger if exists ad_view_create on ad;
+drop function if exists ad_view_create();
 
 
 DROP INDEX IF EXISTS ad_geos;
@@ -171,8 +173,10 @@ CREATE TRIGGER update_comments_count AFTER INSERT OR DELETE ON comment
 CREATE FUNCTION ad_view_create() RETURNS trigger AS $ad_view_create$
     BEGIN
         INSERT INTO ad_view (ad_id, views_count) VALUES (new.ad_id, 0);
+        RETURN NULL;
     END;
 $ad_view_create$ LANGUAGE plpgsql;
 
 CREATE TRIGGER ad_view_create AFTER INSERT ON ad
     FOR EACH ROW EXECUTE PROCEDURE ad_view_create();
+
