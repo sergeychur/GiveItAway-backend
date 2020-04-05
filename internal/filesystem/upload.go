@@ -7,17 +7,16 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 )
 
-func saveFile(file multipart.File, handle *multipart.FileHeader, path string) (string, error) {
+func saveFile(file multipart.File, handle *multipart.FileHeader, path string, adName string) (string, error) {
 	// takes path to directory where to save and adds filename
 	data, err := ioutil.ReadAll(file)
 	if err != nil {
 		return "", err
 	}
 
-	filename := getFileName(path, handle.Filename)
+	filename := getFileName(path, adName, handle.Filename)
 	err = CreateDir(path)
 	if err != nil {
 		return "", err
@@ -47,7 +46,7 @@ func UploadFile(w http.ResponseWriter, r *http.Request, callback func(header mul
 		_ = file.Close()
 	}()
 
-	retPath, err := saveFile(file, handle, filepath.Join(basePath, path))
+	retPath, err := saveFile(file, handle, filepath.Join(basePath, path), path)
 	if err != nil {
 		return "", err
 	}
@@ -65,15 +64,14 @@ func CreateDir(path string) error {
 	return nil
 }
 
-func getFileName(path string, initFilename string) string {
-	_, errNotFound := os.Stat(filepath.Join(path, initFilename))
-	curFileName := initFilename
+func getFileName(path string, adName string, initFilename string) string {
+	extension := filepath.Ext(initFilename)
+	_, errNotFound := os.Stat(filepath.Join(path, adName + extension))
+	curFileName := adName + extension
 	index := 0
 	for !os.IsNotExist(errNotFound) {
 		index++
-		extension := filepath.Ext(curFileName)
-		name := strings.Trim(initFilename, extension)
-		name += fmt.Sprintf("_(%d)", index)
+		name := fmt.Sprintf("%s_(%d)", adName, index)
 		curFileName = name + extension
 		_, errNotFound = os.Stat(filepath.Join(path, curFileName))
 	}

@@ -37,6 +37,12 @@ const (
 
 	// check user exists
 	checkUserExists = "SELECT EXISTS(SELECT 1 FROM users WHERE vk_id = $1)"
+
+	// set ad hidden
+	SetHidden = "UPDATE ad SET hidden = true WHERE ad_id = $1"
+
+	// set ad visible
+	SetVisible = "UPDATE ad SET hidden = false WHERE ad_id = $1"
 )
 
 func (db *DB) CreateAd(ad models.Ad) (int, models.AdCreationResult) {
@@ -242,6 +248,66 @@ func (db *DB) EditAd(adId int, userId int, ad models.Ad) int {
 	if err != nil {
 		return DB_ERROR
 	}
+	err = tx.Commit()
+	if err != nil {
+		return DB_ERROR
+	}
+	return OK
+}
+
+func (db *DB) SetAdHidden(adId int, userId int) int {
+	tx, err := db.StartTransaction()
+	if err != nil {
+		return DB_ERROR
+	}
+	defer func() {
+		_ = tx.Rollback()
+	}()
+	authorId := 0
+	err = tx.QueryRow(checkAdExist, adId).Scan(&authorId)
+	if err == pgx.ErrNoRows {
+		return EMPTY_RESULT
+	}
+	if err != nil {
+		return DB_ERROR
+	}
+
+	if authorId != userId {
+		return FORBIDDEN
+	}
+
+	_, err = tx.Exec(SetHidden, adId)
+
+	err = tx.Commit()
+	if err != nil {
+		return DB_ERROR
+	}
+	return OK
+}
+
+func (db *DB) SetAdVisible(adId int, userId int) int {
+	tx, err := db.StartTransaction()
+	if err != nil {
+		return DB_ERROR
+	}
+	defer func() {
+		_ = tx.Rollback()
+	}()
+	authorId := 0
+	err = tx.QueryRow(checkAdExist, adId).Scan(&authorId)
+	if err == pgx.ErrNoRows {
+		return EMPTY_RESULT
+	}
+	if err != nil {
+		return DB_ERROR
+	}
+
+	if authorId != userId {
+		return FORBIDDEN
+	}
+
+	_, err = tx.Exec(SetVisible, adId)
+
 	err = tx.Commit()
 	if err != nil {
 		return DB_ERROR

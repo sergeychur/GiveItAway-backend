@@ -15,6 +15,8 @@ tags:
     description: "Сделка по объявлению"
   - name: "upload"
     description: "Доступ к фото объявлений"
+  - name: "notification"
+    description: "Вкладка обновлений, запросы на них"
 schemes:
   - "https"
   - "http"
@@ -118,7 +120,56 @@ paths:
           description:
             "The details of ad"
           schema:
-            $ref: "#/definitions/AdForUsers"
+            $ref: "#/definitions/AdForUsersDetailed"
+  /ad/{ad_id}/set_hidden:
+    post:
+      tags:
+        - "ad"
+      parameters:
+        - in: "path"
+          name: "ad_id"
+          type: integer
+          required: true
+          description: "The id of required ad"
+      summary: "Сделать объявление скрытым(доступно только для автора)"
+      responses:
+        404:
+          description:
+            "Ad doesn't exist"
+        200:
+          description:
+            "Hidden status was set"
+        403:
+          description:
+            "user is not author"
+        400:
+          description:
+            "bad parameters"
+
+  /ad/{ad_id}/set_visible:
+    post:
+      tags:
+        - "ad"
+      parameters:
+        - in: "path"
+          name: "ad_id"
+          type: integer
+          required: true
+          description: "The id of required ad"
+      summary: "Сделать объявление открытым(доступным всем)"
+      responses:
+        404:
+          description:
+            "Ad doesn't exist"
+        200:
+          description:
+            "Hidden status was set"
+        403:
+          description:
+            "user is not author"
+        400:
+          description:
+            "bad parameters"
   /ad/find:
     get:
       tags:
@@ -474,8 +525,35 @@ paths:
       responses:
         200:
           description: "comment updated"
+          schema:
+            $ref: "#/definitions/Comment"
         404:
           description: "no comment to update"
+        403:
+          description: "wrong user"
+        401:
+          description: "no auth"
+    delete:
+      summary: "Удалить комментарий"
+      tags: ["comment"]
+      parameters:
+        - in: "path"
+          name: "comment_id"
+          required: true
+          type: integer
+        - in: "body"
+          name: "body"
+          description: "Удаляем комментарий"
+          required: true
+          schema:
+            $ref: "#/definitions/Comment"
+      responses:
+        200:
+          description: "comment deleted"
+          schema:
+            $ref: "#/definitions/Comment"
+        404:
+          description: "no comment to delete"
         403:
           description: "wrong user"
         401:
@@ -658,6 +736,36 @@ paths:
             $ref: "#/definitions/User"
         401:
           description: "data is invalid, though unauthorized"
+  /notifications:
+    get:
+      tags:
+        - "notification"
+      summary: "Получить уведомления для пользователя"
+      parameters:
+        - name: "page"
+          in: "query"
+          type: "string"
+          description: "page for pagination"
+          required: true
+        - name: "rows_per_page"
+          in: "query"
+          type: "string"
+          description: "rows per page for pagination"
+          required: true
+      responses:
+        200:
+          description: "got notifications"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/Notification"
+        400:
+          description: "bad parameters"
+        401:
+          description: "unauthaurized"
+        404:
+          description: "no notifications were found"
+
 definitions:
   User:
     type: "object"
@@ -698,6 +806,9 @@ definitions:
     properties:
       comment_id:
         type: integer
+      creation_date:
+        type: "string"
+        example: "01.02.2006 15:04"
       author:
         $ref: '#/definitions/User'
       text:
@@ -780,7 +891,7 @@ definitions:
         type: "string"
       creation_date:
         type: "string"
-        example: "2006-01-02T15:04:05.999999999Z07:00"
+        example: "01.02.2006 15:04"
       geo_position:
         $ref: "#/definitions/GeoPosition"
       status:
@@ -795,7 +906,7 @@ definitions:
         type: "string"
       comments_count:
         type: integer
-  AdForUsers:
+  AdForUsersDetailed:
     type: "object"
     properties:
       ad_id:
@@ -823,9 +934,48 @@ definitions:
         type: "string"
       creation_date:
         type: "string"
-        example: "20-JUN-1990 08:03:00"
+        example: "01.02.2006 15:04"
       geo_position:
         $ref: "#/definitions/GeoPosition"
+      status:
+        type: "string"
+        enum: ["offer", "chosen", "closed"]
+        default: "offer"
+      pathes_to_photo:
+        type: "array"
+        items:
+          $ref: "#/definitions/AdPhoto"
+      category:
+        type: "string"
+      comments_count:
+        type: integer
+  AdForUsers:
+    type: "object"
+    properties:
+      ad_id:
+        type: "integer"
+        format: "int64"
+      author:
+        $ref: '#/definitions/User'
+      header:
+        type: "string"
+      region:
+        type: "string"
+      district:
+        type: "string"
+      is_auction:
+        type: "boolean"
+      feedback_type:
+        type: "string"
+        enum:
+          - "ls"
+          - "comments"
+          - "other"
+      extra_field:
+        type: "string"
+      creation_date:
+        type: "string"
+        example: "01.02.2006 15:04"
       status:
         type: "string"
         enum: ["offer", "chosen", "closed"]
@@ -864,3 +1014,16 @@ definitions:
       photo_url:
         type: string
         example: "photo1"
+  Notification:
+    type: "object"
+    properties:
+      notification_type:
+        type: string
+        enum: ["ad_close"]
+      creation_date_time:
+        type: string
+        example: "01.02.2006 15:04"
+      payload:
+        type: object
+      is_read:
+        type: "boolean"

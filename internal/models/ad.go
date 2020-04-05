@@ -43,6 +43,39 @@ type AdForUsers struct {
 
 	Header string `json:"header"`
 
+	//Text string `json:"text"`
+
+	Region string `json:"region"`
+
+	District string `json:"district,omitempty"`
+
+	IsAuction bool `json:"is_auction"`
+
+	FeedbackType string `json:"feedback_type"`
+
+	ExtraField string `json:"extra_field,omitempty"`
+
+	CreationDate string `json:"creation_date,omitempty"`
+
+	//GeoPosition *GeoPosition `json:"geo_position,omitempty"`
+
+	Status string `json:"status,omitempty"`
+
+	PathesToPhoto []AdPhoto `json:"pathes_to_photo,omitempty"`
+
+	Category string `json:"category"`
+
+	CommentsCount int32 `json:"comments_count,omitempty"`
+	Hidden bool `json:"hidden"`
+}
+
+type AdForUsersDetailed struct {
+	AdId int64 `json:"ad_id,omitempty"`
+
+	Author *User `json:"author,omitempty"`
+
+	Header string `json:"header"`
+
 	Text string `json:"text"`
 
 	Region string `json:"region"`
@@ -66,6 +99,8 @@ type AdForUsers struct {
 	Category string `json:"category"`
 
 	CommentsCount int32 `json:"comments_count,omitempty"`
+	ViewsCount int32 `json:"views_count"`
+	Hidden bool `json:"hidden"`
 }
 
 type AdPhoto struct {

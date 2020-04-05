@@ -99,7 +99,13 @@ func (server *Server) MakeDeal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	status, dealId := server.db.MakeDeal(adId, subscriberId, initiatorId)
-	log.Print(dealId)	// here we can can do some notification to user
+	notification, err := server.db.FormAdClosedNotification(dealId, initiatorId, subscriberId)
+	if err == nil {
+		err = server.db.InsertNotification(subscriberId, notification)
+		if err != nil {
+			log.Println(err)
+		}
+	}
 	DealRequestFromDB(w, "OK", status)
 }
 

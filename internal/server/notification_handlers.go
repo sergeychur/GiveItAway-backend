@@ -2,13 +2,11 @@ package server
 
 import (
 	"fmt"
-	"github.com/go-chi/chi"
-	"github.com/sergeychur/give_it_away/internal/models"
 	"net/http"
 	"strconv"
 )
 
-func (server *Server) FindAds(w http.ResponseWriter, r *http.Request) {
+func (server *Server) GetNotifications(w http.ResponseWriter, r *http.Request) {
 	userId, err := server.GetUserIdFromCookie(r)
 	if err != nil {
 		WriteToResponse(w, http.StatusInternalServerError, fmt.Errorf("server cannot get userId from cookie"))
@@ -34,29 +32,7 @@ func (server *Server) FindAds(w http.ResponseWriter, r *http.Request) {
 		WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("page and rows per page have to be in get params and int"))
 		return
 	}
-	queryArr, ok := params["query"]
-	status := 0
-	ads := make([]models.AdForUsers, 0)
-	if ok && len(queryArr) == 1 {
-		query := queryArr[0]
-		ads, status = server.db.FindAds(query, page, rowsPerPage, params, userId)
-	} else {
-		ads, status = server.db.GetAds(page, rowsPerPage, params, userId)
-	}
-	DealRequestFromDB(w, ads, status)
-}
 
-func (server *Server) GetAdInfo(w http.ResponseWriter, r *http.Request) {
-	userId, err := server.GetUserIdFromCookie(r)
-	if err != nil {
-		WriteToResponse(w, http.StatusInternalServerError, fmt.Errorf("server cannot get userId from cookie"))
-	}
-	adIdStr := chi.URLParam(r, "ad_id")
-	adId, err := strconv.Atoi(adIdStr)
-	if err != nil {
-		WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("id should be int"))
-		return
-	}
-	ad, status := server.db.GetAd(adId, userId)
-	DealRequestFromDB(w, &ad, status)
+	notifications, status := server.db.GetNotifications(userId, page, rowsPerPage)
+	DealRequestFromDB(w, notifications, status)
 }

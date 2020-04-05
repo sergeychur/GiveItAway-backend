@@ -48,11 +48,13 @@ func NewServer(pathToConfig string) (*Server, error) {
 	// ad
 	needLogin.Post("/ad/create", server.CreateAd)
 	needLogin.Put(fmt.Sprintf("/ad/{ad_id:%s}/edit", idPattern), server.EditAd)
-	subRouter.Get(fmt.Sprintf("/ad/{ad_id:%s}/details", idPattern), server.GetAdInfo)
-	subRouter.Get("/ad/find", server.FindAds)
+	needLogin.Get(fmt.Sprintf("/ad/{ad_id:%s}/details", idPattern), server.GetAdInfo)
+	needLogin.Get("/ad/find", server.FindAds)
 	needLogin.Post(fmt.Sprintf("/ad/{ad_id:%s}/upload_image", idPattern), server.AddPhotoToAd)
 	needLogin.Post(fmt.Sprintf("/ad/{ad_id:%s}/delete", idPattern), server.DeleteAd)
 	needLogin.Post(fmt.Sprintf("/ad/{ad_id:%s}/delete_photo", idPattern), server.DeleteAdPhoto)
+	needLogin.Post(fmt.Sprintf("/ad/{ad_id:%s}/set_hidden", idPattern), server.SetHidden)
+	needLogin.Post(fmt.Sprintf("/ad/{ad_id:%s}/set_visible", idPattern), server.SetVisible)
 
 	// deal
 	needLogin.Post(fmt.Sprintf("/ad/{ad_id:%s}/subscribe", idPattern), server.SubscribeToAd)
@@ -65,9 +67,18 @@ func NewServer(pathToConfig string) (*Server, error) {
 	needLogin.Post(fmt.Sprintf("/deal/{deal_id:%s}/cancel", idPattern), server.CancelDeal)
 	subRouter.Get(fmt.Sprintf("/ad/{ad_id:%s}/deal", idPattern), server.GetDealForAd)
 
+	// notifications
+	needLogin.Get("/notifications", server.GetNotifications)
+
 	// user
 	subRouter.Post("/user/auth", server.AuthUser)
 	subRouter.Get(fmt.Sprintf("/user/{user_id:%s}", idPattern), server.GetUserInfo)
+
+	// comments
+	subRouter.Get(fmt.Sprintf("/ad/{ad_id:%s}/comments", idPattern), server.GetAdComments)
+	needLogin.Post(fmt.Sprintf("/ad/{ad_id:%s}/comments", idPattern), server.CommentAd)
+	needLogin.Put(fmt.Sprintf("/comment/{comment_id:%s}", idPattern), server.EditComment)
+	needLogin.Delete(fmt.Sprintf("/comment/{comment_id:%s}", idPattern), server.DeleteComment)
 
 	r.Mount("/api/", subRouter)
 	subRouter.Mount("/", needLogin)

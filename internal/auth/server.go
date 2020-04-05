@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"fmt"
 	"github.com/sergeychur/give_it_away/internal/config"
 	"google.golang.org/grpc"
 	"log"
@@ -28,12 +29,12 @@ func NewServer(pathToConfig string) (*AuthServerImpl, error) {
 	return server, nil
 }
 
-func (server *AuthServerImpl) Run() {
+func (server *AuthServerImpl) Run() error {
 	lis, err := net.Listen("tcp", ":"+server.ServerConfig.AuthPort)
 	if err != nil {
 		log.Printf("Can`t listen port %s", server.ServerConfig.AuthPort)
-		return
+		return fmt.Errorf("cannot listen")
 	}
 	log.Printf("Running AuthMS(grps) on port %s", server.ServerConfig.AuthPort)
-	log.Fatal(server.rpcServer.Serve(lis))
+	return server.rpcServer.Serve(lis)
 }

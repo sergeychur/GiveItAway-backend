@@ -19,5 +19,8 @@ func main() {
 		log.Println(err)
 		return
 	}
-	serv.Run()
+	err = serv.Run()
+	if err != nil {
+		log.Println(err)
+	}
 }
