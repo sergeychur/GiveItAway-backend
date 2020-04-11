@@ -177,10 +177,22 @@ func (server *Server) CancelDeal(w http.ResponseWriter, r *http.Request) {
 		WriteToResponse(w, http.StatusInternalServerError, fmt.Errorf("server cannot get userId from cookie"))
 	}
 	notifications, err := server.db.FormStatusChangedNotificationsByDeal(dealId)
-	status := server.db.CancelDeal(dealId, userId)
+	status, cancelInfo := server.db.CancelDeal(dealId, userId)
 	if status == database.OK {	// TODO: mb go func
 		if err == nil {
 			err = server.db.InsertNotifications(notifications)
+			if err != nil {
+				log.Println(err)
+			}
+		} else {
+			log.Println(err)
+		}
+		note, err := server.db.FormCancelNotification(cancelInfo.CancelType, userId, cancelInfo.AdId)
+		if err == nil {
+			err = server.db.InsertNotification(cancelInfo.WhomId, note)
+			if err != nil {
+				log.Println(err)
+			}
 		} else {
 			log.Println(err)
 		}

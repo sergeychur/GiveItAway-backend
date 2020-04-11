@@ -119,6 +119,9 @@ func (db *DB) FormStatusChangedNotification(adId int, isDeleted bool, noteType s
 	}
 	if !isDeleted {
 		val.Ad.PathesToPhoto, err = db.GetAdPhotos(val.Ad.AdId)
+		if err != nil {
+			return models.Notification{}, err
+		}
 	}
 	note.Payload = val
 	return note, nil
@@ -179,6 +182,41 @@ func (db *DB) FormStatusChangedNotificationsByAd (adId int, isDeleted bool, note
 		notes = append(notes, curNote)
 	}
 	return notes, nil
+}
+
+func (db *DB) FormCancelNotification(cancelType string, initiatorId int, adId int) (models.Notification, error) {
+	note := models.Notification{}
+	note.CreationDateTime = time.Now().Format("01.02.2006 15:04")
+	note.IsRead = false
+	ad := models.AdForNotification{}
+	whomId := 0
+	err := db.db.QueryRow(GetAdForNotif, adId).Scan(&ad.AdId, &ad.Header, &ad.Status, &whomId)
+	if err == pgx.ErrNoRows {
+		return models.Notification{}, fmt.Errorf("no ad")
+	}
+	if err != nil {
+		return models.Notification{}, err
+	}
+
+	ad.PathesToPhoto, err = db.GetAdPhotos(ad.AdId)
+
+	if cancelType == "subscriber" {
+		note.NotificationType = notifications.SUBSCRIBER_CANCELLED
+		val := models.SubscriberCancelled{}
+		val.Ad = ad
+		user, status := db.GetUser(initiatorId)
+		if status != FOUND {
+			return models.Notification{}, fmt.Errorf("error getting user")
+		}
+		val.Author = user
+		note.Payload = val
+	} else {
+		note.NotificationType = notifications.AUTHOR_CANCELLED
+		val := models.AuthorCancelled{}
+		val.Ad = ad
+		note.Payload = val
+	}
+	return note, nil
 }
 
 func (db *DB) InsertNotification(whomId int, notification models.Notification) error {

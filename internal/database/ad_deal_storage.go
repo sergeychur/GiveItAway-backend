@@ -159,10 +159,10 @@ func (db *DB) FulfillDeal(dealId int, userId int) int {
 	return OK
 }
 
-func (db *DB) CancelDeal(dealId int, userId int) int {
+func (db *DB) CancelDeal(dealId int, userId int) (int, models.CancelInfo) {
 	tx, err := db.StartTransaction()
 	if err != nil {
-		return DB_ERROR
+		return DB_ERROR, models.CancelInfo{}
 	}
 	defer func() {
 		_ = tx.Rollback()
@@ -174,38 +174,38 @@ func (db *DB) CancelDeal(dealId int, userId int) int {
 	status := ""
 	err = tx.QueryRow(GetDealWithAuthor, dealId).Scan(&dealIdGot, &adId, &subscriberId, &status, &authorId)
 	if err == pgx.ErrNoRows {
-		return EMPTY_RESULT
+		return EMPTY_RESULT, models.CancelInfo{}
 	}
 	if err != nil {
-		return DB_ERROR
+		return DB_ERROR, models.CancelInfo{}
 	}
 	if status != "open" {
-		return FORBIDDEN
+		return FORBIDDEN, models.CancelInfo{}
 	}
 	if subscriberId == userId {
 		_, err = tx.Exec(CancelDealSubscriber, dealId)
 		if err != nil {
-			return DB_ERROR
+			return DB_ERROR, models.CancelInfo{}
 		}
 		err = tx.Commit()
 		if err != nil {
-			return DB_ERROR
+			return DB_ERROR, models.CancelInfo{}
 		}
-		return OK
+		return OK, models.CancelInfo{WhomId: authorId, CancelType: "subscriber", AdId: adId}
 	}
 
 	if authorId == userId {
 		_, err = tx.Exec(CancelDealAuthor, dealId)
 		if err != nil {
-			return DB_ERROR
+			return DB_ERROR, models.CancelInfo{}
 		}
 		err = tx.Commit()
 		if err != nil {
-			return DB_ERROR
+			return DB_ERROR, models.CancelInfo{}
 		}
-		return OK
+		return OK, models.CancelInfo{WhomId: subscriberId, CancelType: "author", AdId: adId}
 	}
-	return FORBIDDEN
+	return FORBIDDEN, models.CancelInfo{}
 }
 
 func (db *DB) GetDealForAd(adId int) (models.DealDetails, int) {

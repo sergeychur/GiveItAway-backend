@@ -29,3 +29,18 @@ type UserSubscribed struct {
 	Ad AdForNotification `json:"ad"`
 	Author User `json:"author"`
 }
+
+type CancelInfo struct {
+	WhomId int
+	CancelType string
+	AdId int
+}
+
+type SubscriberCancelled struct {
+	Ad AdForNotification `json:"ad"`
+	Author User `json:"author"`
+}
+
+type AuthorCancelled struct {
+	Ad AdForNotification `json:"ad"`
+}

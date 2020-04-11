@@ -12,6 +12,8 @@ const (
 	DEAL_FULFILL = "fulfill"
 	STATUS_CHANGED = "status"
 	AD_DELETED = "deleted"
+	AUTHOR_CANCELLED = "authorCancel"
+	SUBSCRIBER_CANCELLED = "subscriberCancel"
 )
 
 var (
@@ -30,6 +32,12 @@ var (
 		},
 		AD_DELETED: func() interface{} {
 			return &models.AdStatusChanged{}
+		},
+		AUTHOR_CANCELLED: func() interface{} {
+			return &models.AuthorCancelled{}
+		},
+		SUBSCRIBER_CANCELLED: func() interface{} {
+			return &models.SubscriberCancelled{}
 		},
 	}
 )

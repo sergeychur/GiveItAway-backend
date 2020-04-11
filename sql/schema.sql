@@ -116,7 +116,7 @@ CREATE OR REPLACE FUNCTION close_deal_success(deal_id_to_upd INT) RETURNS void A
     BEGIN
         UPDATE deal SET status = 'success' WHERE deal_id = deal_id_to_upd RETURNING ad_id INTO _ad_id;
         UPDATE ad SET status = 'closed' WHERE ad_id = _ad_id;
---         DELETE FROM ad_subscribers WHERE ad_id = _ad_id; TODO: dunno if needed
+        DELETE FROM ad_subscribers WHERE ad_id = _ad_id; TODO: dunno if needed
     END;
     $$ LANGUAGE 'plpgsql';
 
