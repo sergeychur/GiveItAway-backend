@@ -112,6 +112,7 @@ func (server *Server) Run() error {
 	)
 	if err != nil {
 		log.Println("Can`t connect ro grpc (auth ms)")
+		return err
 	}
 	defer func() {
 		_ = grcpAuthConn.Close()

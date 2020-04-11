@@ -12,12 +12,6 @@ const (
 	// Unsubscribe from ad query
 	UnsubscribeFromAd = "DELETE FROM ad_subscribers WHERE ad_id = $1 AND subscriber_id = $2"
 
-	// Get ad subscribers query
-	GetAdSubscribers = "SELECT u.vk_id, u.name, u.surname, u.carma, u.photo_url FROM ad_subscribers a_s JOIN" +
-		" (SELECT ad_subscribers_id FROM ad_subscribers WHERE ad_id = $1 ORDER BY ad_subscribers_id LIMIT $2 OFFSET $3) " +
-		" l ON (l.ad_subscribers_id = a_s.ad_subscribers_id) JOIN users u ON (u.vk_id = a_s.subscriber_id) " +
-		"ORDER BY a_s.ad_subscribers_id"
-
 	// Make deal query
 	CheckIfSubscriber = "SELECT EXISTS(SELECT 1 FROM ad_subscribers WHERE ad_id = $1 AND subscriber_id = $2)"
 	CheckIfDealExists = "SELECT EXISTS(SELECT 1 FROM deal WHERE ad_id = $1)"
@@ -34,6 +28,14 @@ const (
 
 	// Get Deal
 	GetDealForAd = "SELECT * FROM deal WHERE ad_id = $1"
+
+	// Get ad subscribers query
+	GetAdSubscribers = "SELECT u.vk_id, u.name, u.surname, u.carma, u.photo_url FROM ad_subscribers a_s JOIN" +
+		" (SELECT ad_subscribers_id FROM ad_subscribers WHERE ad_id = $1 ORDER BY ad_subscribers_id LIMIT $2 OFFSET $3) " +
+		" l ON (l.ad_subscribers_id = a_s.ad_subscribers_id) JOIN users u ON (u.vk_id = a_s.subscriber_id) " +
+		"ORDER BY a_s.ad_subscribers_id"
+
+	GetAdSubscribersIds = "SELECT a_s.subscriber_id FROM ad_subscribers a_s WHERE a_s.ad_id = $1"
 )
 
 func (db *DB) SubscribeToAd(adId int, userId int) int {
@@ -70,31 +72,6 @@ func (db *DB) SubscribeToAd(adId int, userId int) int {
 		return DB_ERROR
 	}
 	return OK
-}
-
-func (db *DB) GetAdSubscribers(adId int, page int, rowsPerPage int) ([]models.User, int) {
-	offset := rowsPerPage * (page - 1)
-	rows, err := db.db.Query(GetAdSubscribers, adId, rowsPerPage, offset)
-	if err == pgx.ErrNoRows {
-		return nil, EMPTY_RESULT
-	}
-	if err != nil {
-		return nil, DB_ERROR
-	}
-	users := make([]models.User, 0)
-	defer rows.Close()
-	for rows.Next() {
-		user := models.User{}
-		err = rows.Scan(&user.VkId, &user.Name, &user.Surname, &user.Carma, &user.PhotoUrl)
-		if err != nil {
-			return nil, DB_ERROR
-		}
-		users = append(users, user)
-	}
-	if len(users) == 0 {
-		return users, EMPTY_RESULT
-	}
-	return users, FOUND
 }
 
 func (db *DB) UnsubscribeFromAd(adId int, userId int) int {
@@ -241,4 +218,47 @@ func (db *DB) GetDealForAd(adId int) (models.DealDetails, int) {
 		return deal, DB_ERROR
 	}
 	return deal, FOUND
+}
+
+func (db *DB) GetAdSubscribers(adId int, page int, rowsPerPage int) ([]models.User, int) {
+	offset := rowsPerPage * (page - 1)
+	rows, err := db.db.Query(GetAdSubscribers, adId, rowsPerPage, offset)
+	if err == pgx.ErrNoRows {
+		return nil, EMPTY_RESULT
+	}
+	if err != nil {
+		return nil, DB_ERROR
+	}
+	users := make([]models.User, 0)
+	defer rows.Close()
+	for rows.Next() {
+		user := models.User{}
+		err = rows.Scan(&user.VkId, &user.Name, &user.Surname, &user.Carma, &user.PhotoUrl)
+		if err != nil {
+			return nil, DB_ERROR
+		}
+		users = append(users, user)
+	}
+	if len(users) == 0 {
+		return users, EMPTY_RESULT
+	}
+	return users, FOUND
+}
+
+func (db *DB) GetAllAdSubscribersIDs(adId int) ([]int, error) {
+	rows, err := db.db.Query(GetAdSubscribersIds, adId)
+	if err != nil {
+		return nil, err
+	}
+	ids := make([]int, 0)
+	defer rows.Close()
+	for rows.Next() {
+		id := 0
+		err = rows.Scan(&id)
+		if err != nil {
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+	return ids, nil
 }

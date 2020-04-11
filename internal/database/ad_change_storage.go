@@ -14,16 +14,16 @@ const (
 	GeoPosition               = ", geo_position, lat, long"
 	Blank                     = ""
 	NoExtraFieldNoGeoPosition = ""
-	NoExtraFieldGeoPosition   = ", ST_POINT($9, $10), $9, $10"
+	NoExtraFieldGeoPosition   = ", ST_SetSRID(ST_POINT($9, $10), 4326), $9, $10"
 	ExtraFieldNoGeoPosition   = ", $9"
-	ExtraFieldGeoPosition     = ", $9, ST_POINT($10, $11), $10, $11"
+	ExtraFieldGeoPosition     = ", $9, ST_SetSRID(ST_POINT($10, $11), 4326), $10, $11"
 
 	// edit ad query
 	EditAd                        = "UPDATE ad SET header=$1, text=$2, region=$3, district=$4, is_auction=$5, feedback_type=$6, category=$7%s where ad_id=$%d"
 	NoExtraFieldNoGeoPositionEdit = ", extra_field=NULL"
-	NoExtraFieldGeoPositionEdit   = ", geo_position=ST_POINT($8, $9), lat=$8, long=$9"
+	NoExtraFieldGeoPositionEdit   = ", geo_position=ST_SetSRID(ST_POINT($8, $9), 4326), lat=$8, long=$9"
 	ExtraFieldNoGeoPositionEdit   = ", extra_field=$8"
-	ExtraFieldGeoPositionEdit     = ", extra_field=$8, geo_position=ST_POINT($9, $10), lat=$9, long=$10"
+	ExtraFieldGeoPositionEdit     = ", extra_field=$8, geo_position=ST_SetSRID(ST_POINT($9, $10), 4326), lat=$9, long=$10"
 
 	// add photo to ad query
 	checkAdExist = "SELECT author_id FROM ad WHERE ad_id = $1"

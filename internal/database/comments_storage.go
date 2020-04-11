@@ -8,9 +8,9 @@ import (
 
 const (
 	GetAdComments = "SELECT c.comment_id, c.creation_datetime, c.text, u.vk_id, u.name, u.surname, u.photo_url " +
-		"FROM comment c JOIN (SELECT comment_id FROM comment WHERE ad_id = $1 ORDER BY creation_datetime DESC " +
+		"FROM comment c JOIN (SELECT comment_id FROM comment WHERE ad_id = $1 ORDER BY comment_id " +
 		"LIMIT $2 OFFSET $3) v ON (v.comment_id = c.comment_id) JOIN users u ON (u.vk_id = c.author_id) " +
-		"ORDER BY c.creation_datetime DESC"	// TODO: mb order by id desc
+		"ORDER BY c.comment_id"
 
 	CreateComment = "INSERT INTO COMMENT (ad_id, text, author_id) VALUES ($1, $2, $3) RETURNING comment_id"
 	GetComment = "SELECT c.comment_id, c.creation_datetime, c.text, u.vk_id, u.name, u.surname, u.photo_url " +

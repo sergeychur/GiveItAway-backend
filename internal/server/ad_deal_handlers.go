@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 	"github.com/go-chi/chi"
+	"github.com/sergeychur/give_it_away/internal/database"
 	"log"
 	"net/http"
 	"strconv"
@@ -20,6 +21,15 @@ func (server *Server) SubscribeToAd(w http.ResponseWriter, r *http.Request) {
 		WriteToResponse(w, http.StatusInternalServerError, fmt.Errorf("server cannot get userId from cookie"))
 	}
 	status := server.db.SubscribeToAd(adId, userId)
+	if status == database.OK {
+		notification, err := server.db.FormRespondNotification(userId, adId)
+		if err == nil {
+			err = server.db.InsertNotification(notification.WhomId, notification)
+			if err != nil {
+				log.Println(err)
+			}
+		}
+	}
 	DealRequestFromDB(w, "OK", status)
 }
 
@@ -99,13 +109,28 @@ func (server *Server) MakeDeal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	status, dealId := server.db.MakeDeal(adId, subscriberId, initiatorId)
-	notification, err := server.db.FormAdClosedNotification(dealId, initiatorId, subscriberId)
-	if err == nil {
-		err = server.db.InsertNotification(subscriberId, notification)
-		if err != nil {
+	if status == database.CREATED {	// TODO: probably go func
+		notification, err := server.db.FormAdClosedNotification(dealId, initiatorId, subscriberId)
+		if err == nil {
+			err = server.db.InsertNotification(subscriberId, notification)
+			if err != nil {
+				log.Println(err)
+			}
+		} else {
 			log.Println(err)
 		}
+		notifications, err := server.db.FormStatusChangedNotificationsByDeal(dealId)
+		if err == nil {
+			err = server.db.InsertNotifications(notifications)
+			if err != nil {
+				log.Println(err)
+			}
+		} else {
+			log.Println(err)
+		}
+
 	}
+
 	DealRequestFromDB(w, "OK", status)
 }
 
@@ -120,7 +145,23 @@ func (server *Server) FulfillDeal(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		WriteToResponse(w, http.StatusInternalServerError, fmt.Errorf("server cannot get userId from cookie"))
 	}
+	notifications, err := server.db.FormStatusChangedNotificationsByDeal(dealId)
 	status := server.db.FulfillDeal(dealId, userId)
+	if status == database.OK {	// TODO: mb go func
+		notification, err := server.db.FormFulfillDealNotification(dealId)
+		if err == nil {
+			err = server.db.InsertNotification(notification.WhomId, notification)
+			if err != nil {
+				log.Println(err)
+			}
+		}
+
+		if err == nil {
+			err = server.db.InsertNotifications(notifications)
+		} else {
+			log.Println(err)
+		}
+	}
 	DealRequestFromDB(w, "OK", status)
 }
 
@@ -135,7 +176,15 @@ func (server *Server) CancelDeal(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		WriteToResponse(w, http.StatusInternalServerError, fmt.Errorf("server cannot get userId from cookie"))
 	}
+	notifications, err := server.db.FormStatusChangedNotificationsByDeal(dealId)
 	status := server.db.CancelDeal(dealId, userId)
+	if status == database.OK {	// TODO: mb go func
+		if err == nil {
+			err = server.db.InsertNotifications(notifications)
+		} else {
+			log.Println(err)
+		}
+	}
 	DealRequestFromDB(w, "OK", status)
 }
 

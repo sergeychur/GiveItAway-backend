@@ -36,6 +36,7 @@ const (
 
 	ViewAd = "INSERT INTO ad_view (ad_id, views_count) VALUES ($1, 1)" +
 		" ON CONFLICT (ad_id) DO UPDATE SET views_count = ad_view.views_count + 1"
+
 )
 
 func (db *DB) GetAd(adId int, userId int) (models.AdForUsersDetailed, int) {
@@ -74,18 +75,9 @@ func (db *DB) GetAd(adId int, userId int) (models.AdForUsersDetailed, int) {
 		ad.GeoPosition = nil
 	}
 
-	photosRows, err := db.db.Query(GetAdPhotos, ad.AdId)
+	ad.PathesToPhoto, err = db.GetAdPhotos(ad.AdId)
 	if err != nil {
 		return ad, DB_ERROR
-	}
-	defer photosRows.Close()
-	for photosRows.Next() {
-		adPhoto := models.AdPhoto{}
-		err = photosRows.Scan(&adPhoto.AdPhotoId, &adPhoto.PhotoUrl)
-		if err != nil {
-			return ad, DB_ERROR
-		}
-		ad.PathesToPhoto = append(ad.PathesToPhoto, adPhoto)
 	}
 	return ad, FOUND
 }
@@ -162,9 +154,9 @@ func (db *DB) GetAds(page int, rowsPerPage int, params map[string][]string, user
 			if err != nil {
 				return nil, WRONG_INPUT
 			}
-			innerSortByClause = fmt.Sprintf("geo_position <-> SRID=4326;ST_POINT($%d, $%d))",
+			innerSortByClause = fmt.Sprintf("geo_position <-> ST_SetSRID(ST_POINT($%d, $%d), 4326))",
 				len(strArr) + 1, len(strArr) + 2)
-			outerSortByClause = fmt.Sprintf("a.geo_position <-> SRID=4326;ST_POINT($%d, $%d))",
+			outerSortByClause = fmt.Sprintf("a.geo_position <-> ST_SetSRID(ST_POINT($%d, $%d), 4326))",
 				len(strArr) + 1, len(strArr) + 2)
 			strArr = append(strArr, lat, long)
 			//perform some sort by distance(ad geo, given geo)
@@ -218,21 +210,24 @@ func (db *DB) WorkWithOneAd(rows *pgx.Rows, ads Ads) (Ads, error) {
 	if err != nil {
 		return nil, err
 	}
-	//ad.GeoPosition.Available = true
 	ad.CreationDate = timeStamp.Format("01.02.2006 15:04")
 	if extraFieldTry.Valid {
 		ad.ExtraField = extraFieldTry.String
 	}
-	/*if lat.Valid && long.Valid {
-		ad.GeoPosition.Latitude = lat.Float64
-		ad.GeoPosition.Longitude = long.Float64
-	} else {
-		ad.GeoPosition = nil
-	}*/
-	photosRows, err := db.db.Query(GetAdPhotos, ad.AdId)
+	ad.PathesToPhoto, err = db.GetAdPhotos(ad.AdId)
 	if err != nil {
 		return nil, err
 	}
+	ads = append(ads, *ad)
+	return ads, nil
+}
+
+func (db *DB) GetAdPhotos(adId int64) ([]models.AdPhoto, error) {
+	photosRows, err := db.db.Query(GetAdPhotos, adId)
+	if err != nil {
+		return nil, err
+	}
+	photoArr := make([]models.AdPhoto, 0)
 	defer photosRows.Close()
 	for photosRows.Next() {
 		adPhoto := models.AdPhoto{}
@@ -240,8 +235,7 @@ func (db *DB) WorkWithOneAd(rows *pgx.Rows, ads Ads) (Ads, error) {
 		if err != nil {
 			return nil, err
 		}
-		ad.PathesToPhoto = append(ad.PathesToPhoto, adPhoto)
+		photoArr = append(photoArr, adPhoto)
 	}
-	ads = append(ads, *ad)
-	return ads, nil
+	return photoArr, nil
 }

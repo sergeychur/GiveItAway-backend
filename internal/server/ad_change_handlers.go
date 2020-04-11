@@ -6,6 +6,7 @@ import (
 	"github.com/sergeychur/give_it_away/internal/database"
 	"github.com/sergeychur/give_it_away/internal/filesystem"
 	"github.com/sergeychur/give_it_away/internal/models"
+	"github.com/sergeychur/give_it_away/internal/notifications"
 	"log"
 	"mime/multipart"
 	"net/http"
@@ -71,11 +72,25 @@ func (server *Server) DeleteAd(w http.ResponseWriter, r *http.Request) {
 	userId, err := server.GetUserIdFromCookie(r)
 	if err != nil {
 		WriteToResponse(w, http.StatusInternalServerError, fmt.Errorf("server cannot get userId from cookie"))
+		return
 	}
+	{
+		notificationsArr, err := server.db.FormStatusChangedNotificationsByAd(adId,
+			true, notifications.AD_DELETED)
+		if err == nil {
+			err = server.db.InsertNotifications(notificationsArr)
+			if err != nil {
+				log.Println(err)
+			}
+		} else {
+			log.Println(err)
+		}
+	}
+
 	status := server.db.DeleteAd(adId, userId)
 	DealRequestFromDB(w, "OK", status)
 
-	if status != database.FORBIDDEN {
+	if status == database.OK {
 		err = filesystem.DeleteAdPhotos(server.config.UploadPath, adId)
 		if err != nil {
 			log.Printf("Didn't delete photos for ad %d\n", adId)
