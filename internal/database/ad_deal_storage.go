@@ -15,15 +15,15 @@ const (
 	// Make deal query
 	CheckIfSubscriber = "SELECT EXISTS(SELECT 1 FROM ad_subscribers WHERE ad_id = $1 AND subscriber_id = $2)"
 	CheckIfDealExists = "SELECT EXISTS(SELECT 1 FROM deal WHERE ad_id = $1)"
-	CreateDeal = "SELECT make_deal($1, $2)"
-	GetDeal = "SELECT * FROM deal WHERE deal_id = $1"
+	CreateDeal        = "SELECT make_deal($1, $2)"
+	GetDeal           = "SELECT * FROM deal WHERE deal_id = $1"
 
 	// Fulfill deal
 	GetDealWithAuthor = "SELECT d.*, a.author_id FROM deal d JOIN ad a ON (a.ad_id = d.Ad_id) WHERE d.deal_id = $1"
-	FulfillDeal = "SELECT close_deal_success($1)"
+	FulfillDeal       = "SELECT close_deal_success($1)"
 
 	// CancelDeal
-	CancelDealAuthor = "SELECT close_deal_fail_by_author($1)"
+	CancelDealAuthor     = "SELECT close_deal_fail_by_author($1)"
 	CancelDealSubscriber = "SELECT close_deal_fail_by_subscriber($1)"
 
 	// Get Deal
@@ -56,7 +56,7 @@ func (db *DB) SubscribeToAd(adId int, userId int) int {
 	}
 
 	if authorId == userId {
-		 return FORBIDDEN
+		return FORBIDDEN
 	}
 	isSubscribed := false
 	err = tx.QueryRow(CheckIfSubscriber, adId, userId).Scan(&isSubscribed)

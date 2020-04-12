@@ -7,17 +7,17 @@ import (
 )
 
 const (
-	AD_CLOSE = "ad_close"
-	AD_RESPOND = "respond"
-	DEAL_FULFILL = "fulfill"
-	STATUS_CHANGED = "status"
-	AD_DELETED = "deleted"
-	AUTHOR_CANCELLED = "authorCancel"
+	AD_CLOSE             = "ad_close"
+	AD_RESPOND           = "respond"
+	DEAL_FULFILL         = "fulfill"
+	STATUS_CHANGED       = "status"
+	AD_DELETED           = "deleted"
+	AUTHOR_CANCELLED     = "authorCancel"
 	SUBSCRIBER_CANCELLED = "subscriberCancel"
 )
 
 var (
-	FuncsMap = map[string]func() interface{} {
+	FuncsMap = map[string]func() interface{}{
 		AD_CLOSE: func() interface{} {
 			return &models.AuthorClosedAd{}
 		},

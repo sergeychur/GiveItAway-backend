@@ -13,7 +13,7 @@ const (
 		"ORDER BY c.comment_id"
 
 	CreateComment = "INSERT INTO COMMENT (ad_id, text, author_id) VALUES ($1, $2, $3) RETURNING comment_id"
-	GetComment = "SELECT c.comment_id, c.creation_datetime, c.text, u.vk_id, u.name, u.surname, u.photo_url " +
+	GetComment    = "SELECT c.comment_id, c.creation_datetime, c.text, u.vk_id, u.name, u.surname, u.photo_url " +
 		"FROM comment c JOIN users u ON (c.author_id = u.vk_id) WHERE c.comment_id = $1"
 
 	CheckCommentExists = "SELECT author_id FROM comment WHERE comment_id = $1"
@@ -56,7 +56,7 @@ func (db *DB) CreateComment(adId int, userId int, comment models.Comment) (model
 	err := db.db.QueryRow(checkUserExists, userId).Scan(&exists)
 	if err == pgx.ErrNoRows || !exists {
 		return models.CommentForUser{}, EMPTY_RESULT
-	}	// TODO: mb remove, user_id taken from cookie, useless
+	} // TODO: mb remove, user_id taken from cookie, useless
 	authorId := 0
 	err = db.db.QueryRow(checkAdExist, adId).Scan(&authorId)
 	if err == pgx.ErrNoRows {

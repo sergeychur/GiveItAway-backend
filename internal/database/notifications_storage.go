@@ -163,7 +163,7 @@ func (db *DB) FormStatusChangedNotificationsByDeal(dealId int) ([]models.Notific
 	return notes, nil
 }
 
-func (db *DB) FormStatusChangedNotificationsByAd (adId int, isDeleted bool, noteType string) ([]models.Notification, error) {
+func (db *DB) FormStatusChangedNotificationsByAd(adId int, isDeleted bool, noteType string) ([]models.Notification, error) {
 	subscriberIds, err := db.GetAllAdSubscribersIDs(adId)
 	if err != nil {
 		return nil, err

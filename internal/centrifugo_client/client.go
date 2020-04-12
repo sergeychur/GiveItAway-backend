@@ -14,7 +14,7 @@ func NewClient(host string, port string, apiKey string) *CentrifugoClient {
 	cl := new(CentrifugoClient)
 	cl.client = gocent.New(gocent.Config{
 		Addr: host + ":" + port,
-		Key: apiKey,
+		Key:  apiKey,
 	})
 	return cl
 }

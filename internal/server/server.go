@@ -17,12 +17,12 @@ import (
 )
 
 type Server struct {
-	router *chi.Mux
-	db     *database.DB
+	router             *chi.Mux
+	db                 *database.DB
 	NotificationSender *centrifugo_client.CentrifugoClient
-	config *config.Config
-	AuthClient auth.AuthClient
-	CookieField string
+	config             *config.Config
+	AuthClient         auth.AuthClient
+	CookieField        string
 }
 
 func NewServer(pathToConfig string) (*Server, error) {
@@ -60,7 +60,7 @@ func NewServer(pathToConfig string) (*Server, error) {
 
 	// deal
 	needLogin.Post(fmt.Sprintf("/ad/{ad_id:%s}/subscribe", idPattern), server.SubscribeToAd)
-	subRouter.Get(fmt.Sprintf("/ad/{ad_id:%s}/subscribers", idPattern), server.GetAdSubscribers)		// think about it
+	subRouter.Get(fmt.Sprintf("/ad/{ad_id:%s}/subscribers", idPattern), server.GetAdSubscribers) // think about it
 	needLogin.Post(fmt.Sprintf("/ad/{ad_id:%s}/unsubscribe", idPattern), server.UnsubscribeFromAd)
 	needLogin.Put(fmt.Sprintf("/ad/{ad_id:%s}/make_deal", idPattern), server.MakeDeal)
 	needLogin.Get(fmt.Sprintf("/ad/{ad_id:%s}/deal", idPattern), server.CancelDeal)
@@ -126,7 +126,6 @@ func (server *Server) Run() error {
 	}()
 
 	server.AuthClient = auth.NewAuthClient(grcpAuthConn)
-
 
 	log.Fatal(http.ListenAndServe(":"+port, server.router))
 	return nil

@@ -109,7 +109,7 @@ func (server *Server) MakeDeal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	status, dealId := server.db.MakeDeal(adId, subscriberId, initiatorId)
-	if status == database.CREATED {	// TODO: probably go func
+	if status == database.CREATED { // TODO: probably go func
 		notification, err := server.db.FormAdClosedNotification(dealId, initiatorId, subscriberId)
 		if err == nil {
 			err = server.db.InsertNotification(subscriberId, notification)
@@ -147,7 +147,7 @@ func (server *Server) FulfillDeal(w http.ResponseWriter, r *http.Request) {
 	}
 	notifications, err := server.db.FormStatusChangedNotificationsByDeal(dealId)
 	status := server.db.FulfillDeal(dealId, userId)
-	if status == database.OK {	// TODO: mb go func
+	if status == database.OK { // TODO: mb go func
 		notification, err := server.db.FormFulfillDealNotification(dealId)
 		if err == nil {
 			err = server.db.InsertNotification(notification.WhomId, notification)
@@ -178,7 +178,7 @@ func (server *Server) CancelDeal(w http.ResponseWriter, r *http.Request) {
 	}
 	notifications, err := server.db.FormStatusChangedNotificationsByDeal(dealId)
 	status, cancelInfo := server.db.CancelDeal(dealId, userId)
-	if status == database.OK {	// TODO: mb go func
+	if status == database.OK { // TODO: mb go func
 		if err == nil {
 			err = server.db.InsertNotifications(notifications)
 			if err != nil {

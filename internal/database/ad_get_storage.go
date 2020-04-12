@@ -36,7 +36,6 @@ const (
 
 	ViewAd = "INSERT INTO ad_view (ad_id, views_count) VALUES ($1, 1)" +
 		" ON CONFLICT (ad_id) DO UPDATE SET views_count = ad_view.views_count + 1"
-
 )
 
 func (db *DB) GetAd(adId int, userId int) (models.AdForUsersDetailed, int) {
@@ -155,22 +154,22 @@ func (db *DB) GetAds(page int, rowsPerPage int, params map[string][]string, user
 				return nil, WRONG_INPUT
 			}
 			innerSortByClause = fmt.Sprintf("geo_position <-> ST_SetSRID(ST_POINT($%d, $%d), 4326))",
-				len(strArr) + 1, len(strArr) + 2)
+				len(strArr)+1, len(strArr)+2)
 			outerSortByClause = fmt.Sprintf("a.geo_position <-> ST_SetSRID(ST_POINT($%d, $%d), 4326))",
-				len(strArr) + 1, len(strArr) + 2)
+				len(strArr)+1, len(strArr)+2)
 			strArr = append(strArr, lat, long)
 			//perform some sort by distance(ad geo, given geo)
 		}
 	}
 
 	if len(strArr) == 0 {
-		whereClause += Where + fmt.Sprintf("(hidden = false OR author_id = $%d)", len(strArr) + 1)
+		whereClause += Where + fmt.Sprintf("(hidden = false OR author_id = $%d)", len(strArr)+1)
 	} else {
-		whereClause += And + fmt.Sprintf("(hidden = false OR author_id = $%d)", len(strArr) + 1)
+		whereClause += And + fmt.Sprintf("(hidden = false OR author_id = $%d)", len(strArr)+1)
 	}
 
 	strArr = append(strArr, userId)
-	query = fmt.Sprintf(GetAds, whereClause, innerSortByClause, len(strArr) + 1, len(strArr) + 2, outerSortByClause)
+	query = fmt.Sprintf(GetAds, whereClause, innerSortByClause, len(strArr)+1, len(strArr)+2, outerSortByClause)
 	strArr = append(strArr, rowsPerPage, offset)
 	ads := make([]models.AdForUsers, 0)
 	rows, err := db.db.Query(query, strArr...)
@@ -204,8 +203,8 @@ func (db *DB) WorkWithOneAd(rows *pgx.Rows, ads Ads) (Ads, error) {
 	long := pgx.NullFloat64{}*/
 	timeStamp := time.Time{}
 	err := rows.Scan(&ad.AdId, &ad.Author.VkId, &ad.Author.Carma, &ad.Author.Name, &ad.Author.Surname,
-		&ad.Author.PhotoUrl, &ad.Header, /*&ad.Text,*/ &ad.Region, &ad.District, &ad.IsAuction, &ad.FeedbackType,
-		&extraFieldTry, &timeStamp, /*&lat, &long,*/ &ad.Status, &ad.Category,
+		&ad.Author.PhotoUrl, &ad.Header /*&ad.Text,*/, &ad.Region, &ad.District, &ad.IsAuction, &ad.FeedbackType,
+		&extraFieldTry, &timeStamp /*&lat, &long,*/, &ad.Status, &ad.Category,
 		&ad.CommentsCount, &ad.Hidden)
 	if err != nil {
 		return nil, err

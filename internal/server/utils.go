@@ -141,7 +141,7 @@ func SetJWTToCookie(secret []byte, userId int, w http.ResponseWriter, minutes in
 	expirationTime := time.Now().Add(time.Duration(minutes) * time.Minute)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"expires": expirationTime.Unix(),
-		"userId": userId,
+		"userId":  userId,
 	})
 	tokenString, err := token.SignedString(secret)
 	if err != nil {
@@ -149,11 +149,11 @@ func SetJWTToCookie(secret []byte, userId int, w http.ResponseWriter, minutes in
 	}
 
 	http.SetCookie(w, &http.Cookie{
-		Name:    cookieField,
-		Value:   tokenString,
-		Expires: expirationTime,
+		Name:     cookieField,
+		Value:    tokenString,
+		Expires:  expirationTime,
 		HttpOnly: true,
-		Path:"/",
+		Path:     "/",
 	})
 	return nil
 }
