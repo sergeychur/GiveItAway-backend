@@ -78,3 +78,14 @@ services:
       - ./data/certbot/www:/var/www/certbot
     entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
 
+  centrifugal:
+    image: centrifugo/centrifugo
+    restart: unless-stopped
+    networks:
+      - uniting_net
+    command: centrifugo -c centrifugo_config.json
+    ports:
+      - "8000:8000"
+    expose:
+      - 8000
+
