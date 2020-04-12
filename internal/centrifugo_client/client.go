@@ -61,7 +61,7 @@ func (cl *CentrifugoClient) SendAllFromList(ctx context.Context, notification mo
 	}
 }
 
-func (cl *CentrifugoClient) SendToChannel(ctx context.Context, notification models.Notification, channelName string) {
+func (cl *CentrifugoClient) SendToChannel(ctx context.Context, notification interface{}, channelName string) {
 	data, err := json.Marshal(notification)
 	if err != nil {
 		log.Println(err)

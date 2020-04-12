@@ -3,7 +3,9 @@ package server
 import (
 	"fmt"
 	"github.com/go-chi/chi"
+	"github.com/sergeychur/give_it_away/internal/database"
 	"github.com/sergeychur/give_it_away/internal/models"
+	"log"
 	"net/http"
 	"strconv"
 )
@@ -61,6 +63,11 @@ func (server *Server) CommentAd(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	retVal, status := server.db.CreateComment(adId, userId, comment)
+	// TODO: mb go func
+	if status == database.CREATED {
+		note := FormNewCommentUpdate(retVal)
+		server.NotificationSender.SendToChannel(r.Context(), note, fmt.Sprintf("ad_%d", adId))
+	}
 	DealRequestFromDB(w, retVal, status)
 }
 
@@ -82,7 +89,17 @@ func (server *Server) EditComment(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
+	// todo: check
 	retVal, status := server.db.EditComment(commentId, userId, comment)
+	adId, err := server.db.GetAdIdForComment(int(retVal.CommentId))
+	if err != nil {
+		log.Println(err)
+	}
+	if status == database.CREATED {
+		// TODO: mb go func
+		note := FormEditCommentUpdate(retVal)
+		server.NotificationSender.SendToChannel(r.Context(), note, fmt.Sprintf("ad_%d", adId))
+	}
 	DealRequestFromDB(w, retVal, status)
 }
 
@@ -98,6 +115,16 @@ func (server *Server) DeleteComment(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		WriteToResponse(w, http.StatusInternalServerError, fmt.Errorf("server cannot get userId from cookie"))
 	}
+	adId, err := server.db.GetAdIdForComment(int(commentId))
 	status := server.db.DeleteComment(commentId, userId)
+	if err != nil {
+		log.Println(err)
+	}
+	// Todo: check
+	if status == database.OK {
+		// todo: mb go func
+		note := FormDeleteCommentUpdate()
+		server.NotificationSender.SendToChannel(r.Context(), note, fmt.Sprintf("ad_%d", adId))
+	}
 	DealRequestFromDB(w, "OK", status)
 }

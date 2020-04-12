@@ -20,6 +20,7 @@ const (
 
 	UpdateComment = "UPDATE comment SET text = $2 WHERE comment_id = $1"
 	DeleteComment = "DELETE FROM comment WHERE comment_id = $1"
+	GetCommentAdId = "SELECT ad_id FROM comment WHERE comment_id = $1"
 )
 
 func (db *DB) GetComments(adId int, page int, rowsPerPage int) ([]models.CommentForUser, int) {
@@ -122,4 +123,13 @@ func (db *DB) DeleteComment(commentId int, userId int) int {
 		return DB_ERROR
 	}
 	return OK
+}
+
+func (db *DB) GetAdIdForComment(commentId int) (int, error) {
+	adId := 0
+	err := db.db.QueryRow(GetCommentAdId, commentId).Scan(&adId)
+	if err != nil {
+		return 0, err
+	}
+	return adId, nil
 }
