@@ -83,7 +83,9 @@ services:
     restart: unless-stopped
     networks:
       - uniting_net
-    command: centrifugo -c centrifugo_config.json
+    command: centrifugo -c /centrifuge/centrifugo_config.json
+    volumes: 
+      - ./config:/centrifuge/
     ports:
       - "8000:8000"
     expose:
