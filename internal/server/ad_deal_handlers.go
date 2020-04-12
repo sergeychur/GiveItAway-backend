@@ -77,6 +77,7 @@ func (server *Server) UnsubscribeFromAd(w http.ResponseWriter, r *http.Request) 
 	// todo maybe send notification to ad viewers here too
 	status := server.db.UnsubscribeFromAd(adId, userId)
 	DealRequestFromDB(w, "OK", status)
+
 }
 
 func (server *Server) MakeDeal(w http.ResponseWriter, r *http.Request) {

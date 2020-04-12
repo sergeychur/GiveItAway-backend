@@ -14,6 +14,7 @@ const (
 	AD_DELETED           = "deleted"
 	AUTHOR_CANCELLED     = "authorCancel"
 	SUBSCRIBER_CANCELLED = "subscriberCancel"
+	COMMENT_CREATED = "new_comment"
 )
 
 var (

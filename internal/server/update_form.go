@@ -9,6 +9,7 @@ const (
 	EDIT_AD = "edit_ad"
 	NEW_SUBSCRIBER = "new_subscriber"
 	AD_CLOSE = "ad_close"
+	STATUS_CHANGED = "status_changed"
 )
 
 func FormNewCommentUpdate(comment models.CommentForUser) models.AdUpdate {
@@ -58,4 +59,45 @@ func FormDealcreatedUpdate(deal models.DealDetails) models.AdUpdate {
 	}
 }
 
+func FormFulfillDealUpdate(note models.Notification) (*models.AdUpdate, int) {
+	fulfillInfo, ok := note.Payload.(models.AdStatusChanged)
+	if !ok {
+		return nil, 0
+	}
 
+	newStatus := models.AdNewStatus{
+		NewStatus: fulfillInfo.Ad.Status,
+	}
+
+	return &models.AdUpdate{
+		Payload: newStatus,
+		Type: STATUS_CHANGED,
+	}, int(fulfillInfo.Ad.AdId)
+}
+
+func FormCancelDealUpdate(note models.Notification) (*models.AdUpdate, int) {
+	cancelInfoAuthor, ok := note.Payload.(models.AuthorCancelled)
+	if ok {
+		newStatus := models.AdNewStatus{
+			NewStatus: cancelInfoAuthor.Ad.Status,
+		}
+
+		return &models.AdUpdate{
+			Payload: newStatus,
+			Type: STATUS_CHANGED,
+		}, int(cancelInfoAuthor.Ad.AdId)
+	} else {
+		cancelInfoSubscriber, ok := note.Payload.(models.SubscriberCancelled)
+		if ok {
+			newStatus := models.AdNewStatus{
+				NewStatus: cancelInfoSubscriber.Ad.Status,
+			}
+
+			return &models.AdUpdate{
+				Payload: newStatus,
+				Type: STATUS_CHANGED,
+			}, int(cancelInfoSubscriber.Ad.AdId)
+		}
+	}
+	return nil, 0
+}

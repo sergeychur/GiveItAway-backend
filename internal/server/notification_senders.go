@@ -58,6 +58,9 @@ func (server *Server) FulFillDealSendUpd(dealId int, notifications []models.Noti
 	} else {
 		log.Println(err)
 	}
+	// todo send change status (user who fulfilled or deal?)
+	upd, adId := FormFulfillDealUpdate(notification)
+	server.NotificationSender.SendToChannel(r.Context(), upd, fmt.Sprintf("ad_%d", adId))
 }
 
 func (server *Server) CancelDealSendUpd(err error, cancelInfo models.CancelInfo, userId int,
@@ -83,6 +86,9 @@ func (server *Server) CancelDealSendUpd(err error, cancelInfo models.CancelInfo,
 	} else {
 		log.Println(err)
 	}
+
+	upd, adId := FormCancelDealUpdate(note)
+	server.NotificationSender.SendToChannel(r.Context(), upd, fmt.Sprintf("ad_%d", adId))
 }
 
 func (server *Server) SubscribeToAdSendUpd(userId, adId int, r *http.Request) {
@@ -93,7 +99,6 @@ func (server *Server) SubscribeToAdSendUpd(userId, adId int, r *http.Request) {
 		if err != nil {
 			log.Println(err)
 		} else {
-
 			server.NotificationSender.SendOneClient(r.Context(), notification, notification.WhomId)
 			// todo: maybe remake, talk with Artyom
 			newSubUpd := FormNewSubscriberUpdate(notification)

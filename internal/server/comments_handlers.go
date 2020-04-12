@@ -63,12 +63,24 @@ func (server *Server) CommentAd(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	retVal, status := server.db.CreateComment(adId, userId, comment)
+	DealRequestFromDB(w, retVal, status)
 	// TODO: mb go func
 	if status == database.CREATED {
+		// todo: check notification to author
 		note := FormNewCommentUpdate(retVal)
 		server.NotificationSender.SendToChannel(r.Context(), note, fmt.Sprintf("ad_%d", adId))
+		noteToAuthor, err := server.db.FormNewCommentNotif(retVal, adId)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		err = server.db.InsertNotification(noteToAuthor.WhomId, noteToAuthor)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		server.NotificationSender.SendOneClient(r.Context(), noteToAuthor, noteToAuthor.WhomId)
 	}
-	DealRequestFromDB(w, retVal, status)
 }
 
 func (server *Server) EditComment(w http.ResponseWriter, r *http.Request) {
