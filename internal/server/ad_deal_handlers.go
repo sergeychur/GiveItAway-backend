@@ -25,6 +25,8 @@ func (server *Server) SubscribeToAd(w http.ResponseWriter, r *http.Request) {
 		notification, err := server.db.FormRespondNotification(userId, adId)
 		if err == nil {
 			err = server.db.InsertNotification(notification.WhomId, notification)
+			// done
+			server.NotificationSender.SendOneClient(r.Context(), notification, notification.WhomId)
 			if err != nil {
 				log.Println(err)
 			}
@@ -113,6 +115,8 @@ func (server *Server) MakeDeal(w http.ResponseWriter, r *http.Request) {
 		notification, err := server.db.FormAdClosedNotification(dealId, initiatorId, subscriberId)
 		if err == nil {
 			err = server.db.InsertNotification(subscriberId, notification)
+			// TODO :done
+			server.NotificationSender.SendOneClient(r.Context(), notification, subscriberId)
 			if err != nil {
 				log.Println(err)
 			}
@@ -121,6 +125,8 @@ func (server *Server) MakeDeal(w http.ResponseWriter, r *http.Request) {
 		}
 		notifications, err := server.db.FormStatusChangedNotificationsByDeal(dealId)
 		if err == nil {
+			// TODO:done
+			server.NotificationSender.SendAllNotifications(r.Context(), notifications)
 			err = server.db.InsertNotifications(notifications)
 			if err != nil {
 				log.Println(err)
@@ -150,6 +156,8 @@ func (server *Server) FulfillDeal(w http.ResponseWriter, r *http.Request) {
 	if status == database.OK { // TODO: mb go func
 		notification, err := server.db.FormFulfillDealNotification(dealId)
 		if err == nil {
+			// TODO(FULFILL): done
+			server.NotificationSender.SendOneClient(r.Context(), notification, notification.WhomId)
 			err = server.db.InsertNotification(notification.WhomId, notification)
 			if err != nil {
 				log.Println(err)
@@ -157,6 +165,8 @@ func (server *Server) FulfillDeal(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if err == nil {
+			// TODO(FULFILL): done
+			server.NotificationSender.SendAllNotifications(r.Context(), notifications)
 			err = server.db.InsertNotifications(notifications)
 		} else {
 			log.Println(err)
@@ -180,6 +190,8 @@ func (server *Server) CancelDeal(w http.ResponseWriter, r *http.Request) {
 	status, cancelInfo := server.db.CancelDeal(dealId, userId)
 	if status == database.OK { // TODO: mb go func
 		if err == nil {
+			// TODO(CANCEL): done
+			server.NotificationSender.SendAllNotifications(r.Context(), notifications)
 			err = server.db.InsertNotifications(notifications)
 			if err != nil {
 				log.Println(err)
@@ -189,6 +201,8 @@ func (server *Server) CancelDeal(w http.ResponseWriter, r *http.Request) {
 		}
 		note, err := server.db.FormCancelNotification(cancelInfo.CancelType, userId, cancelInfo.AdId)
 		if err == nil {
+			// TODO(CANCEL): done
+			server.NotificationSender.SendOneClient(r.Context(), note, cancelInfo.WhomId)
 			err = server.db.InsertNotification(cancelInfo.WhomId, note)
 			if err != nil {
 				log.Println(err)

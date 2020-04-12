@@ -74,10 +74,15 @@ func (server *Server) DeleteAd(w http.ResponseWriter, r *http.Request) {
 		WriteToResponse(w, http.StatusInternalServerError, fmt.Errorf("server cannot get userId from cookie"))
 		return
 	}
+	notificationsArr, errNotif := server.db.FormStatusChangedNotificationsByAd(adId,
+		true, notifications.AD_DELETED)
+
+	status := server.db.DeleteAd(adId, userId)
+	DealRequestFromDB(w, "OK", status)
 	{
-		notificationsArr, err := server.db.FormStatusChangedNotificationsByAd(adId,
-			true, notifications.AD_DELETED)
-		if err == nil {
+
+		if errNotif == nil {
+			server.NotificationSender.SendAllNotifications(r.Context(), notificationsArr)
 			err = server.db.InsertNotifications(notificationsArr)
 			if err != nil {
 				log.Println(err)
@@ -85,11 +90,8 @@ func (server *Server) DeleteAd(w http.ResponseWriter, r *http.Request) {
 		} else {
 			log.Println(err)
 		}
+
 	}
-
-	status := server.db.DeleteAd(adId, userId)
-	DealRequestFromDB(w, "OK", status)
-
 	if status == database.OK {
 		err = filesystem.DeleteAdPhotos(server.config.UploadPath, adId)
 		if err != nil {
@@ -147,6 +149,7 @@ func (server *Server) EditAd(w http.ResponseWriter, r *http.Request) {
 		WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("wrong feedback type"))
 		return
 	}
+	// TODO(EDIT): send notification to all, who are on the page of ad
 	status := server.db.EditAd(adId, userId, ad)
 	DealRequestFromDB(w, "OK", status)
 }
