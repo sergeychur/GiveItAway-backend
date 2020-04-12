@@ -149,8 +149,18 @@ func (server *Server) EditAd(w http.ResponseWriter, r *http.Request) {
 		WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("wrong feedback type"))
 		return
 	}
-	// TODO(EDIT): send notification to all, who are on the page of ad
+	// TODO(EDIT): check this
+
 	status := server.db.EditAd(adId, userId, ad)
+	if status == database.OK {
+		retVal, getStatus := server.db.GetAd(adId, userId)
+		if getStatus != database.OK {
+			log.Println("cannot get ad, strange")
+		} else {
+			note := FormEditAdUpdate(retVal)
+			server.NotificationSender.SendToChannel(r.Context(), note, fmt.Sprintf("ad_%d", adId))
+		}
+	}
 	DealRequestFromDB(w, "OK", status)
 }
 

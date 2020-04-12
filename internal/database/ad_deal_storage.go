@@ -220,6 +220,20 @@ func (db *DB) GetDealForAd(adId int) (models.DealDetails, int) {
 	return deal, FOUND
 }
 
+func (db *DB) GetDealById(dealId int) (models.DealDetails, int) {
+	deal := models.DealDetails{}
+	err := db.db.QueryRow(GetDeal, dealId).Scan(&deal.DealId, &deal.AdId, &deal.SubscriberId, &deal.Status)
+	if err == pgx.ErrNoRows {
+		return deal, EMPTY_RESULT
+	}
+	if err != nil {
+		return deal, DB_ERROR
+	}
+	return deal, FOUND
+}
+
+
+
 func (db *DB) GetAdSubscribers(adId int, page int, rowsPerPage int) ([]models.User, int) {
 	offset := rowsPerPage * (page - 1)
 	rows, err := db.db.Query(GetAdSubscribers, adId, rowsPerPage, offset)
