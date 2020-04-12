@@ -183,3 +183,15 @@ func (server *Server) GetUserIdFromCookie(r *http.Request) (int, error) {
 	}
 	return int(StrUserId.Id), nil
 }
+
+func GenerateCentrifugoToken(userId int, minutes int, secret []byte) (models.CentInfo, error) {
+	expirationTime := time.Now().Add(time.Duration(minutes) * time.Minute)
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"exp": expirationTime.Unix(),
+		"sub": strconv.Itoa(userId),
+	})
+	tokenStr, err := token.SignedString(secret)
+	return models.CentInfo{
+		Token: tokenStr,
+	}, err
+}

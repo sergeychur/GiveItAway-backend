@@ -5,6 +5,7 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/sergeychur/give_it_away/internal/auth"
+	"github.com/sergeychur/give_it_away/internal/centrifugo_client"
 	"github.com/sergeychur/give_it_away/internal/config"
 	"github.com/sergeychur/give_it_away/internal/database"
 	"github.com/sergeychur/give_it_away/internal/middlewares"
@@ -18,6 +19,7 @@ import (
 type Server struct {
 	router *chi.Mux
 	db     *database.DB
+	NotificationSender *centrifugo_client.CentrifugoClient
 	config *config.Config
 	AuthClient auth.AuthClient
 	CookieField string
@@ -80,6 +82,10 @@ func NewServer(pathToConfig string) (*Server, error) {
 	needLogin.Put(fmt.Sprintf("/comment/{comment_id:%s}", idPattern), server.EditComment)
 	needLogin.Delete(fmt.Sprintf("/comment/{comment_id:%s}", idPattern), server.DeleteComment)
 
+	// centrifugo token
+	needLogin.Get("/ws_token", server.GetCentrifugoToken)
+	subRouter.Get("/test_cent", server.TestCentrifugo)
+
 	r.Mount("/api/", subRouter)
 	subRouter.Mount("/", needLogin)
 
@@ -92,6 +98,7 @@ func NewServer(pathToConfig string) (*Server, error) {
 	db := database.NewDB(server.config.DBUser, server.config.DBPass,
 		server.config.DBName, server.config.DBHost, uint16(dbPort))
 	server.db = db
+	server.NotificationSender = centrifugo_client.NewClient(server.config.CentrifugoHost, server.config.CentrifugoPort, server.config.ApiKey)
 	return server, nil
 }
 

@@ -19,6 +19,9 @@ type Config struct {
 	Secret       string   `json:"secret"`
 	AllowedHosts []string `json:"allowedHosts,omitempty"`
 	UploadPath   string   `json:"uploadPath,omitempty"`
+	ApiKey string `json:"api_key"`
+	CentrifugoPort string `json:"centrifugo_port"`
+	CentrifugoHost string `json:"centrifugo_host"`
 }
 
 func NewConfig(pathToConfig string) (*Config, error) {
