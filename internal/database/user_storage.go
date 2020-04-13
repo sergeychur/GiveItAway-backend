@@ -4,10 +4,16 @@ import (
 	"github.com/sergeychur/give_it_away/internal/models"
 	"gopkg.in/jackc/pgx.v2"
 	"log"
+	"time"
 )
 
 const (
+	GetUserProfileById = "SELECT u.vk_id, u.carma, u.name, u.surname, u.photo_url, u.registration_date_time, u.frozen_carma, " +
+		"u_s.total_earned_carma, u_s.total_spent_carma, u_s.total_given_ads, u_s.total_received_ads, " +
+		"u_s.total_aborted_ads FROM users u JOIN users_stats u_s ON u_s.user_id = u.vk_id WHERE u.vk_id = $1"
+
 	GetUserById = "SELECT * FROM users WHERE vk_id = $1"
+
 	CreateUser  = "INSERT INTO users (vk_id, name, surname, photo_url) VALUES ($1, $2, $3, $4)"
 	GetReceived = "SELECT a.ad_id, u.vk_id, u.carma, u.name, u.surname, u.photo_url, a.header, a.region," +
 		" a.district, a.is_auction, a.feedback_type, a.extra_field, a.creation_datetime, a.status," +
@@ -19,6 +25,25 @@ const (
 		" a.category, a.comments_count, a.hidden FROM ad a JOIN (SELECT ad_id FROM ad WHERE status = 'closed'" +
 		" AND author_id = $1 ORDER BY ad_id LIMIT $2 OFFSET $3) l ON (l.ad_id = a.ad_id) JOIN users u ON (a.author_id = u.vk_id) ORDER BY ad_id"
 )
+
+func (db *DB) GetUserProfile(userId int) (models.UserForProfile, int) {
+	row := db.db.QueryRow(GetUserProfileById, userId)
+	user := models.UserForProfile{}
+	timeStamp := time.Time{}
+	err := row.Scan(&user.VkId, &user.Carma, &user.Name, &user.Surname, &user.PhotoUrl, &timeStamp, &user.FrozenCarma,
+		&user.TotalEarnedCarma, &user.TotalSpentCarma, &user.TotalGivenAds, &user.TotalReceivedAds, &user.TotalAbortedAds)
+	if err == pgx.ErrNoRows {
+		return user, EMPTY_RESULT
+	}
+	if err != nil {
+		log.Println(err.Error())
+		return user, DB_ERROR
+	}
+	loc, _ := time.LoadLocation("UTC")
+	timeStamp.In(loc)
+	user.RegistrationDate = timeStamp.Format("02 Jan 06 15:04 UTC")
+	return user, FOUND
+}
 
 func (db *DB) GetUser(userId int) (models.User, int) {
 	row := db.db.QueryRow(GetUserById, userId)

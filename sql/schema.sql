@@ -14,6 +14,8 @@ DROP TRIGGER IF EXISTS update_comments_count ON comment;
 DROP FUNCTION IF EXISTS update_comments_count;
 drop trigger if exists ad_view_create on ad;
 drop function if exists ad_view_create();
+drop trigger if exists users_stats_create on users;
+drop function if exists user_stats_create();
 
 
 DROP INDEX IF EXISTS ad_geos;
@@ -28,7 +30,21 @@ CREATE TABLE users (
     carma int NOT NULL default 0,
     name citext,
     surname citext,
-    photo_url text
+    photo_url text,
+    registration_date_time TIMESTAMP WITH TIME ZONE default (now() at time zone 'utc'),
+    frozen_carma int NOT NULL default 0
+);
+
+CREATE TABLE users_stats (
+    user_stats_id bigserial CONSTRAINT users_stats_pk PRIMARY KEY,
+    user_id bigint,
+    CONSTRAINT users_stats_users FOREIGN KEY (user_id)
+        REFERENCES users (vk_id) ON UPDATE CASCADE ON DELETE NO ACTION,
+    total_earned_carma bigint not null default 0,
+    total_spent_carma bigint not null default 0,
+    total_given_ads bigint not null default 0,
+    total_received_ads bigint not null default 0,
+    total_aborted_ads bigint not null default 0
 );
 
 DROP TYPE IF EXISTS feedback;
@@ -48,7 +64,7 @@ CREATE TABLE ad (
     is_auction boolean,
     feedback_type feedback,
     extra_field citext,
-    creation_datetime TIMESTAMP WITH TIME ZONE default now(),
+    creation_datetime TIMESTAMP WITH TIME ZONE default (now() at time zone 'utc'),
     lat float,
     long float,
     geo_position geography,
@@ -116,7 +132,7 @@ CREATE OR REPLACE FUNCTION close_deal_success(deal_id_to_upd INT) RETURNS void A
     BEGIN
         UPDATE deal SET status = 'success' WHERE deal_id = deal_id_to_upd RETURNING ad_id INTO _ad_id;
         UPDATE ad SET status = 'closed' WHERE ad_id = _ad_id;
-        DELETE FROM ad_subscribers WHERE ad_id = _ad_id; TODO: dunno if needed
+        DELETE FROM ad_subscribers WHERE ad_id = _ad_id;
     END;
     $$ LANGUAGE 'plpgsql';
 
@@ -148,7 +164,7 @@ CREATE TABLE notifications (
     CONSTRAINT notification_user FOREIGN KEY (user_id)
         REFERENCES users (vk_id) ON UPDATE CASCADE ON DELETE NO ACTION,
     notification_type citext,
-    creation_datetime TIMESTAMP WITH TIME ZONE default now(),
+    creation_datetime TIMESTAMP WITH TIME ZONE default (now() at time zone 'utc'),
     payload bytea,
     is_read boolean NOT NULL DEFAULT false
 );
@@ -159,7 +175,7 @@ CREATE TABLE comment (
     CONSTRAINT comment_ad FOREIGN KEY (ad_id)
         REFERENCES ad (ad_id) ON UPDATE CASCADE ON DELETE CASCADE,
     text citext,
-    creation_datetime TIMESTAMP WITH TIME ZONE default now(),
+    creation_datetime TIMESTAMP WITH TIME ZONE default (now() at time zone 'utc'),
     author_id bigint,
     CONSTRAINT comment_user FOREIGN KEY (author_id)
         REFERENCES users (vk_id) ON UPDATE CASCADE ON DELETE NO ACTION
@@ -189,3 +205,13 @@ $ad_view_create$ LANGUAGE plpgsql;
 CREATE TRIGGER ad_view_create AFTER INSERT ON ad
     FOR EACH ROW EXECUTE PROCEDURE ad_view_create();
 
+
+CREATE FUNCTION user_stats_create() RETURNS trigger AS $user_stats_create$
+BEGIN
+    INSERT INTO users_stats (user_id) VALUES (new.vk_id);
+    RETURN NULL;
+END;
+$user_stats_create$ LANGUAGE plpgsql;
+
+CREATE TRIGGER users_stats_create AFTER INSERT ON users
+    FOR EACH ROW EXECUTE PROCEDURE user_stats_create();

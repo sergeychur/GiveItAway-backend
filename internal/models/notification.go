@@ -1,6 +1,7 @@
 package models
 
 type Notification struct {
+	NotificationId int	`json:"notification_id"` 
 	NotificationType string      `json:"notification_type"`
 	WhomId           int         /*`json:"whom_id,omitempty"`*/
 	CreationDateTime string      `json:"creation_date_time"`

@@ -42,7 +42,9 @@ func (db *DB) GetComments(adId int, page int, rowsPerPage int) ([]models.Comment
 		if err != nil {
 			return nil, DB_ERROR
 		}
-		comment.CreationDateTime = timeStamp.Format("01.02.2006 15:04")
+		loc, _ := time.LoadLocation("UTC")
+		timeStamp.In(loc)
+		comment.CreationDateTime = timeStamp.Format("02 Jan 06 15:04 UTC")
 		comments = append(comments, comment)
 	}
 
@@ -76,7 +78,9 @@ func (db *DB) CreateComment(adId int, userId int, comment models.Comment) (model
 	if err != nil {
 		return models.CommentForUser{}, DB_ERROR
 	}
-	retVal.CreationDateTime = timeStamp.Format("01.02.2006 15:04")
+	loc, _ := time.LoadLocation("UTC")
+	timeStamp.In(loc)
+	retVal.CreationDateTime = timeStamp.Format("02 Jan 06 15:04 UTC")
 	return retVal, CREATED
 }
 
@@ -103,7 +107,9 @@ func (db *DB) EditComment(commentId int, userId int, comment models.Comment) (mo
 	if err != nil {
 		return models.CommentForUser{}, DB_ERROR
 	}
-	retVal.CreationDateTime = timeStamp.Format("01.02.2006 15:04")
+	loc, _ := time.LoadLocation("UTC")
+	timeStamp.In(loc)
+	retVal.CreationDateTime = timeStamp.Format("02 Jan 06 15:04 UTC")
 	return retVal, CREATED
 }
 

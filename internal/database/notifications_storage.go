@@ -44,17 +44,18 @@ func (db *DB) GetNotifications(userId int, page int, rowsPerPage int) ([]models.
 		notification := models.Notification{}
 		timeStamp := time.Time{}
 		var payload []byte
-		id := 0
-		err = rows.Scan(&id, &notification.NotificationType, &timeStamp, &payload, &notification.IsRead)
+		err = rows.Scan(&notification.NotificationId, &notification.NotificationType, &timeStamp, &payload, &notification.IsRead)
 		if err != nil {
 			return nil, DB_ERROR
 		}
-		notification.CreationDateTime = timeStamp.Format("01.02.2006 15:04")
+		loc, _ := time.LoadLocation("UTC")
+		timeStamp.In(loc)
+		notification.CreationDateTime = timeStamp.String()
 		notification.Payload, err = notifications.FormPayLoad(payload, notification.NotificationType)
 		if err != nil {
 			return nil, DB_ERROR
 		}
-		_, err = db.db.Exec(SetReadTrue, id)
+		_, err = db.db.Exec(SetReadTrue, notification.NotificationId)
 		if err != nil {
 			return nil, DB_ERROR
 		}
@@ -66,7 +67,10 @@ func (db *DB) GetNotifications(userId int, page int, rowsPerPage int) ([]models.
 func (db *DB) FormAdClosedNotification(dealId int, initiatorId int, subscriberId int) (models.Notification, error) {
 	note := models.Notification{}
 	note.NotificationType = notifications.AD_CLOSE
-	note.CreationDateTime = time.Now().Format("01.02.2006 15:04")
+	loc, _ := time.LoadLocation("UTC")
+	timeStamp := time.Now()
+	timeStamp.In(loc)
+	note.CreationDateTime = timeStamp.String()
 	note.IsRead = false
 	val := &models.AuthorClosedAd{}
 	val.DealId = dealId
@@ -87,7 +91,10 @@ func (db *DB) FormAdClosedNotification(dealId int, initiatorId int, subscriberId
 func (db *DB) FormRespondNotification(subscriberId int, adId int) (models.Notification, error) {
 	note := models.Notification{}
 	note.NotificationType = notifications.AD_RESPOND
-	note.CreationDateTime = time.Now().Format("01.02.2006 15:04")
+	timeStamp := time.Now()
+	loc, _ := time.LoadLocation("UTC")
+	timeStamp.In(loc)
+	note.CreationDateTime = timeStamp.String()
 	note.IsRead = false
 	val := &models.UserSubscribed{}
 	err := db.db.QueryRow(GetAdForNotif, adId).Scan(&val.Ad.AdId, &val.Ad.Header, &val.Ad.Status, &note.WhomId)
@@ -107,7 +114,10 @@ func (db *DB) FormRespondNotification(subscriberId int, adId int) (models.Notifi
 func (db *DB) FormStatusChangedNotification(adId int, isDeleted bool, noteType string) (models.Notification, error) {
 	note := models.Notification{}
 	note.NotificationType = noteType
-	note.CreationDateTime = time.Now().Format("01.02.2006 15:04")
+	timeStamp := time.Now()
+	loc, _ := time.LoadLocation("UTC")
+	timeStamp.In(loc)
+	note.CreationDateTime = timeStamp.String()
 	note.IsRead = false
 	val := models.AdStatusChanged{}
 	err := db.db.QueryRow(GetAdForNotif, adId).Scan(&val.Ad.AdId, &val.Ad.Header, &val.Ad.Status, &note.WhomId)
@@ -186,7 +196,10 @@ func (db *DB) FormStatusChangedNotificationsByAd(adId int, isDeleted bool, noteT
 
 func (db *DB) FormCancelNotification(cancelType string, initiatorId int, adId int) (models.Notification, error) {
 	note := models.Notification{}
-	note.CreationDateTime = time.Now().Format("01.02.2006 15:04")
+	timeStamp := time.Now()
+	loc, _ := time.LoadLocation("UTC")
+	timeStamp.In(loc)
+	note.CreationDateTime = timeStamp.String()
 	note.IsRead = false
 	ad := models.AdForNotification{}
 	whomId := 0
@@ -220,7 +233,8 @@ func (db *DB) FormCancelNotification(cancelType string, initiatorId int, adId in
 }
 
 func (db *DB) InsertNotification(whomId int, notification models.Notification) error {
-	creation, err := time.Parse("01.02.2006 15:04", notification.CreationDateTime)
+	// 2009-11-10 23:00:00 +0000 UTC
+	creation, err := time.Parse("02 Jan 06 15:04 UTC", notification.CreationDateTime)
 	if err != nil {
 		return err
 	}
@@ -238,7 +252,7 @@ func (db *DB) InsertNotifications(notes []models.Notification) error {
 		return err
 	}
 	for _, notification := range notes {
-		creation, err := time.Parse("01.02.2006 15:04", notification.CreationDateTime)
+		creation, err := time.Parse("02 Jan 06 15:04 UTC", notification.CreationDateTime)
 		if err != nil {
 			return err
 		}
