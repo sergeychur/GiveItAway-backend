@@ -51,3 +51,71 @@ func (server *Server) GetUserInfo(w http.ResponseWriter, r *http.Request) {
 	user, status := server.db.GetUser(userId)
 	DealRequestFromDB(w, &user, status)
 }
+
+func (server *Server) GetGiven(w http.ResponseWriter, r *http.Request) {
+	userIdStr := chi.URLParam(r, "user_id")
+	userId, err := strconv.Atoi(userIdStr)
+	if err != nil {
+		WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("id should be int"))
+		return
+	}
+
+	params := r.URL.Query()
+	pageArr, ok := params["page"]
+	if !ok {
+		WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("page and rows per page have to be in get params and int"))
+		return
+	}
+	page, err := strconv.Atoi(pageArr[0])
+	if err != nil || page < 1 {
+		WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("page and rows per page have to be in get params and int"))
+		return
+	}
+	rowsPerPageArr, ok := params["rows_per_page"]
+	if !ok || len(rowsPerPageArr) != 1 {
+		WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("page and rows per page have to be in get params and int"))
+		return
+	}
+	rowsPerPage, err := strconv.Atoi(rowsPerPageArr[0])
+	if err != nil || rowsPerPage < 1 {
+		WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("page and rows per page have to be in get params and int"))
+		return
+	}
+
+	ads, status := server.db.GetGiven(userId, page, rowsPerPage)
+	DealRequestFromDB(w, ads, status)
+}
+
+func (server *Server) GetReceived(w http.ResponseWriter, r *http.Request) {
+	userIdStr := chi.URLParam(r, "user_id")
+	userId, err := strconv.Atoi(userIdStr)
+	if err != nil {
+		WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("id should be int"))
+		return
+	}
+
+	params := r.URL.Query()
+	pageArr, ok := params["page"]
+	if !ok {
+		WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("page and rows per page have to be in get params and int"))
+		return
+	}
+	page, err := strconv.Atoi(pageArr[0])
+	if err != nil || page < 1 {
+		WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("page and rows per page have to be in get params and int"))
+		return
+	}
+	rowsPerPageArr, ok := params["rows_per_page"]
+	if !ok || len(rowsPerPageArr) != 1 {
+		WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("page and rows per page have to be in get params and int"))
+		return
+	}
+	rowsPerPage, err := strconv.Atoi(rowsPerPageArr[0])
+	if err != nil || rowsPerPage < 1 {
+		WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("page and rows per page have to be in get params and int"))
+		return
+	}
+
+	ads, status := server.db.GetReceived(userId, page, rowsPerPage)
+	DealRequestFromDB(w, ads, status)
+}
