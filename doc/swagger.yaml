@@ -741,7 +741,7 @@ paths:
   /user/{user_id}/given:
     get:
       tags:
-        - "user"
+        - "ad"
       summary: "Получить объявления, вещи из которых отдал юзер"
       produces:
         - "application/json"
@@ -775,7 +775,7 @@ paths:
   /user/{user_id}/received:
     get:
       tags:
-        - "user"
+        - "ad"
       summary: "Получить объявления, вещи из которых забрал юзер"
       produces:
         - "application/json"
@@ -835,6 +835,19 @@ paths:
           description: "unauthaurized"
         404:
           description: "no notifications were found"
+
+  /notifications_count:
+    get:
+      tags:
+        - "notification"
+      summary: "Получить число непрочитанных уведомлений"
+      responses:
+        200:
+          description: "counted"
+          schema:
+            $ref: "#/definitions/NotificationsCount"
+        401:
+          description: "unauthorized"
   /ws_token:
     get:
       tags:
@@ -1116,3 +1129,8 @@ definitions:
       token:
         type: string
         example: "jerfherwfbr43b3rb4rhbfefgvqwe"
+  NotificationsCount:
+    type: "object"
+    properties:
+      number:
+        type: integer

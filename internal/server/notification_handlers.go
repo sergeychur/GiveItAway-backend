@@ -37,6 +37,15 @@ func (server *Server) GetNotifications(w http.ResponseWriter, r *http.Request) {
 	DealRequestFromDB(w, notifications, status)
 }
 
+func (server *Server) CountUnreadNotes(w http.ResponseWriter, r *http.Request) {
+	userId, err := server.GetUserIdFromCookie(r)
+	if err != nil {
+		WriteToResponse(w, http.StatusInternalServerError, fmt.Errorf("server cannot get userId from cookie"))
+	}
+	num, status := server.db.GetUnreadNotesCount(userId)
+	DealRequestFromDB(w, num, status)
+}
+
 func (server *Server) GetCentrifugoToken(w http.ResponseWriter, r *http.Request) {
 	userId, err := server.GetUserIdFromCookie(r)
 	if err != nil {

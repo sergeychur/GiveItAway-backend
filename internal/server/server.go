@@ -71,6 +71,7 @@ func NewServer(pathToConfig string) (*Server, error) {
 
 	// notifications
 	needLogin.Get("/notifications", server.GetNotifications)
+	needLogin.Get("/notifications_count", server.CountUnreadNotes)
 
 	// user
 	subRouter.Post("/user/auth", server.AuthUser)

@@ -6,6 +6,9 @@ import (
 	"time"
 )
 
+const (
+	GetUnreadNotesNumber = "SELECT COUNT(*) FROM notifications WHERE is_read = false AND user_id = $1"
+)
 
 func (db *DB) FormNewCommentNotif(comment models.CommentForUser, adId int) (models.Notification, error) {
 	note := models.Notification{}
@@ -20,4 +23,13 @@ func (db *DB) FormNewCommentNotif(comment models.CommentForUser, adId int) (mode
 	note.WhomId = authorId
 	note.NotificationType = notifications.COMMENT_CREATED
 	return note, nil
+}
+
+func (db *DB) GetUnreadNotesCount(userId int) (models.NotesNumber, int){
+	num := models.NotesNumber{}
+	err := db.db.QueryRow(GetUnreadNotesNumber, userId).Scan(&num.Number)
+	if err != nil {
+		return models.NotesNumber{}, DB_ERROR
+	}
+	return num, FOUND
 }
