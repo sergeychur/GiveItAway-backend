@@ -9,6 +9,7 @@ DROP TABLE IF EXISTS comment;
 
 DROP FUNCTION IF EXISTS make_deal;
 DROP FUNCTION IF EXISTS close_deal_success;
+DROP FUNCTION IF EXISTS close_deal_fail_by_subscriber;
 DROP FUNCTION IF EXISTS close_deal_fail_by_author;
 DROP TRIGGER IF EXISTS update_comments_count ON comment;
 DROP FUNCTION IF EXISTS update_comments_count;
@@ -128,10 +129,17 @@ CREATE OR REPLACE FUNCTION make_deal(ad_id_to_insert INT, subscriber_id_to_inser
     $$ LANGUAGE 'plpgsql';
 
 CREATE OR REPLACE FUNCTION close_deal_success(deal_id_to_upd INT) RETURNS void AS $$
-    DECLARE _ad_id INT;
+    DECLARE
+        _ad_id INT;
+        _author_id INT;
+        _subscriber_id INT;
     BEGIN
         UPDATE deal SET status = 'success' WHERE deal_id = deal_id_to_upd RETURNING ad_id INTO _ad_id;
         UPDATE ad SET status = 'closed' WHERE ad_id = _ad_id;
+        SELECT author_id FROM ad WHERE ad_id = _ad_id INTO _author_id;
+        UPDATE users_stats SET total_given_ads = total_given_ads + 1 WHERE user_id = _author_id;
+        SELECT subscriber_id FROM deal WHERE deal_id = deal_id_to_upd INTO _subscriber_id;
+        UPDATE users_stats SET total_received_ads = total_received_ads + 1 WHERE user_id = _subscriber_id;
         DELETE FROM ad_subscribers WHERE ad_id = _ad_id;
     END;
     $$ LANGUAGE 'plpgsql';
@@ -146,11 +154,15 @@ CREATE OR REPLACE FUNCTION close_deal_fail_by_author(deal_id_to_cls INT) RETURNS
 $$ LANGUAGE 'plpgsql';
 
 CREATE OR REPLACE FUNCTION close_deal_fail_by_subscriber(deal_id_to_cls INT) RETURNS void AS $$
-DECLARE _ad_id INT;
+DECLARE
+    _ad_id INT;
+    _author_id INT;
 BEGIN
     _ad_id := (SELECT ad_id FROM deal WHERE deal_id = deal_id_to_cls);
     UPDATE ad SET status = 'aborted' WHERE ad_id = _ad_id;
     DELETE FROM deal WHERE deal_id = deal_id_to_cls;
+    SELECT author_id FROM ad WHERE ad_id = _ad_id INTO _author_id;
+    UPDATE users_stats SET total_aborted_ads = total_aborted_ads + 1 WHERE user_id = _author_id;
 END;
 $$ LANGUAGE 'plpgsql';
 
