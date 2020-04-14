@@ -1,13 +1,14 @@
 package database
 
 import (
+	"github.com/sergeychur/give_it_away/internal/global_constants"
 	"github.com/sergeychur/give_it_away/internal/models"
 	"gopkg.in/jackc/pgx.v2"
 )
 
 const (
 	// Subscribe to ad query
-	SubscribeToAd = "INSERT INTO ad_subscribers (ad_id, subscriber_id) VALUES ($1, $2)"
+	SubscribeToAd = "INSERT INTO ad_subscribers (ad_id, subscriber_id, bid) VALUES ($1, $2, $3)"
 
 	// Unsubscribe from ad query
 	UnsubscribeFromAd = "DELETE FROM ad_subscribers WHERE ad_id = $1 AND subscriber_id = $2"
@@ -20,17 +21,17 @@ const (
 
 	// Fulfill deal
 	GetDealWithAuthor = "SELECT d.*, a.author_id FROM deal d JOIN ad a ON (a.ad_id = d.Ad_id) WHERE d.deal_id = $1"
-	FulfillDeal       = "SELECT close_deal_success($1)"
+	FulfillDeal       = "SELECT close_deal_success($1, $2)"
 
 	// CancelDeal
 	CancelDealAuthor     = "SELECT close_deal_fail_by_author($1)"
-	CancelDealSubscriber = "SELECT close_deal_fail_by_subscriber($1)"
+	CancelDealSubscriber = "SELECT close_deal_fail_by_subscriber($1, $2)"
 
 	// Get Deal
 	GetDealForAd = "SELECT * FROM deal WHERE ad_id = $1"
 
 	// Get ad subscribers query
-	GetAdSubscribers = "SELECT u.vk_id, u.name, u.surname, u.carma, u.photo_url FROM ad_subscribers a_s JOIN" +
+	GetAdSubscribers = "SELECT u.vk_id, u.name, u.surname, u.photo_url FROM ad_subscribers a_s JOIN" +
 		" (SELECT ad_subscribers_id FROM ad_subscribers WHERE ad_id = $1 ORDER BY ad_subscribers_id LIMIT $2 OFFSET $3) " +
 		" l ON (l.ad_subscribers_id = a_s.ad_subscribers_id) JOIN users u ON (u.vk_id = a_s.subscriber_id) " +
 		"ORDER BY a_s.ad_subscribers_id"
@@ -38,7 +39,8 @@ const (
 	GetAdSubscribersIds = "SELECT a_s.subscriber_id FROM ad_subscribers a_s WHERE a_s.ad_id = $1"
 )
 
-func (db *DB) SubscribeToAd(adId int, userId int) int {
+func (db *DB) SubscribeToAd(adId int, userId int, priceCoeff int) int {
+	// todo check if user can subscribe; two different functions for auction and usual ad
 	tx, err := db.StartTransaction()
 	if err != nil {
 		return DB_ERROR
@@ -63,7 +65,15 @@ func (db *DB) SubscribeToAd(adId int, userId int) int {
 	if isSubscribed {
 		return FORBIDDEN
 	}
-	_, err = tx.Exec(SubscribeToAd, adId, userId)
+	canSubscribe, frozencarma, err := db.DealWithCarmaSubscribe(tx, adId, userId)
+	if err != nil {
+		return DB_ERROR
+	}
+
+	if !canSubscribe {
+		return CONFLICT
+	}
+	_, err = tx.Exec(SubscribeToAd, adId, userId, frozencarma)
 	if err != nil {
 		return DB_ERROR
 	}
@@ -75,7 +85,22 @@ func (db *DB) SubscribeToAd(adId int, userId int) int {
 }
 
 func (db *DB) UnsubscribeFromAd(adId int, userId int) int {
-	_, err := db.db.Exec(UnsubscribeFromAd, adId, userId)
+	tx, err := db.StartTransaction()
+	if err != nil {
+		return DB_ERROR
+	}
+	defer func() {
+		_ = tx.Rollback()
+	}()
+	err = db.DealWithCarmaUnsubscribe(tx, adId, userId)
+	if err != nil {
+		return DB_ERROR
+	}
+	_, err = tx.Exec(UnsubscribeFromAd, adId, userId)
+	if err != nil {
+		return DB_ERROR
+	}
+	err = tx.Commit()
 	if err != nil {
 		return DB_ERROR
 	}
@@ -127,6 +152,7 @@ func (db *DB) MakeDeal(adId int, subscriberId int, initiatorId int) (int, int) {
 }
 
 func (db *DB) FulfillDeal(dealId int, userId int) int {
+	// todo: check if current_carma or frozen_carma can be less then zero
 	tx, err := db.StartTransaction()
 	if err != nil {
 		return DB_ERROR
@@ -148,7 +174,7 @@ func (db *DB) FulfillDeal(dealId int, userId int) int {
 	if userId != subscriberId || status != "open" {
 		return FORBIDDEN
 	}
-	_, err = tx.Exec(FulfillDeal, dealId)
+	_, err = tx.Exec(FulfillDeal, dealId, global_constants.PriceCoeff)
 	if err != nil {
 		return DB_ERROR
 	}
@@ -183,7 +209,7 @@ func (db *DB) CancelDeal(dealId int, userId int) (int, models.CancelInfo) {
 		return FORBIDDEN, models.CancelInfo{}
 	}
 	if subscriberId == userId {
-		_, err = tx.Exec(CancelDealSubscriber, dealId)
+		_, err = tx.Exec(CancelDealSubscriber, dealId, global_constants.PriceCoeff)
 		if err != nil {
 			return DB_ERROR, models.CancelInfo{}
 		}
@@ -247,7 +273,7 @@ func (db *DB) GetAdSubscribers(adId int, page int, rowsPerPage int) ([]models.Us
 	defer rows.Close()
 	for rows.Next() {
 		user := models.User{}
-		err = rows.Scan(&user.VkId, &user.Name, &user.Surname, &user.Carma, &user.PhotoUrl)
+		err = rows.Scan(&user.VkId, &user.Name, &user.Surname, &user.PhotoUrl)
 		if err != nil {
 			return nil, DB_ERROR
 		}

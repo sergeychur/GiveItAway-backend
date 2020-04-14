@@ -28,12 +28,21 @@ CREATE EXTENSION IF NOT EXISTS postgis;
 
 CREATE TABLE users (
     vk_id bigint NOT NULL CONSTRAINT user_pk PRIMARY KEY,
-    carma int NOT NULL default 0,
     name citext,
     surname citext,
     photo_url text,
-    registration_date_time TIMESTAMP WITH TIME ZONE default (now() at time zone 'utc'),
-    frozen_carma int NOT NULL default 0
+    registration_date_time TIMESTAMP WITH TIME ZONE default (now() at time zone 'utc')
+);
+
+CREATE TABLE users_carma (
+    user_id bigint,
+    CONSTRAINT users_carma_users FOREIGN KEY (user_id)
+        REFERENCES users (vk_id) ON UPDATE CASCADE ON DELETE NO ACTION,
+    current_carma int NOT NULL default 0,
+    frozen_carma int NOT NULL default 0,
+    cost_frozen int NOT NULL default 1,
+    casback_frozen int NOT NULL default 1,
+    last_updated  TIMESTAMP WITH TIME ZONE default (now() at time zone 'utc')
 );
 
 CREATE TABLE users_stats (
@@ -100,7 +109,8 @@ CREATE TABLE ad_subscribers (
     subscriber_id bigint,
     CONSTRAINT ad_subscribers_user FOREIGN KEY (subscriber_id)
         REFERENCES users (vk_id) ON UPDATE CASCADE ON DELETE NO ACTION,
-    CONSTRAINT ad_subscriber_unique UNIQUE (ad_id, subscriber_id)
+    CONSTRAINT ad_subscriber_unique UNIQUE (ad_id, subscriber_id),
+    bid int NOT NULL default 0
 );
 
 DROP TYPE IF EXISTS deal_status;
@@ -128,18 +138,42 @@ CREATE OR REPLACE FUNCTION make_deal(ad_id_to_insert INT, subscriber_id_to_inser
     END;
     $$ LANGUAGE 'plpgsql';
 
-CREATE OR REPLACE FUNCTION close_deal_success(deal_id_to_upd INT) RETURNS void AS $$
+CREATE OR REPLACE FUNCTION close_deal_success(deal_id_to_upd INT, price_coeff INT) RETURNS void AS $$
     DECLARE
         _ad_id INT;
         _author_id INT;
         _subscriber_id INT;
+        _subscribers_num INT;
     BEGIN
+        -- TODO: add auction
+        -- deal with statuses
         UPDATE deal SET status = 'success' WHERE deal_id = deal_id_to_upd RETURNING ad_id INTO _ad_id;
         UPDATE ad SET status = 'closed' WHERE ad_id = _ad_id;
+
+        -- acquiring needed variables
         SELECT author_id FROM ad WHERE ad_id = _ad_id INTO _author_id;
-        UPDATE users_stats SET total_given_ads = total_given_ads + 1 WHERE user_id = _author_id;
         SELECT subscriber_id FROM deal WHERE deal_id = deal_id_to_upd INTO _subscriber_id;
+
+        -- deal with stats
+        UPDATE users_stats SET total_given_ads = total_given_ads + 1 WHERE user_id = _author_id;
         UPDATE users_stats SET total_received_ads = total_received_ads + 1 WHERE user_id = _subscriber_id;
+
+        -- deal with carma stuff
+        -- look for performance
+
+        -- all the subscribers
+        UPDATE users_carma SET frozen_carma = frozen_carma - (cost_frozen - 1)* price_coeff, cost_frozen = cost_frozen -1
+        WHERE user_id IN (SELECT subscriber_id FROM ad_subscribers WHERE ad_id = _ad_id AND subscriber_id != _subscriber_id);
+
+        -- chosen (one) subscriber
+        UPDATE users_carma SET frozen_carma = frozen_carma - price_coeff * casback_frozen,
+                            current_carma = current_carma - price_coeff * casback_frozen,
+                               casback_frozen = casback_frozen + 1 WHERE user_id = _subscriber_id;
+        -- author, we add carma in amount of (subscribers_num * coeff)
+        SELECT COUNT(*) FROM ad_subscribers WHERE ad_id = _ad_id INTO _subscribers_num;
+        UPDATE users_carma SET current_carma = current_carma + _subscribers_num * price_coeff WHERE user_id = _author_id;
+
+        -- delete subscribers
         DELETE FROM ad_subscribers WHERE ad_id = _ad_id;
     END;
     $$ LANGUAGE 'plpgsql';
@@ -153,14 +187,21 @@ CREATE OR REPLACE FUNCTION close_deal_fail_by_author(deal_id_to_cls INT) RETURNS
     END;
 $$ LANGUAGE 'plpgsql';
 
-CREATE OR REPLACE FUNCTION close_deal_fail_by_subscriber(deal_id_to_cls INT) RETURNS void AS $$
+CREATE OR REPLACE FUNCTION close_deal_fail_by_subscriber(deal_id_to_cls INT, price_coeff INT) RETURNS void AS $$
 DECLARE
     _ad_id INT;
     _author_id INT;
 BEGIN
+    -- TODO: add auction
     _ad_id := (SELECT ad_id FROM deal WHERE deal_id = deal_id_to_cls);
     UPDATE ad SET status = 'aborted' WHERE ad_id = _ad_id;
     DELETE FROM deal WHERE deal_id = deal_id_to_cls;
+
+    -- look for performance
+    UPDATE users_carma SET cost_frozen = cost_frozen -1, frozen_carma = frozen_carma - (cost_frozen - 1) * price_coeff
+    WHERE user_id IN (SELECT subscriber_id FROM ad_subscribers WHERE ad_id = _ad_id);
+
+    DELETE FROM ad_subscribers WHERE ad_id = _ad_id;
     SELECT author_id FROM ad WHERE ad_id = _ad_id INTO _author_id;
     UPDATE users_stats SET total_aborted_ads = total_aborted_ads + 1 WHERE user_id = _author_id;
 END;
@@ -221,6 +262,7 @@ CREATE TRIGGER ad_view_create AFTER INSERT ON ad
 CREATE FUNCTION user_stats_create() RETURNS trigger AS $user_stats_create$
 BEGIN
     INSERT INTO users_stats (user_id) VALUES (new.vk_id);
+    INSERT INTO users_carma (user_id) VALUES (new.vk_id);
     RETURN NULL;
 END;
 $user_stats_create$ LANGUAGE plpgsql;

@@ -16,13 +16,13 @@ const (
 	Other    = "other"
 
 	// get ad query
-	GetAdById = "SELECT a.ad_id, u.vk_id, u.carma, u.name, u.surname, u.photo_url, a.header, a.text, a.region," +
+	GetAdById = "SELECT a.ad_id, u.vk_id, u.name, u.surname, u.photo_url, a.header, a.text, a.region," +
 		" a.district, a.is_auction, a.feedback_type, a.extra_field, a.creation_datetime, a.lat, a.long, a.status," +
 		" a.category, a.comments_count, aw.views_count, a.hidden FROM ad a JOIN users u ON (a.author_id = u.vk_id) " +
 		"JOIN ad_view aw ON (a.ad_id = aw.ad_id) WHERE a.ad_id = $1 AND (a.author_id = $2 OR a.hidden = false)"
 
 	// get ads query
-	GetAds = "SELECT a.ad_id, u.vk_id, u.carma, u.name, u.surname, u.photo_url, a.header, a.region," +
+	GetAds = "SELECT a.ad_id, u.vk_id, u.name, u.surname, u.photo_url, a.header, a.region," +
 		" a.district, a.is_auction, a.feedback_type, a.extra_field, a.creation_datetime, a.status," +
 		" a.category, a.comments_count, a.hidden FROM ad a JOIN users u ON (a.author_id = u.vk_id) " +
 		"JOIN (SELECT ad_id FROM ad%s ORDER BY %s LIMIT $%d OFFSET $%d) l ON (l.ad_id = a.ad_id) ORDER BY %s"
@@ -47,7 +47,7 @@ func (db *DB) GetAd(adId int, userId int) (models.AdForUsersDetailed, int) {
 	lat := pgx.NullFloat64{}
 	long := pgx.NullFloat64{}
 	timeStamp := time.Time{}
-	err := row.Scan(&ad.AdId, &ad.Author.VkId, &ad.Author.Carma, &ad.Author.Name, &ad.Author.Surname,
+	err := row.Scan(&ad.AdId, &ad.Author.VkId, &ad.Author.Name, &ad.Author.Surname,
 		&ad.Author.PhotoUrl, &ad.Header, &ad.Text, &ad.Region, &ad.District, &ad.IsAuction, &ad.FeedbackType,
 		&extraFieldTry, &timeStamp, &lat, &long, &ad.Status, &ad.Category,
 		&ad.CommentsCount, &ad.ViewsCount, &ad.Hidden)
@@ -204,7 +204,7 @@ func (db *DB) WorkWithOneAd(rows *pgx.Rows, ads Ads) (Ads, error) {
 	/*lat := pgx.NullFloat64{}
 	long := pgx.NullFloat64{}*/
 	timeStamp := time.Time{}
-	err := rows.Scan(&ad.AdId, &ad.Author.VkId, &ad.Author.Carma, &ad.Author.Name, &ad.Author.Surname,
+	err := rows.Scan(&ad.AdId, &ad.Author.VkId, &ad.Author.Name, &ad.Author.Surname,
 		&ad.Author.PhotoUrl, &ad.Header /*&ad.Text,*/, &ad.Region, &ad.District, &ad.IsAuction, &ad.FeedbackType,
 		&extraFieldTry, &timeStamp /*&lat, &long,*/, &ad.Status, &ad.Category,
 		&ad.CommentsCount, &ad.Hidden)

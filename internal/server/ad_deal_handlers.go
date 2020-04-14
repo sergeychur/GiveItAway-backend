@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/go-chi/chi"
 	"github.com/sergeychur/give_it_away/internal/database"
+	"github.com/sergeychur/give_it_away/internal/global_constants"
 	"net/http"
 	"strconv"
 )
@@ -19,7 +20,7 @@ func (server *Server) SubscribeToAd(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		WriteToResponse(w, http.StatusInternalServerError, fmt.Errorf("server cannot get userId from cookie"))
 	}
-	status := server.db.SubscribeToAd(adId, userId)
+	status := server.db.SubscribeToAd(adId, userId, global_constants.PriceCoeff)
 	if status == database.OK {
 		server.SubscribeToAdSendUpd(userId, adId, r)
 	}

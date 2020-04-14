@@ -138,6 +138,10 @@ func (db *DB) DeleteAd(adId int, userId int) int {
 	if authorId != userId {
 		return FORBIDDEN
 	}
+	err = db.GiveCarmaBackDelete(tx, adId, userId)
+	if err != nil {
+		return DB_ERROR
+	}
 	_, err = tx.Exec(deleteAd, adId)
 	if err != nil {
 		return DB_ERROR

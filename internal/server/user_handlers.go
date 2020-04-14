@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/go-chi/chi"
 	"github.com/sergeychur/give_it_away/internal/database"
+	"github.com/sergeychur/give_it_away/internal/global_constants"
 	"github.com/sergeychur/give_it_away/internal/models"
 	"net/http"
 	"strconv"
@@ -22,7 +23,7 @@ func (server *Server) AuthUser(w http.ResponseWriter, r *http.Request) {
 	}
 	user, status := server.db.GetUserProfile(userId)
 	if status == database.EMPTY_RESULT {
-		status = server.db.CreateUser(userId, info.Name, info.Surname, info.PhotoURL)
+		status = server.db.CreateUser(userId, info.Name, info.Surname, info.PhotoURL, global_constants.InitialCarma)
 		if status == database.CREATED {
 			newStatus := 0
 			user, newStatus = server.db.GetUserProfile(userId)

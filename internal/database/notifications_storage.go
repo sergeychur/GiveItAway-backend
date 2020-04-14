@@ -50,7 +50,7 @@ func (db *DB) GetNotifications(userId int, page int, rowsPerPage int) ([]models.
 		}
 		loc, _ := time.LoadLocation("UTC")
 		timeStamp.In(loc)
-		notification.CreationDateTime = timeStamp.String()
+		notification.CreationDateTime = timeStamp.Format("02 Jan 06 15:04 UTC")
 		notification.Payload, err = notifications.FormPayLoad(payload, notification.NotificationType)
 		if err != nil {
 			return nil, DB_ERROR
@@ -70,7 +70,7 @@ func (db *DB) FormAdClosedNotification(dealId int, initiatorId int, subscriberId
 	loc, _ := time.LoadLocation("UTC")
 	timeStamp := time.Now()
 	timeStamp.In(loc)
-	note.CreationDateTime = timeStamp.String()
+	note.CreationDateTime = timeStamp.Format("02 Jan 06 15:04 UTC")
 	note.IsRead = false
 	val := &models.AuthorClosedAd{}
 	val.DealId = dealId
@@ -94,7 +94,7 @@ func (db *DB) FormRespondNotification(subscriberId int, adId int) (models.Notifi
 	timeStamp := time.Now()
 	loc, _ := time.LoadLocation("UTC")
 	timeStamp.In(loc)
-	note.CreationDateTime = timeStamp.String()
+	note.CreationDateTime = timeStamp.Format("02 Jan 06 15:04 UTC")
 	note.IsRead = false
 	val := &models.UserSubscribed{}
 	err := db.db.QueryRow(GetAdForNotif, adId).Scan(&val.Ad.AdId, &val.Ad.Header, &val.Ad.Status, &note.WhomId)
@@ -117,7 +117,7 @@ func (db *DB) FormStatusChangedNotification(adId int, isDeleted bool, noteType s
 	timeStamp := time.Now()
 	loc, _ := time.LoadLocation("UTC")
 	timeStamp.In(loc)
-	note.CreationDateTime = timeStamp.String()
+	note.CreationDateTime = timeStamp.Format("02 Jan 06 15:04 UTC")
 	note.IsRead = false
 	val := models.AdStatusChanged{}
 	err := db.db.QueryRow(GetAdForNotif, adId).Scan(&val.Ad.AdId, &val.Ad.Header, &val.Ad.Status, &note.WhomId)
@@ -199,7 +199,7 @@ func (db *DB) FormCancelNotification(cancelType string, initiatorId int, adId in
 	timeStamp := time.Now()
 	loc, _ := time.LoadLocation("UTC")
 	timeStamp.In(loc)
-	note.CreationDateTime = timeStamp.String()
+	note.CreationDateTime = timeStamp.Format("02 Jan 06 15:04 UTC")
 	note.IsRead = false
 	ad := models.AdForNotification{}
 	whomId := 0

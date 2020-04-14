@@ -60,7 +60,7 @@ func FormDealcreatedUpdate(deal models.DealDetails) models.AdUpdate {
 }
 
 func FormFulfillDealUpdate(note models.Notification) (*models.AdUpdate, int) {
-	fulfillInfo, ok := note.Payload.(models.AdStatusChanged)
+	fulfillInfo, ok := note.Payload.(*models.AdStatusChanged)
 	if !ok {
 		return nil, 0
 	}
