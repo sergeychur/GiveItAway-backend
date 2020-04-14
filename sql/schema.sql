@@ -20,6 +20,7 @@ drop function if exists user_stats_create();
 
 
 DROP INDEX IF EXISTS ad_geos;
+DROP INDEX IF EXISTS richest;
 
 
 CREATE EXTENSION IF NOT EXISTS citext;
@@ -144,6 +145,8 @@ CREATE OR REPLACE FUNCTION close_deal_success(deal_id_to_upd INT, price_coeff IN
         _author_id INT;
         _subscriber_id INT;
         _subscribers_num INT;
+        _is_auction BOOLEAN;
+        _author_gain INT;
     BEGIN
         -- TODO: add auction
         -- deal with statuses
@@ -151,7 +154,7 @@ CREATE OR REPLACE FUNCTION close_deal_success(deal_id_to_upd INT, price_coeff IN
         UPDATE ad SET status = 'closed' WHERE ad_id = _ad_id;
 
         -- acquiring needed variables
-        SELECT author_id FROM ad WHERE ad_id = _ad_id INTO _author_id;
+        SELECT author_id, is_auction FROM ad WHERE ad_id = _ad_id INTO _author_id, _is_auction;
         SELECT subscriber_id FROM deal WHERE deal_id = deal_id_to_upd INTO _subscriber_id;
 
         -- deal with stats
@@ -160,28 +163,48 @@ CREATE OR REPLACE FUNCTION close_deal_success(deal_id_to_upd INT, price_coeff IN
 
         -- deal with carma stuff
         -- look for performance
+        if _is_auction THEN
+            -- all the subscribers take their carma back
+            UPDATE users_carma SET frozen_carma = frozen_carma - a_s.bid FROM ad_subscribers a_s
+                WHERE users_carma.user_id = a_s.subscriber_id and a_s.ad_id = _ad_id;
+            -- the chosen subscriber
+            UPDATE users_carma SET frozen_carma = frozen_carma - a_s.bid FROM ad_subscribers a_s
+                WHERE users_carma.user_id = a_s.subscriber_id and a_s.subscriber_id = _subscriber_id;
+            -- author
+            SELECT bid FROM ad_subscribers WHERE ad_id = _ad_id AND subscriber_id = _subscriber_id INTO _author_gain;
+            UPDATE users_carma SET current_carma = current_carma + _author_gain WHERE user_id = _author_id;
 
-        -- all the subscribers
-        UPDATE users_carma SET frozen_carma = frozen_carma - (cost_frozen - 1)* price_coeff, cost_frozen = cost_frozen -1
-        WHERE user_id IN (SELECT subscriber_id FROM ad_subscribers WHERE ad_id = _ad_id AND subscriber_id != _subscriber_id);
+        else
+            -- all the subscribers
+            UPDATE users_carma SET frozen_carma = frozen_carma - (cost_frozen - 1)* price_coeff, cost_frozen = cost_frozen -1
+            WHERE user_id IN (SELECT subscriber_id FROM ad_subscribers WHERE ad_id = _ad_id AND subscriber_id != _subscriber_id);
 
-        -- chosen (one) subscriber
-        UPDATE users_carma SET frozen_carma = frozen_carma - price_coeff * casback_frozen,
-                            current_carma = current_carma - price_coeff * casback_frozen,
-                               casback_frozen = casback_frozen + 1 WHERE user_id = _subscriber_id;
-        -- author, we add carma in amount of (subscribers_num * coeff)
-        SELECT COUNT(*) FROM ad_subscribers WHERE ad_id = _ad_id INTO _subscribers_num;
-        UPDATE users_carma SET current_carma = current_carma + _subscribers_num * price_coeff WHERE user_id = _author_id;
-
+            -- chosen (one) subscriber
+            UPDATE users_carma SET frozen_carma = frozen_carma - price_coeff * casback_frozen,
+                                   current_carma = current_carma - price_coeff * casback_frozen,
+                                   casback_frozen = casback_frozen + 1 WHERE user_id = _subscriber_id;
+            -- author, we add carma in amount of (subscribers_num * coeff)
+            SELECT COUNT(*) FROM ad_subscribers WHERE ad_id = _ad_id INTO _subscribers_num;
+            UPDATE users_carma SET current_carma = current_carma + _subscribers_num * price_coeff WHERE user_id = _author_id;
+        end if;
         -- delete subscribers
         DELETE FROM ad_subscribers WHERE ad_id = _ad_id;
     END;
-    $$ LANGUAGE 'plpgsql';
+$$ LANGUAGE 'plpgsql';
 
 CREATE OR REPLACE FUNCTION close_deal_fail_by_author(deal_id_to_cls INT) RETURNS void AS $$
     DECLARE _ad_id INT;
+            _is_auction BOOLEAN;
+            _subscriber_id INT;
     BEGIN
         _ad_id := (SELECT ad_id FROM deal WHERE deal_id = deal_id_to_cls);
+        SELECT is_auction FROM ad WHERE ad_id = _ad_id INTO _is_auction;
+        if _is_auction then
+            SELECT subscriber_id FROM deal WHERE deal_id = deal_id_to_cls INTO _subscriber_id;
+            UPDATE users_carma SET frozen_carma = frozen_carma - a_s.bid FROM ad_subscribers a_s
+                WHERE users_carma.user_id = a_s.subscriber_id and a_s.subscriber_id = _subscriber_id;
+            DELETE FROM ad_subscribers WHERE ad_id = _ad_id AND subscriber_id = _subscriber_id;
+        end if;
         UPDATE ad SET status = 'offer' WHERE ad_id = _ad_id;
         DELETE FROM deal WHERE deal_id = deal_id_to_cls;
     END;
@@ -191,15 +214,24 @@ CREATE OR REPLACE FUNCTION close_deal_fail_by_subscriber(deal_id_to_cls INT, pri
 DECLARE
     _ad_id INT;
     _author_id INT;
+    _is_auction BOOLEAN;
+    _subscriber_id INT;
 BEGIN
     -- TODO: add auction
     _ad_id := (SELECT ad_id FROM deal WHERE deal_id = deal_id_to_cls);
     UPDATE ad SET status = 'aborted' WHERE ad_id = _ad_id;
     DELETE FROM deal WHERE deal_id = deal_id_to_cls;
 
+    SELECT is_auction FROM ad WHERE ad_id = _ad_id INTO _is_auction;
+    IF _is_auction THEN
+        SELECT subscriber_id FROM deal WHERE deal_id = deal_id_to_cls INTO _subscriber_id;
+        UPDATE users_carma SET frozen_carma = frozen_carma - a_s.bid FROM ad_subscribers a_s
+        WHERE users_carma.user_id = a_s.subscriber_id and a_s.subscriber_id = _subscriber_id;
+    else
+        UPDATE users_carma SET cost_frozen = cost_frozen -1, frozen_carma = frozen_carma - (cost_frozen - 1) * price_coeff
+        WHERE user_id IN (SELECT subscriber_id FROM ad_subscribers WHERE ad_id = _ad_id);
+    end if;
     -- look for performance
-    UPDATE users_carma SET cost_frozen = cost_frozen -1, frozen_carma = frozen_carma - (cost_frozen - 1) * price_coeff
-    WHERE user_id IN (SELECT subscriber_id FROM ad_subscribers WHERE ad_id = _ad_id);
 
     DELETE FROM ad_subscribers WHERE ad_id = _ad_id;
     SELECT author_id FROM ad WHERE ad_id = _ad_id INTO _author_id;
@@ -269,3 +301,5 @@ $user_stats_create$ LANGUAGE plpgsql;
 
 CREATE TRIGGER users_stats_create AFTER INSERT ON users
     FOR EACH ROW EXECUTE PROCEDURE user_stats_create();
+
+CREATE INDEX richest ON ad_subscribers (bid);

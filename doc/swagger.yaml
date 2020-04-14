@@ -296,6 +296,8 @@ paths:
           description: "user id is the same as author's"
         401:
           description: "no auth"
+        409:
+          description: "not enough carma to subscribe"
   /ad/{ad_id}/subscribers:
     get:
       summary: "Посмотреть подписавшихся на объвлениe"

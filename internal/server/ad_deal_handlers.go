@@ -93,18 +93,25 @@ func (server *Server) MakeDeal(w http.ResponseWriter, r *http.Request) {
 		WriteToResponse(w, http.StatusInternalServerError, fmt.Errorf("server cannot get userId from cookie"))
 	}
 	params := r.URL.Query()
-	subscriberArr, ok := params["subscriber_id"]
-	if !ok || len(subscriberArr) != 1 {
-		WriteToResponse(w, http.StatusBadRequest,
-			fmt.Errorf("subscriber_id has to be in get params and positive int"))
-		return
+	isAuctionArr, ok := params["is_auction"]
+	subscriberId := 0
+	isAuction := false
+	if !ok || len(isAuctionArr) != 1  {
+		subscriberArr, ok := params["subscriber_id"]
+		if !ok || len(subscriberArr) != 1 {
+			WriteToResponse(w, http.StatusBadRequest,
+				fmt.Errorf("subscriber_id has to be in get params and positive int"))
+			return
+		}
+		subscriberId, err = strconv.Atoi(subscriberArr[0])
+		if err != nil {
+			WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("subscriber_id should be int"))
+			return
+		}
+	} else {
+		isAuction = isAuctionArr[0] == "true"
 	}
-	subscriberId, err := strconv.Atoi(subscriberArr[0])
-	if err != nil {
-		WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("subscriber_id should be int"))
-		return
-	}
-	status, dealId := server.db.MakeDeal(adId, subscriberId, initiatorId)
+	status, dealId := server.db.MakeDeal(adId, subscriberId, initiatorId, isAuction)
 
 	if status == database.CREATED { // TODO: probably go func
 		server.MakeDealSendUpd(dealId, initiatorId, subscriberId, adId, r)

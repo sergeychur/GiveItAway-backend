@@ -18,6 +18,7 @@ const (
 	CheckIfDealExists = "SELECT EXISTS(SELECT 1 FROM deal WHERE ad_id = $1)"
 	CreateDeal        = "SELECT make_deal($1, $2)"
 	GetDeal           = "SELECT * FROM deal WHERE deal_id = $1"
+	GetRichest = "select subscriber_id from ad_subscribers where ad_id = $1 order by bid desc limit 1"
 
 	// Fulfill deal
 	GetDealWithAuthor = "SELECT d.*, a.author_id FROM deal d JOIN ad a ON (a.ad_id = d.Ad_id) WHERE d.deal_id = $1"
@@ -107,7 +108,7 @@ func (db *DB) UnsubscribeFromAd(adId int, userId int) int {
 	return OK
 }
 
-func (db *DB) MakeDeal(adId int, subscriberId int, initiatorId int) (int, int) {
+func (db *DB) MakeDeal(adId int, subscriberId int, initiatorId int, isAuction bool) (int, int) {
 	tx, err := db.StartTransaction()
 	if err != nil {
 		return DB_ERROR, 0
@@ -115,7 +116,6 @@ func (db *DB) MakeDeal(adId int, subscriberId int, initiatorId int) (int, int) {
 	defer func() {
 		_ = tx.Rollback()
 	}()
-
 	authorId := 0
 	// TODO: maybe add check if the ad is open(you cannot deal with closed ad)
 	err = tx.QueryRow(checkAdExist, adId).Scan(&authorId)
@@ -129,19 +129,27 @@ func (db *DB) MakeDeal(adId int, subscriberId int, initiatorId int) (int, int) {
 	if authorId != initiatorId {
 		return FORBIDDEN, 0
 	}
-	isSubscriber := false
-	err = tx.QueryRow(CheckIfSubscriber, adId, subscriberId).Scan(&isSubscriber)
-	if err != nil {
-		return DB_ERROR, 0
-	}
 	dealExists := true
 	err = tx.QueryRow(CheckIfDealExists, adId).Scan(&dealExists)
 	if err != nil {
 		return DB_ERROR, 0
 	}
-	if dealExists || !isSubscriber {
-		return CONFLICT, 0
+	if isAuction {
+		err = tx.QueryRow(GetRichest, adId).Scan(&subscriberId)
+		if err != nil {
+			return DB_ERROR, 0
+		}
+	} else {
+		isSubscriber := false
+		err = tx.QueryRow(CheckIfSubscriber, adId, subscriberId).Scan(&isSubscriber)
+		if err != nil {
+			return DB_ERROR, 0
+		}
+		if dealExists || !isSubscriber {
+			return CONFLICT, 0
+		}
 	}
+
 	dealId := 0
 	err = tx.QueryRow(CreateDeal, adId, subscriberId).Scan(&dealId)
 	if err != nil {
