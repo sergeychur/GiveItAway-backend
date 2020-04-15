@@ -168,10 +168,9 @@ CREATE OR REPLACE FUNCTION close_deal_success(deal_id_to_upd INT, price_coeff IN
             UPDATE users_carma SET frozen_carma = frozen_carma - a_s.bid FROM ad_subscribers a_s
                 WHERE users_carma.user_id = a_s.subscriber_id and a_s.ad_id = _ad_id;
             -- the chosen subscriber
-            UPDATE users_carma SET frozen_carma = frozen_carma - a_s.bid FROM ad_subscribers a_s
-                WHERE users_carma.user_id = a_s.subscriber_id and a_s.subscriber_id = _subscriber_id;
-            -- author
             SELECT bid FROM ad_subscribers WHERE ad_id = _ad_id AND subscriber_id = _subscriber_id INTO _author_gain;
+            UPDATE users_carma SET current_carma = current_carma - _author_gain WHERE user_id = _subscriber_id;
+            -- author
             UPDATE users_carma SET current_carma = current_carma + _author_gain WHERE user_id = _author_id;
 
         else
@@ -226,7 +225,8 @@ BEGIN
     IF _is_auction THEN
         SELECT subscriber_id FROM deal WHERE deal_id = deal_id_to_cls INTO _subscriber_id;
         UPDATE users_carma SET frozen_carma = frozen_carma - a_s.bid FROM ad_subscribers a_s
-        WHERE users_carma.user_id = a_s.subscriber_id and a_s.subscriber_id = _subscriber_id;
+            WHERE users_carma.user_id = a_s.subscriber_id and a_s.subscriber_id = _subscriber_id AND a_s.ad_id = _ad_id;
+        DELETE FROM ad_subscribers WHERE ad_id = _ad_id AND subscriber_id = _subscriber_id;
     else
         UPDATE users_carma SET cost_frozen = cost_frozen -1, frozen_carma = frozen_carma - (cost_frozen - 1) * price_coeff
         WHERE user_id IN (SELECT subscriber_id FROM ad_subscribers WHERE ad_id = _ad_id);

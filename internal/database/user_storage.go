@@ -16,7 +16,7 @@ const (
 	GetUserById = "SELECT u.vk_id, u.name, u.surname, u.photo_url" +
 		" FROM users u WHERE vk_id = $1"
 
-	CreateUser  = "INSERT INTO users (vk_id, name, surname, photo_url) VALUES ($1, $2, $3, $4, $5)"
+	CreateUser  = "INSERT INTO users (vk_id, name, surname, photo_url) VALUES ($1, $2, $3, $4)"
 	GrantInitialCarma = "UPDATE users_carma SET current_carma = $1"
 	GetReceived = "SELECT a.ad_id, u.vk_id, u.name, u.surname, u.photo_url, a.header, a.region," +
 		" a.district, a.is_auction, a.feedback_type, a.extra_field, a.creation_datetime, a.status," +
@@ -67,7 +67,7 @@ func (db *DB) CreateUser(userId int, name string, surname string, photoURL strin
 	if err != nil {
 		return DB_ERROR
 	}
-	_, err = db.db.Exec(GrantInitialCarma, initialCarma, initialCarma)
+	_, err = db.db.Exec(GrantInitialCarma, initialCarma)
 	if err != nil {
 		return DB_ERROR
 	}

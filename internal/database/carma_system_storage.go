@@ -53,6 +53,10 @@ func (db *DB) DealWithCarmaSubscribe(tx *pgx.Tx, adId, userId int) (bool, int, e
 func (db *DB) DealWithCarmaSubscribeAuct(tx *pgx.Tx, adId, userId int) (bool, int, error) {
 	carmaForAuct := 0
 	err := tx.QueryRow(getMaxBidInAuction, adId).Scan(&carmaForAuct)
+	if err == pgx.ErrNoRows {
+		err = nil
+		carmaForAuct = global_constants.InitialBid
+	}
 	if err != nil {
 		return false, 0, err
 	}
@@ -65,8 +69,8 @@ func (db *DB) DealWithCarmaSubscribeAuct(tx *pgx.Tx, adId, userId int) (bool, in
 		return false, 0, nil
 	}
 
-	frozenCarma := 0
-	err = tx.QueryRow(updateFrozenSubscribeAuct, carmaForAuct, userId).Scan(&frozenCarma)
+	frozenCarma := carmaForAuct + 1
+	_, err = tx.Exec(updateFrozenSubscribeAuct, frozenCarma, userId)
 	if err != nil {
 		return false, 0, err
 	}
