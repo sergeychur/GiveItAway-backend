@@ -22,7 +22,16 @@ func (db *DB) FormNewCommentNotif(comment models.CommentForUser, adId int) (mode
 	if err != nil {
 		return models.Notification{}, err
 	}
-	note.Payload = comment
+	ad := models.AdForNotification{}
+	whomId := 0
+	err = db.db.QueryRow(GetAdForNotif, adId).Scan(&ad.AdId, &ad.Header, &ad.Status, &whomId)
+	if err != nil {
+		return models.Notification{}, err
+	}
+	note.Payload = models.NewComment{
+		Ad: ad,
+		Comment: comment,
+	}
 	note.WhomId = authorId
 	note.NotificationType = notifications.COMMENT_CREATED
 	return note, nil

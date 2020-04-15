@@ -41,7 +41,7 @@ var (
 			return &models.SubscriberCancelled{}
 		},
 		COMMENT_CREATED: func() interface{} {
-			return &models.CommentForUser{}
+			return &models.NewComment{}
 		},
 	}
 )
