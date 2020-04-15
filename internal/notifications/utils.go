@@ -40,6 +40,9 @@ var (
 		SUBSCRIBER_CANCELLED: func() interface{} {
 			return &models.SubscriberCancelled{}
 		},
+		COMMENT_CREATED: func() interface{} {
+			return &models.CommentForUser{}
+		},
 	}
 )
 
