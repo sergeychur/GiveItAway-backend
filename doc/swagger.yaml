@@ -418,7 +418,11 @@ paths:
           type: integer
         - name: subscriber_id
           in: query
-          required: true
+          required: false
+          type: integer
+        - name: is_auction
+          in: query
+          required: false
           type: integer
       responses:
         201:
@@ -450,6 +454,43 @@ paths:
           description: "wrong parameters"
         404:
           description: "no pending deal for ad"
+  /ad/{ad_id}/bid_for_user:
+    get:
+      summary: "Получить текущую цену на пользователя"
+      tags:
+        - deal
+      parameters:
+        - name: ad_id
+          in: path
+          required: true
+          type: integer
+      responses:
+        200:
+          description: "there is a evaluated price"
+          schema:
+            $ref: "#/definitions/Bid"
+        400:
+          description: "wrong parameters"
+        404:
+          description: "no ad or user"
+
+  /ad/{ad_id}/max_bid:
+    get:
+      summary: "Получить максимальную ставку в аукционе"
+      tags:
+        - deal
+      parameters:
+        - name: ad_id
+          in: path
+          required: true
+          type: integer
+      responses:
+        200:
+          description: "there is a evaluated price"
+          schema:
+            $ref: "#/definitions/Bid"
+        400:
+          description: "wrong parameters"
   /ad/{ad_id}/comments:
     get:
       tags:
@@ -1135,4 +1176,9 @@ definitions:
     type: "object"
     properties:
       number:
+        type: integer
+  Bid:
+    type: "object"
+    properties:
+      bid:
         type: integer

@@ -64,6 +64,8 @@ func NewServer(pathToConfig string) (*Server, error) {
 	needLogin.Post(fmt.Sprintf("/ad/{ad_id:%s}/unsubscribe", idPattern), server.UnsubscribeFromAd)
 	needLogin.Put(fmt.Sprintf("/ad/{ad_id:%s}/make_deal", idPattern), server.MakeDeal)
 	needLogin.Get(fmt.Sprintf("/ad/{ad_id:%s}/deal", idPattern), server.CancelDeal)
+	needLogin.Get(fmt.Sprintf("/ad/{ad_id:%s}/bid_for_user", idPattern), server.GetBidForUser)
+	needLogin.Get(fmt.Sprintf("/ad/{ad_id:%s}/max_bid", idPattern), server.GetMaxBid)
 
 	needLogin.Post(fmt.Sprintf("/deal/{deal_id:%s}/fulfill", idPattern), server.FulfillDeal)
 	needLogin.Post(fmt.Sprintf("/deal/{deal_id:%s}/cancel", idPattern), server.CancelDeal)

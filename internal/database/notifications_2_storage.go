@@ -12,7 +12,10 @@ const (
 
 func (db *DB) FormNewCommentNotif(comment models.CommentForUser, adId int) (models.Notification, error) {
 	note := models.Notification{}
-	note.CreationDateTime = time.Now().Format("01.02.2006 15:04")
+	timeStamp := time.Now()
+	loc, _ := time.LoadLocation("UTC")
+	timeStamp.In(loc)
+	note.CreationDateTime = timeStamp.Format("02 Jan 06 15:04 UTC")
 	note.IsRead = false
 	authorId := 0
 	err := db.db.QueryRow(checkAdExist, adId).Scan(&authorId)

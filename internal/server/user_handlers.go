@@ -21,12 +21,12 @@ func (server *Server) AuthUser(w http.ResponseWriter, r *http.Request) {
 		WriteToResponse(w, http.StatusUnauthorized, fmt.Errorf("auth data is invalid"))
 		return
 	}
-	user, status := server.db.GetUserProfile(userId)
+	user, status := server.db.GetUser(userId)
 	if status == database.EMPTY_RESULT {
 		status = server.db.CreateUser(userId, info.Name, info.Surname, info.PhotoURL, global_constants.InitialCarma)
 		if status == database.CREATED {
 			newStatus := 0
-			user, newStatus = server.db.GetUserProfile(userId)
+			user, newStatus = server.db.GetUser(userId)
 			if newStatus != database.FOUND {
 				// mb not that way, dunno. but after creation there should be a result
 				status = database.DB_ERROR

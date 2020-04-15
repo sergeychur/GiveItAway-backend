@@ -3,6 +3,7 @@ package database
 import (
 	"fmt"
 	"github.com/sergeychur/give_it_away/internal/global_constants"
+	"github.com/sergeychur/give_it_away/internal/models"
 	"gopkg.in/jackc/pgx.v2"
 )
 
@@ -31,6 +32,8 @@ const (
 		"WHERE user_id IN (SELECT subscriber_id FROM ad_subscribers WHERE ad_id = $2);"
 	updateCarmaDeleteAuct = "UPDATE users_carma SET frozen_carma = frozen_carma - a_s.bid FROM ad_subscribers a_s " +
 		"WHERE users_carma.user_id = a_s.subscriber_id and a_s.ad_id = $1"
+
+	GetUserCostFreeze = "SELECT cost_frozen FROM users_carma WHERE user_id = $1"
 
 )
 
@@ -137,4 +140,41 @@ func (db *DB) GiveCarmaBackDelete(tx *pgx.Tx, adId, userId int) error {
 		_, err = tx.Exec(updateCarmaDeleteNonAuct, global_constants.PriceCoeff, adId)
 	}
 	return err
+}
+
+func (db *DB) GetMaxBidForAd (adId int) (models.Bid, int) {
+	bid := models.Bid{}
+	err := db.db.QueryRow(getMaxBidInAuction, adId).Scan(&bid.Bid)
+	if err == pgx.ErrNoRows {
+		return models.Bid{Bid: 0}, FOUND
+	}
+	if err != nil {
+		return models.Bid{}, DB_ERROR
+	}
+	return bid, FOUND
+}
+
+func (db *DB) GetUserBidForAd(adId, userId int) (models.Bid, int) {
+	isAuction := false
+	err := db.db.QueryRow(checkIfAuction, adId).Scan(&isAuction)
+	if err == pgx.ErrNoRows {
+		return models.Bid{}, EMPTY_RESULT
+	}
+	if err != nil {
+		return models.Bid{}, DB_ERROR
+	}
+	if isAuction {
+		bid, status := db.GetMaxBidForAd(adId)
+		bid.Bid += 1
+		return bid, status
+	}
+	bid := models.Bid{}
+	err = db.db.QueryRow(GetUserCostFreeze, userId).Scan(&bid.Bid)
+	if err == pgx.ErrNoRows {
+		return models.Bid{}, EMPTY_RESULT
+	}
+	if err != nil {
+		return models.Bid{}, DB_ERROR
+	}
+	return bid, FOUND
 }

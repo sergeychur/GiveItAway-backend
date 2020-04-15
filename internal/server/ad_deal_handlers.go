@@ -170,3 +170,29 @@ func (server *Server) GetDealForAd(w http.ResponseWriter, r *http.Request) {
 	deal, status := server.db.GetDealForAd(adId)
 	DealRequestFromDB(w, deal, status)
 }
+
+func (server *Server) GetBidForUser (w http.ResponseWriter, r *http.Request) {
+	adIdStr := chi.URLParam(r, "ad_id")
+	adId, err := strconv.Atoi(adIdStr)
+	if err != nil {
+		WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("ad_id should be int"))
+		return
+	}
+	userId, err := server.GetUserIdFromCookie(r)
+	if err != nil {
+		WriteToResponse(w, http.StatusInternalServerError, fmt.Errorf("server cannot get userId from cookie"))
+	}
+	maxBid, status := server.db.GetUserBidForAd(adId, userId)
+	DealRequestFromDB(w, maxBid, status)
+}
+
+func (server *Server) GetMaxBid (w http.ResponseWriter, r *http.Request) {
+	adIdStr := chi.URLParam(r, "ad_id")
+	adId, err := strconv.Atoi(adIdStr)
+	if err != nil {
+		WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("ad_id should be int"))
+		return
+	}
+	maxBid, status := server.db.GetMaxBidForAd(adId)
+	DealRequestFromDB(w, maxBid, status)
+}
