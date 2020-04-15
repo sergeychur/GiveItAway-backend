@@ -172,6 +172,8 @@ CREATE OR REPLACE FUNCTION close_deal_success(deal_id_to_upd INT, price_coeff IN
             UPDATE users_carma SET current_carma = current_carma - _author_gain WHERE user_id = _subscriber_id;
             -- author
             UPDATE users_carma SET current_carma = current_carma + _author_gain WHERE user_id = _author_id;
+            UPDATE users_stats SET total_earned_carma = total_earned_carma + _author_gain FROM users_carma
+                WHERE users_carma.user_id = users_stats.user_id AND users_stats.user_id = _author_id;
 
         else
             -- all the subscribers
@@ -179,6 +181,8 @@ CREATE OR REPLACE FUNCTION close_deal_success(deal_id_to_upd INT, price_coeff IN
             WHERE user_id IN (SELECT subscriber_id FROM ad_subscribers WHERE ad_id = _ad_id AND subscriber_id != _subscriber_id);
 
             -- chosen (one) subscriber
+            UPDATE users_stats SET total_spent_carma = total_spent_carma + price_coeff * casback_frozen FROM users_carma
+                WHERE users_carma.user_id = users_stats.user_id AND users_stats.user_id = _subscriber_id;
             UPDATE users_carma SET frozen_carma = frozen_carma - price_coeff * casback_frozen,
                                    current_carma = current_carma - price_coeff * casback_frozen,
                                    casback_frozen = casback_frozen + 1 WHERE user_id = _subscriber_id;

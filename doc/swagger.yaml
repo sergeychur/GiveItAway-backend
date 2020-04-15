@@ -849,6 +849,40 @@ paths:
         404:
           description: "Found nothing"
 
+  /ad/wanted:
+    get:
+      tags:
+        - "ad"
+      summary: "Получить объявления, на которые подписан"
+      produces:
+        - "application/json"
+      parameters:
+        - name: "page"
+          in: "query"
+          type: "string"
+          description: "page for pagination"
+          required: true
+        - name: "rows_per_page"
+          in: "query"
+          type: "string"
+          description: "rows per page for pagination"
+          required: true
+        - name: "user_id"
+          in: "path"
+          required: true
+          type: integer
+      responses:
+        200:
+          description: "found smth"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/AdForUsers"
+        400:
+          description: "Invalid parameters"
+        404:
+          description: "Found nothing"
+
   /notifications:
     get:
       tags:
