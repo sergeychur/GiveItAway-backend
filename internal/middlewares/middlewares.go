@@ -39,4 +39,3 @@ func CreateCheckAuthMiddleware(secret []byte, cookieField string,
 		})
 	}
 }
-

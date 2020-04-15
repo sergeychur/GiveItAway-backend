@@ -9,14 +9,18 @@ DROP TABLE IF EXISTS comment;
 
 DROP FUNCTION IF EXISTS make_deal;
 DROP FUNCTION IF EXISTS close_deal_success;
+DROP FUNCTION IF EXISTS close_deal_fail_by_subscriber;
 DROP FUNCTION IF EXISTS close_deal_fail_by_author;
 DROP TRIGGER IF EXISTS update_comments_count ON comment;
 DROP FUNCTION IF EXISTS update_comments_count;
 drop trigger if exists ad_view_create on ad;
 drop function if exists ad_view_create();
+drop trigger if exists users_stats_create on users;
+drop function if exists user_stats_create();
 
 
 DROP INDEX IF EXISTS ad_geos;
+DROP INDEX IF EXISTS richest;
 
 
 CREATE EXTENSION IF NOT EXISTS citext;
@@ -25,10 +29,33 @@ CREATE EXTENSION IF NOT EXISTS postgis;
 
 CREATE TABLE users (
     vk_id bigint NOT NULL CONSTRAINT user_pk PRIMARY KEY,
-    carma int NOT NULL default 0,
     name citext,
     surname citext,
-    photo_url text
+    photo_url text,
+    registration_date_time TIMESTAMP WITH TIME ZONE default (now() at time zone 'utc')
+);
+
+CREATE TABLE users_carma (
+    user_id bigint,
+    CONSTRAINT users_carma_users FOREIGN KEY (user_id)
+        REFERENCES users (vk_id) ON UPDATE CASCADE ON DELETE NO ACTION,
+    current_carma int NOT NULL default 0,
+    frozen_carma int NOT NULL default 0,
+    cost_frozen int NOT NULL default 1,
+    casback_frozen int NOT NULL default 1,
+    last_updated  TIMESTAMP WITH TIME ZONE default (now() at time zone 'utc')
+);
+
+CREATE TABLE users_stats (
+    user_stats_id bigserial CONSTRAINT users_stats_pk PRIMARY KEY,
+    user_id bigint,
+    CONSTRAINT users_stats_users FOREIGN KEY (user_id)
+        REFERENCES users (vk_id) ON UPDATE CASCADE ON DELETE NO ACTION,
+    total_earned_carma bigint not null default 0,
+    total_spent_carma bigint not null default 0,
+    total_given_ads bigint not null default 0,
+    total_received_ads bigint not null default 0,
+    total_aborted_ads bigint not null default 0
 );
 
 DROP TYPE IF EXISTS feedback;
@@ -48,7 +75,7 @@ CREATE TABLE ad (
     is_auction boolean,
     feedback_type feedback,
     extra_field citext,
-    creation_datetime TIMESTAMP WITH TIME ZONE default now(),
+    creation_datetime TIMESTAMP WITH TIME ZONE default (now() at time zone 'utc'),
     lat float,
     long float,
     geo_position geography,
@@ -83,7 +110,8 @@ CREATE TABLE ad_subscribers (
     subscriber_id bigint,
     CONSTRAINT ad_subscribers_user FOREIGN KEY (subscriber_id)
         REFERENCES users (vk_id) ON UPDATE CASCADE ON DELETE NO ACTION,
-    CONSTRAINT ad_subscriber_unique UNIQUE (ad_id, subscriber_id)
+    CONSTRAINT ad_subscriber_unique UNIQUE (ad_id, subscriber_id),
+    bid int NOT NULL default 0
 );
 
 DROP TYPE IF EXISTS deal_status;
@@ -111,30 +139,107 @@ CREATE OR REPLACE FUNCTION make_deal(ad_id_to_insert INT, subscriber_id_to_inser
     END;
     $$ LANGUAGE 'plpgsql';
 
-CREATE OR REPLACE FUNCTION close_deal_success(deal_id_to_upd INT) RETURNS void AS $$
-    DECLARE _ad_id INT;
+CREATE OR REPLACE FUNCTION close_deal_success(deal_id_to_upd INT, price_coeff INT) RETURNS void AS $$
+    DECLARE
+        _ad_id INT;
+        _author_id INT;
+        _subscriber_id INT;
+        _subscribers_num INT;
+        _is_auction BOOLEAN;
+        _author_gain INT;
     BEGIN
+        -- TODO: add auction
+        -- deal with statuses
         UPDATE deal SET status = 'success' WHERE deal_id = deal_id_to_upd RETURNING ad_id INTO _ad_id;
         UPDATE ad SET status = 'closed' WHERE ad_id = _ad_id;
+
+        -- acquiring needed variables
+        SELECT author_id, is_auction FROM ad WHERE ad_id = _ad_id INTO _author_id, _is_auction;
+        SELECT subscriber_id FROM deal WHERE deal_id = deal_id_to_upd INTO _subscriber_id;
+
+        -- deal with stats
+        UPDATE users_stats SET total_given_ads = total_given_ads + 1 WHERE user_id = _author_id;
+        UPDATE users_stats SET total_received_ads = total_received_ads + 1 WHERE user_id = _subscriber_id;
+
+        -- deal with carma stuff
+        -- look for performance
+        if _is_auction THEN
+            -- all the subscribers take their carma back
+            UPDATE users_carma SET frozen_carma = frozen_carma - a_s.bid FROM ad_subscribers a_s
+                WHERE users_carma.user_id = a_s.subscriber_id and a_s.ad_id = _ad_id;
+            -- the chosen subscriber
+            SELECT bid FROM ad_subscribers WHERE ad_id = _ad_id AND subscriber_id = _subscriber_id INTO _author_gain;
+            UPDATE users_carma SET current_carma = current_carma - _author_gain WHERE user_id = _subscriber_id;
+            -- author
+            UPDATE users_carma SET current_carma = current_carma + _author_gain WHERE user_id = _author_id;
+            UPDATE users_stats SET total_earned_carma = total_earned_carma + _author_gain FROM users_carma
+                WHERE users_carma.user_id = users_stats.user_id AND users_stats.user_id = _author_id;
+
+        else
+            -- all the subscribers
+            UPDATE users_carma SET frozen_carma = frozen_carma - (cost_frozen - 1)* price_coeff, cost_frozen = cost_frozen -1
+            WHERE user_id IN (SELECT subscriber_id FROM ad_subscribers WHERE ad_id = _ad_id AND subscriber_id != _subscriber_id);
+
+            -- chosen (one) subscriber
+            UPDATE users_stats SET total_spent_carma = total_spent_carma + price_coeff * casback_frozen FROM users_carma
+                WHERE users_carma.user_id = users_stats.user_id AND users_stats.user_id = _subscriber_id;
+            UPDATE users_carma SET frozen_carma = frozen_carma - price_coeff * casback_frozen,
+                                   current_carma = current_carma - price_coeff * casback_frozen,
+                                   casback_frozen = casback_frozen + 1 WHERE user_id = _subscriber_id;
+            -- author, we add carma in amount of (subscribers_num * coeff)
+            SELECT COUNT(*) FROM ad_subscribers WHERE ad_id = _ad_id INTO _subscribers_num;
+            UPDATE users_carma SET current_carma = current_carma + _subscribers_num * price_coeff WHERE user_id = _author_id;
+        end if;
+        -- delete subscribers
         DELETE FROM ad_subscribers WHERE ad_id = _ad_id;
     END;
-    $$ LANGUAGE 'plpgsql';
+$$ LANGUAGE 'plpgsql';
 
 CREATE OR REPLACE FUNCTION close_deal_fail_by_author(deal_id_to_cls INT) RETURNS void AS $$
     DECLARE _ad_id INT;
+            _is_auction BOOLEAN;
+            _subscriber_id INT;
     BEGIN
         _ad_id := (SELECT ad_id FROM deal WHERE deal_id = deal_id_to_cls);
+        SELECT is_auction FROM ad WHERE ad_id = _ad_id INTO _is_auction;
+        if _is_auction then
+            SELECT subscriber_id FROM deal WHERE deal_id = deal_id_to_cls INTO _subscriber_id;
+            UPDATE users_carma SET frozen_carma = frozen_carma - a_s.bid FROM ad_subscribers a_s
+                WHERE users_carma.user_id = a_s.subscriber_id and a_s.subscriber_id = _subscriber_id AND a_s.ad_id = _ad_id;
+            DELETE FROM ad_subscribers WHERE ad_id = _ad_id AND subscriber_id = _subscriber_id;
+        end if;
         UPDATE ad SET status = 'offer' WHERE ad_id = _ad_id;
         DELETE FROM deal WHERE deal_id = deal_id_to_cls;
     END;
 $$ LANGUAGE 'plpgsql';
 
-CREATE OR REPLACE FUNCTION close_deal_fail_by_subscriber(deal_id_to_cls INT) RETURNS void AS $$
-DECLARE _ad_id INT;
+CREATE OR REPLACE FUNCTION close_deal_fail_by_subscriber(deal_id_to_cls INT, price_coeff INT) RETURNS void AS $$
+DECLARE
+    _ad_id INT;
+    _author_id INT;
+    _is_auction BOOLEAN;
+    _subscriber_id INT;
 BEGIN
+    -- TODO: add auction
     _ad_id := (SELECT ad_id FROM deal WHERE deal_id = deal_id_to_cls);
     UPDATE ad SET status = 'aborted' WHERE ad_id = _ad_id;
+    SELECT subscriber_id FROM deal WHERE deal_id = deal_id_to_cls INTO _subscriber_id;
     DELETE FROM deal WHERE deal_id = deal_id_to_cls;
+
+    SELECT is_auction FROM ad WHERE ad_id = _ad_id INTO _is_auction;
+    IF _is_auction THEN
+        UPDATE users_carma SET frozen_carma = frozen_carma - a_s.bid FROM ad_subscribers a_s
+            WHERE users_carma.user_id = a_s.subscriber_id and a_s.subscriber_id = _subscriber_id AND a_s.ad_id = _ad_id;
+        DELETE FROM ad_subscribers WHERE ad_id = _ad_id AND subscriber_id = _subscriber_id;
+    else
+        UPDATE users_carma SET cost_frozen = cost_frozen -1, frozen_carma = frozen_carma - (cost_frozen - 1) * price_coeff
+            WHERE user_id IN (SELECT subscriber_id FROM ad_subscribers WHERE ad_id = _ad_id);
+    end if;
+    -- look for performance
+
+    DELETE FROM ad_subscribers WHERE ad_id = _ad_id;
+    SELECT author_id FROM ad WHERE ad_id = _ad_id INTO _author_id;
+    UPDATE users_stats SET total_aborted_ads = total_aborted_ads + 1 WHERE user_id = _author_id;
 END;
 $$ LANGUAGE 'plpgsql';
 
@@ -148,7 +253,7 @@ CREATE TABLE notifications (
     CONSTRAINT notification_user FOREIGN KEY (user_id)
         REFERENCES users (vk_id) ON UPDATE CASCADE ON DELETE NO ACTION,
     notification_type citext,
-    creation_datetime TIMESTAMP WITH TIME ZONE default now(),
+    creation_datetime TIMESTAMP WITH TIME ZONE default (now() at time zone 'utc'),
     payload bytea,
     is_read boolean NOT NULL DEFAULT false
 );
@@ -159,7 +264,7 @@ CREATE TABLE comment (
     CONSTRAINT comment_ad FOREIGN KEY (ad_id)
         REFERENCES ad (ad_id) ON UPDATE CASCADE ON DELETE CASCADE,
     text citext,
-    creation_datetime TIMESTAMP WITH TIME ZONE default now(),
+    creation_datetime TIMESTAMP WITH TIME ZONE default (now() at time zone 'utc'),
     author_id bigint,
     CONSTRAINT comment_user FOREIGN KEY (author_id)
         REFERENCES users (vk_id) ON UPDATE CASCADE ON DELETE NO ACTION
@@ -189,3 +294,16 @@ $ad_view_create$ LANGUAGE plpgsql;
 CREATE TRIGGER ad_view_create AFTER INSERT ON ad
     FOR EACH ROW EXECUTE PROCEDURE ad_view_create();
 
+
+CREATE FUNCTION user_stats_create() RETURNS trigger AS $user_stats_create$
+BEGIN
+    INSERT INTO users_stats (user_id) VALUES (new.vk_id);
+    INSERT INTO users_carma (user_id) VALUES (new.vk_id);
+    RETURN NULL;
+END;
+$user_stats_create$ LANGUAGE plpgsql;
+
+CREATE TRIGGER users_stats_create AFTER INSERT ON users
+    FOR EACH ROW EXECUTE PROCEDURE user_stats_create();
+
+CREATE INDEX richest ON ad_subscribers (bid);

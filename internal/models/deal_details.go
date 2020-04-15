@@ -9,3 +9,7 @@ type DealDetails struct {
 
 	Status string `json:"status,omitempty"`
 }
+
+type Bid struct {
+	Bid int `json:"bid"`
+}

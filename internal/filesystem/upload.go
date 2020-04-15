@@ -66,7 +66,7 @@ func CreateDir(path string) error {
 
 func getFileName(path string, adName string, initFilename string) string {
 	extension := filepath.Ext(initFilename)
-	_, errNotFound := os.Stat(filepath.Join(path, adName + extension))
+	_, errNotFound := os.Stat(filepath.Join(path, adName+extension))
 	curFileName := adName + extension
 	index := 0
 	for !os.IsNotExist(errNotFound) {

@@ -6,6 +6,7 @@ import (
 	"github.com/sergeychur/give_it_away/internal/database"
 	"github.com/sergeychur/give_it_away/internal/filesystem"
 	"github.com/sergeychur/give_it_away/internal/models"
+	"github.com/sergeychur/give_it_away/internal/notifications"
 	"log"
 	"mime/multipart"
 	"net/http"
@@ -57,7 +58,7 @@ func (server *Server) AddPhotoToAd(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		WriteToResponse(w, http.StatusInternalServerError, fmt.Errorf("server cannot get userId from cookie"))
 	}
-	status := server.db.AddPhotoToAd(server.config.Host + pathToPhoto, adId, userId)
+	status := server.db.AddPhotoToAd(server.config.Host+pathToPhoto, adId, userId)
 	DealRequestFromDB(w, "OK", status)
 }
 
@@ -71,11 +72,27 @@ func (server *Server) DeleteAd(w http.ResponseWriter, r *http.Request) {
 	userId, err := server.GetUserIdFromCookie(r)
 	if err != nil {
 		WriteToResponse(w, http.StatusInternalServerError, fmt.Errorf("server cannot get userId from cookie"))
+		return
 	}
+	notificationsArr, errNotif := server.db.FormStatusChangedNotificationsByAd(adId,
+		true, notifications.AD_DELETED)
+
 	status := server.db.DeleteAd(adId, userId)
 	DealRequestFromDB(w, "OK", status)
+	{
 
-	if status != database.FORBIDDEN {
+		if errNotif == nil {
+			server.NotificationSender.SendAllNotifications(r.Context(), notificationsArr)
+			err = server.db.InsertNotifications(notificationsArr)
+			if err != nil {
+				log.Println(err)
+			}
+		} else {
+			log.Println(err)
+		}
+
+	}
+	if status == database.OK {
 		err = filesystem.DeleteAdPhotos(server.config.UploadPath, adId)
 		if err != nil {
 			log.Printf("Didn't delete photos for ad %d\n", adId)
@@ -132,7 +149,18 @@ func (server *Server) EditAd(w http.ResponseWriter, r *http.Request) {
 		WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("wrong feedback type"))
 		return
 	}
+	// TODO(EDIT): check this
+
 	status := server.db.EditAd(adId, userId, ad)
+	if status == database.OK {
+		retVal, getStatus := server.db.GetAd(adId, userId)
+		if getStatus != database.OK {
+			log.Println("cannot get ad, strange")
+		} else {
+			note := FormEditAdUpdate(retVal)
+			server.NotificationSender.SendToChannel(r.Context(), note, fmt.Sprintf("ad_%d", adId))
+		}
+	}
 	DealRequestFromDB(w, "OK", status)
 }
 

@@ -16,13 +16,13 @@ const (
 	Other    = "other"
 
 	// get ad query
-	GetAdById = "SELECT a.ad_id, u.vk_id, u.carma, u.name, u.surname, u.photo_url, a.header, a.text, a.region," +
+	GetAdById = "SELECT a.ad_id, u.vk_id, u.name, u.surname, u.photo_url, a.header, a.text, a.region," +
 		" a.district, a.is_auction, a.feedback_type, a.extra_field, a.creation_datetime, a.lat, a.long, a.status," +
 		" a.category, a.comments_count, aw.views_count, a.hidden FROM ad a JOIN users u ON (a.author_id = u.vk_id) " +
 		"JOIN ad_view aw ON (a.ad_id = aw.ad_id) WHERE a.ad_id = $1 AND (a.author_id = $2 OR a.hidden = false)"
 
 	// get ads query
-	GetAds = "SELECT a.ad_id, u.vk_id, u.carma, u.name, u.surname, u.photo_url, a.header, a.region," +
+	GetAds = "SELECT a.ad_id, u.vk_id, u.name, u.surname, u.photo_url, a.header, a.region," +
 		" a.district, a.is_auction, a.feedback_type, a.extra_field, a.creation_datetime, a.status," +
 		" a.category, a.comments_count, a.hidden FROM ad a JOIN users u ON (a.author_id = u.vk_id) " +
 		"JOIN (SELECT ad_id FROM ad%s ORDER BY %s LIMIT $%d OFFSET $%d) l ON (l.ad_id = a.ad_id) ORDER BY %s"
@@ -47,7 +47,7 @@ func (db *DB) GetAd(adId int, userId int) (models.AdForUsersDetailed, int) {
 	lat := pgx.NullFloat64{}
 	long := pgx.NullFloat64{}
 	timeStamp := time.Time{}
-	err := row.Scan(&ad.AdId, &ad.Author.VkId, &ad.Author.Carma, &ad.Author.Name, &ad.Author.Surname,
+	err := row.Scan(&ad.AdId, &ad.Author.VkId, &ad.Author.Name, &ad.Author.Surname,
 		&ad.Author.PhotoUrl, &ad.Header, &ad.Text, &ad.Region, &ad.District, &ad.IsAuction, &ad.FeedbackType,
 		&extraFieldTry, &timeStamp, &lat, &long, &ad.Status, &ad.Category,
 		&ad.CommentsCount, &ad.ViewsCount, &ad.Hidden)
@@ -63,7 +63,9 @@ func (db *DB) GetAd(adId int, userId int) (models.AdForUsersDetailed, int) {
 		return models.AdForUsersDetailed{}, DB_ERROR
 	}
 	ad.GeoPosition.Available = true
-	ad.CreationDate = timeStamp.Format("01.02.2006 15:04")
+	loc, _ := time.LoadLocation("UTC")
+	timeStamp.In(loc)
+	ad.CreationDate = timeStamp.Format("02 Jan 06 15:04 UTC")
 	if extraFieldTry.Valid {
 		ad.ExtraField = extraFieldTry.String
 	}
@@ -74,18 +76,9 @@ func (db *DB) GetAd(adId int, userId int) (models.AdForUsersDetailed, int) {
 		ad.GeoPosition = nil
 	}
 
-	photosRows, err := db.db.Query(GetAdPhotos, ad.AdId)
+	ad.PathesToPhoto, err = db.GetAdPhotos(ad.AdId)
 	if err != nil {
 		return ad, DB_ERROR
-	}
-	defer photosRows.Close()
-	for photosRows.Next() {
-		adPhoto := models.AdPhoto{}
-		err = photosRows.Scan(&adPhoto.AdPhotoId, &adPhoto.PhotoUrl)
-		if err != nil {
-			return ad, DB_ERROR
-		}
-		ad.PathesToPhoto = append(ad.PathesToPhoto, adPhoto)
 	}
 	return ad, FOUND
 }
@@ -162,23 +155,29 @@ func (db *DB) GetAds(page int, rowsPerPage int, params map[string][]string, user
 			if err != nil {
 				return nil, WRONG_INPUT
 			}
-			innerSortByClause = fmt.Sprintf("geo_position <-> SRID=4326;ST_POINT($%d, $%d))",
-				len(strArr) + 1, len(strArr) + 2)
-			outerSortByClause = fmt.Sprintf("a.geo_position <-> SRID=4326;ST_POINT($%d, $%d))",
-				len(strArr) + 1, len(strArr) + 2)
+			innerSortByClause = fmt.Sprintf("geo_position <-> ST_SetSRID(ST_POINT($%d, $%d), 4326))",
+				len(strArr)+1, len(strArr)+2)
+			outerSortByClause = fmt.Sprintf("a.geo_position <-> ST_SetSRID(ST_POINT($%d, $%d), 4326))",
+				len(strArr)+1, len(strArr)+2)
 			strArr = append(strArr, lat, long)
 			//perform some sort by distance(ad geo, given geo)
 		}
 	}
 
 	if len(strArr) == 0 {
-		whereClause += Where + fmt.Sprintf("(hidden = false OR author_id = $%d)", len(strArr) + 1)
+		whereClause += Where + "status = 'offer' "
 	} else {
-		whereClause += And + fmt.Sprintf("(hidden = false OR author_id = $%d)", len(strArr) + 1)
+		whereClause += And + "status = 'offer' "
 	}
 
+	//if len(strArr) == 0 {
+	//	whereClause += Where + fmt.Sprintf("(hidden = false OR author_id = $%d)", len(strArr)+1)
+	//} else {
+		whereClause += And + fmt.Sprintf(" (hidden = false OR author_id = $%d)", len(strArr)+1)
+	//}
+
 	strArr = append(strArr, userId)
-	query = fmt.Sprintf(GetAds, whereClause, innerSortByClause, len(strArr) + 1, len(strArr) + 2, outerSortByClause)
+	query = fmt.Sprintf(GetAds, whereClause, innerSortByClause, len(strArr)+1, len(strArr)+2, outerSortByClause)
 	strArr = append(strArr, rowsPerPage, offset)
 	ads := make([]models.AdForUsers, 0)
 	rows, err := db.db.Query(query, strArr...)
@@ -211,28 +210,34 @@ func (db *DB) WorkWithOneAd(rows *pgx.Rows, ads Ads) (Ads, error) {
 	/*lat := pgx.NullFloat64{}
 	long := pgx.NullFloat64{}*/
 	timeStamp := time.Time{}
-	err := rows.Scan(&ad.AdId, &ad.Author.VkId, &ad.Author.Carma, &ad.Author.Name, &ad.Author.Surname,
-		&ad.Author.PhotoUrl, &ad.Header, /*&ad.Text,*/ &ad.Region, &ad.District, &ad.IsAuction, &ad.FeedbackType,
-		&extraFieldTry, &timeStamp, /*&lat, &long,*/ &ad.Status, &ad.Category,
+	err := rows.Scan(&ad.AdId, &ad.Author.VkId, &ad.Author.Name, &ad.Author.Surname,
+		&ad.Author.PhotoUrl, &ad.Header /*&ad.Text,*/, &ad.Region, &ad.District, &ad.IsAuction, &ad.FeedbackType,
+		&extraFieldTry, &timeStamp /*&lat, &long,*/, &ad.Status, &ad.Category,
 		&ad.CommentsCount, &ad.Hidden)
 	if err != nil {
 		return nil, err
 	}
-	//ad.GeoPosition.Available = true
-	ad.CreationDate = timeStamp.Format("01.02.2006 15:04")
+
+	loc, _ := time.LoadLocation("UTC")
+	timeStamp.In(loc)
+	ad.CreationDate = timeStamp.Format("02 Jan 06 15:04 UTC")
 	if extraFieldTry.Valid {
 		ad.ExtraField = extraFieldTry.String
 	}
-	/*if lat.Valid && long.Valid {
-		ad.GeoPosition.Latitude = lat.Float64
-		ad.GeoPosition.Longitude = long.Float64
-	} else {
-		ad.GeoPosition = nil
-	}*/
-	photosRows, err := db.db.Query(GetAdPhotos, ad.AdId)
+	ad.PathesToPhoto, err = db.GetAdPhotos(ad.AdId)
 	if err != nil {
 		return nil, err
 	}
+	ads = append(ads, *ad)
+	return ads, nil
+}
+
+func (db *DB) GetAdPhotos(adId int64) ([]models.AdPhoto, error) {
+	photosRows, err := db.db.Query(GetAdPhotos, adId)
+	if err != nil {
+		return nil, err
+	}
+	photoArr := make([]models.AdPhoto, 0)
 	defer photosRows.Close()
 	for photosRows.Next() {
 		adPhoto := models.AdPhoto{}
@@ -240,8 +245,7 @@ func (db *DB) WorkWithOneAd(rows *pgx.Rows, ads Ads) (Ads, error) {
 		if err != nil {
 			return nil, err
 		}
-		ad.PathesToPhoto = append(ad.PathesToPhoto, adPhoto)
+		photoArr = append(photoArr, adPhoto)
 	}
-	ads = append(ads, *ad)
-	return ads, nil
+	return photoArr, nil
 }

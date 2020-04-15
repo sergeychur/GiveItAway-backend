@@ -36,3 +36,30 @@ func (server *Server) GetNotifications(w http.ResponseWriter, r *http.Request) {
 	notifications, status := server.db.GetNotifications(userId, page, rowsPerPage)
 	DealRequestFromDB(w, notifications, status)
 }
+
+func (server *Server) CountUnreadNotes(w http.ResponseWriter, r *http.Request) {
+	userId, err := server.GetUserIdFromCookie(r)
+	if err != nil {
+		WriteToResponse(w, http.StatusInternalServerError, fmt.Errorf("server cannot get userId from cookie"))
+	}
+	num, status := server.db.GetUnreadNotesCount(userId)
+	DealRequestFromDB(w, num, status)
+}
+
+func (server *Server) GetCentrifugoToken(w http.ResponseWriter, r *http.Request) {
+	userId, err := server.GetUserIdFromCookie(r)
+	if err != nil {
+		WriteToResponse(w, http.StatusInternalServerError, fmt.Errorf("server cannot get userId from cookie"))
+		return
+	}
+	token, err := GenerateCentrifugoToken(userId, 240, []byte(server.config.Secret))
+	if err != nil {
+		WriteToResponse(w, http.StatusInternalServerError, err)
+		return
+	}
+	WriteToResponse(w, http.StatusOK, token)
+}
+
+func (server *Server) TestCentrifugo(w http.ResponseWriter, r *http.Request) {
+	server.NotificationSender.PublishTest(r.Context())
+}

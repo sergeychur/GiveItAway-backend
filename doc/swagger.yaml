@@ -17,6 +17,8 @@ tags:
     description: "Доступ к фото объявлений"
   - name: "notification"
     description: "Вкладка обновлений, запросы на них"
+  - name: "ws_token"
+    description: "Получение токена для центрифуги"
 schemes:
   - "https"
   - "http"
@@ -294,6 +296,8 @@ paths:
           description: "user id is the same as author's"
         401:
           description: "no auth"
+        409:
+          description: "not enough carma to subscribe"
   /ad/{ad_id}/subscribers:
     get:
       summary: "Посмотреть подписавшихся на объвлениe"
@@ -414,8 +418,13 @@ paths:
           type: integer
         - name: subscriber_id
           in: query
-          required: true
+          required: false
           type: integer
+        - name: type
+          in: query
+          required: true
+          type: string
+          enum: ["auction", "choice", "random"]
       responses:
         201:
           description: "deal created"
@@ -446,6 +455,43 @@ paths:
           description: "wrong parameters"
         404:
           description: "no pending deal for ad"
+  /ad/{ad_id}/bid_for_user:
+    get:
+      summary: "Получить текущую цену на пользователя"
+      tags:
+        - deal
+      parameters:
+        - name: ad_id
+          in: path
+          required: true
+          type: integer
+      responses:
+        200:
+          description: "there is a evaluated price"
+          schema:
+            $ref: "#/definitions/Bid"
+        400:
+          description: "wrong parameters"
+        404:
+          description: "no ad or user"
+
+  /ad/{ad_id}/max_bid:
+    get:
+      summary: "Получить максимальную ставку в аукционе"
+      tags:
+        - deal
+      parameters:
+        - name: ad_id
+          in: path
+          required: true
+          type: integer
+      responses:
+        200:
+          description: "there is a evaluated price"
+          schema:
+            $ref: "#/definitions/Bid"
+        400:
+          description: "wrong parameters"
   /ad/{ad_id}/comments:
     get:
       tags:
@@ -736,6 +782,108 @@ paths:
             $ref: "#/definitions/User"
         401:
           description: "data is invalid, though unauthorized"
+  /user/{user_id}/given:
+    get:
+      tags:
+        - "ad"
+      summary: "Получить объявления, вещи из которых отдал юзер"
+      produces:
+        - "application/json"
+      parameters:
+        - name: "page"
+          in: "query"
+          type: "string"
+          description: "page for pagination"
+          required: true
+        - name: "rows_per_page"
+          in: "query"
+          type: "string"
+          description: "rows per page for pagination"
+          required: true
+        - name: "user_id"
+          in: "path"
+          required: true
+          type: integer
+      responses:
+        200:
+          description: "found smth"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/AdForUsers"
+        400:
+          description: "Invalid parameters"
+        404:
+          description: "Found nothing"
+
+  /user/{user_id}/received:
+    get:
+      tags:
+        - "ad"
+      summary: "Получить объявления, вещи из которых забрал юзер"
+      produces:
+        - "application/json"
+      parameters:
+        - name: "page"
+          in: "query"
+          type: "string"
+          description: "page for pagination"
+          required: true
+        - name: "rows_per_page"
+          in: "query"
+          type: "string"
+          description: "rows per page for pagination"
+          required: true
+        - name: "user_id"
+          in: "path"
+          required: true
+          type: integer
+      responses:
+        200:
+          description: "found smth"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/AdForUsers"
+        400:
+          description: "Invalid parameters"
+        404:
+          description: "Found nothing"
+
+  /ad/wanted:
+    get:
+      tags:
+        - "ad"
+      summary: "Получить объявления, на которые подписан"
+      produces:
+        - "application/json"
+      parameters:
+        - name: "page"
+          in: "query"
+          type: "string"
+          description: "page for pagination"
+          required: true
+        - name: "rows_per_page"
+          in: "query"
+          type: "string"
+          description: "rows per page for pagination"
+          required: true
+        - name: "user_id"
+          in: "path"
+          required: true
+          type: integer
+      responses:
+        200:
+          description: "found smth"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/AdForUsers"
+        400:
+          description: "Invalid parameters"
+        404:
+          description: "Found nothing"
+
   /notifications:
     get:
       tags:
@@ -765,6 +913,32 @@ paths:
           description: "unauthaurized"
         404:
           description: "no notifications were found"
+
+  /notifications_count:
+    get:
+      tags:
+        - "notification"
+      summary: "Получить число непрочитанных уведомлений"
+      responses:
+        200:
+          description: "counted"
+          schema:
+            $ref: "#/definitions/NotificationsCount"
+        401:
+          description: "unauthorized"
+  /ws_token:
+    get:
+      tags:
+        - "ws_token"
+      summary: "Получить токен для центрифуги"
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: "#/definitions/TokenObj"
+        401:
+          description: Unloginned
+
 
 definitions:
   User:
@@ -1027,3 +1201,19 @@ definitions:
         type: object
       is_read:
         type: "boolean"
+  TokenObj:
+    type: "object"
+    properties:
+      token:
+        type: string
+        example: "jerfherwfbr43b3rb4rhbfefgvqwe"
+  NotificationsCount:
+    type: "object"
+    properties:
+      number:
+        type: integer
+  Bid:
+    type: "object"
+    properties:
+      bid:
+        type: integer

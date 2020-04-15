@@ -7,20 +7,47 @@ import (
 )
 
 const (
-	AD_CLOSE = "ad_close"
+	AD_CLOSE             = "ad_close"
+	AD_RESPOND           = "respond"
+	DEAL_FULFILL         = "fulfill"
+	STATUS_CHANGED       = "status"
+	AD_DELETED           = "deleted"
+	AUTHOR_CANCELLED     = "authorCancel"
+	SUBSCRIBER_CANCELLED = "subscriberCancel"
+	COMMENT_CREATED = "new_comment"
 )
 
 var (
-	funcsmap = map[string]func() interface{} {
+	FuncsMap = map[string]func() interface{}{
 		AD_CLOSE: func() interface{} {
 			return &models.AuthorClosedAd{}
+		},
+		AD_RESPOND: func() interface{} {
+			return &models.UserSubscribed{}
+		},
+		DEAL_FULFILL: func() interface{} {
+			return &models.AdStatusChanged{}
+		},
+		STATUS_CHANGED: func() interface{} {
+			return &models.AdStatusChanged{}
+		},
+		AD_DELETED: func() interface{} {
+			return &models.AdStatusChanged{}
+		},
+		AUTHOR_CANCELLED: func() interface{} {
+			return &models.AuthorCancelled{}
+		},
+		SUBSCRIBER_CANCELLED: func() interface{} {
+			return &models.SubscriberCancelled{}
+		},
+		COMMENT_CREATED: func() interface{} {
+			return &models.NewComment{}
 		},
 	}
 )
 
 func FormPayLoad(payload []byte, notificationType string) (interface{}, error) {
-	//funcsmap := make(map[string] func([]byte) interface{})
-	neededFunc, ok := funcsmap[notificationType]
+	neededFunc, ok := FuncsMap[notificationType]
 	if !ok {
 		return nil, fmt.Errorf("unable to detect notification type")
 	}

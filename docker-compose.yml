@@ -65,6 +65,7 @@ services:
       - ./data/nginx:/etc/nginx/conf.d
       - ./data/certbot/conf:/etc/letsencrypt
       - ./data/certbot/www:/var/www/certbot
+      - /home/artyom/GiveItAway/build:/front
     ports:
       - "80:80"
       - "443:443"
@@ -77,4 +78,17 @@ services:
       - ./data/certbot/conf:/etc/letsencrypt
       - ./data/certbot/www:/var/www/certbot
     entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+
+  centrifugal:
+    image: centrifugo/centrifugo
+    restart: unless-stopped
+    networks:
+      - uniting_net
+    command: centrifugo -c /centrifuge/centrifugo_config.json
+    volumes: 
+      - ./config:/centrifuge/
+    ports:
+      - "8000:8000"
+    expose:
+      - 8000
 
