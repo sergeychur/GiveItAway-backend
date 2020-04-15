@@ -4,6 +4,9 @@ import (
 	"github.com/sergeychur/give_it_away/internal/global_constants"
 	"github.com/sergeychur/give_it_away/internal/models"
 	"gopkg.in/jackc/pgx.v2"
+	"math/rand"
+	"net/url"
+	"strconv"
 )
 
 const (
@@ -38,6 +41,7 @@ const (
 		"ORDER BY a_s.ad_subscribers_id"
 
 	GetAdSubscribersIds = "SELECT a_s.subscriber_id FROM ad_subscribers a_s WHERE a_s.ad_id = $1"
+
 )
 
 func (db *DB) SubscribeToAd(adId int, userId int, priceCoeff int) int {
@@ -108,10 +112,10 @@ func (db *DB) UnsubscribeFromAd(adId int, userId int) int {
 	return OK
 }
 
-func (db *DB) MakeDeal(adId int, subscriberId int, initiatorId int, isAuction bool) (int, int) {
+func (db *DB) MakeDeal(adId int, initiatorId int, dealType string, params url.Values) (int, int, int) {
 	tx, err := db.StartTransaction()
 	if err != nil {
-		return DB_ERROR, 0
+		return DB_ERROR, 0, 0
 	}
 	defer func() {
 		_ = tx.Rollback()
@@ -120,43 +124,40 @@ func (db *DB) MakeDeal(adId int, subscriberId int, initiatorId int, isAuction bo
 	// TODO: maybe add check if the ad is open(you cannot deal with closed ad)
 	err = tx.QueryRow(checkAdExist, adId).Scan(&authorId)
 	if err == pgx.ErrNoRows {
-		return EMPTY_RESULT, 0
+		return EMPTY_RESULT, 0, 0
 	}
 	if err != nil {
-		return DB_ERROR, 0
+		return DB_ERROR, 0, 0
 	}
 
 	if authorId != initiatorId {
-		return FORBIDDEN, 0
+		return FORBIDDEN, 0, 0
 	}
 	dealExists := true
 	err = tx.QueryRow(CheckIfDealExists, adId).Scan(&dealExists)
 	if err != nil {
-		return DB_ERROR, 0
+		return DB_ERROR, 0, 0
 	}
-	if isAuction {
-		err = tx.QueryRow(GetRichest, adId).Scan(&subscriberId)
-		if err != nil {
-			return DB_ERROR, 0
-		}
-	} else {
-		isSubscriber := false
-		err = tx.QueryRow(CheckIfSubscriber, adId, subscriberId).Scan(&isSubscriber)
-		if err != nil {
-			return DB_ERROR, 0
-		}
-		if dealExists || !isSubscriber {
-			return CONFLICT, 0
-		}
+	subscriberId, status := db.GetSubscriberIdForDeal(adId, dealType, params)
+	if status != OK {
+		return status, 0, 0
+	}
+	isSubscriber := false
+	err = tx.QueryRow(CheckIfSubscriber, adId, subscriberId).Scan(&isSubscriber)
+	if err != nil {
+		return DB_ERROR, 0, 0
+	}
+	if dealExists || !isSubscriber {
+		return CONFLICT, 0, 0
 	}
 
 	dealId := 0
 	err = tx.QueryRow(CreateDeal, adId, subscriberId).Scan(&dealId)
 	if err != nil {
-		return DB_ERROR, 0
+		return DB_ERROR, 0, 0
 	}
 	_ = tx.Commit()
-	return CREATED, dealId
+	return CREATED, dealId, subscriberId
 }
 
 func (db *DB) FulfillDeal(dealId int, userId int) int {
@@ -309,4 +310,54 @@ func (db *DB) GetAllAdSubscribersIDs(adId int) ([]int, error) {
 		ids = append(ids, id)
 	}
 	return ids, nil
+}
+
+func (db *DB) GetSubscriberIdForDeal(adId int, dealType string, params url.Values) (int, int) {
+	choicer := map[string]func(values url.Values) (int, int) {
+		"auction": func(values url.Values) (int, int) {
+			subscriberId := 0
+			err := db.db.QueryRow(GetRichest, adId).Scan(&subscriberId)
+			if err != nil {
+				return 0, DB_ERROR
+			}
+			return subscriberId, OK
+		},
+		"random": func(values url.Values) (int, int) {
+			rows, err := db.db.Query(GetAdSubscribersIds, adId)
+			if err != nil {
+				return 0, DB_ERROR
+			}
+			defer func() {
+				rows.Close()
+			}()
+			ids := make([]int, 0)
+			for rows.Next() {
+				id := 0
+				err = rows.Scan(&id)
+				if err != nil {
+					return 0, DB_ERROR
+				}
+				ids = append(ids, id)
+			}
+			length := len(ids)
+			index := rand.Intn(length)
+			return ids[index], OK
+		},
+		"choice": func(values url.Values) (int, int) {
+			subscriberArr, ok := params["subscriber_id"]
+			if !ok || len(subscriberArr) != 1 {
+				return 0, WRONG_INPUT
+			}
+			subscriberId, err := strconv.Atoi(subscriberArr[0])
+			if err != nil {
+				return 0, WRONG_INPUT
+			}
+			return subscriberId, OK
+		},
+	}
+	fun, ok := choicer[dealType]
+	if !ok {
+		return 0, WRONG_INPUT
+	}
+	return fun(params)
 }

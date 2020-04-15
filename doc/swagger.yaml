@@ -420,10 +420,11 @@ paths:
           in: query
           required: false
           type: integer
-        - name: is_auction
+        - name: type
           in: query
-          required: false
-          type: integer
+          required: true
+          type: string
+          enum: ["auction", "choice", "random"]
       responses:
         201:
           description: "deal created"

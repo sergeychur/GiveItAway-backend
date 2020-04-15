@@ -93,7 +93,7 @@ func (server *Server) MakeDeal(w http.ResponseWriter, r *http.Request) {
 		WriteToResponse(w, http.StatusInternalServerError, fmt.Errorf("server cannot get userId from cookie"))
 	}
 	params := r.URL.Query()
-	isAuctionArr, ok := params["is_auction"]
+	/*isAuctionArr, ok := params["is_auction"]
 	subscriberId := 0
 	isAuction := false
 	if !ok || len(isAuctionArr) != 1  {
@@ -110,8 +110,18 @@ func (server *Server) MakeDeal(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		isAuction = isAuctionArr[0] == "true"
+	}*/
+	typeArr, ok := params["type"]
+	if !ok || len(typeArr) != 1  {
+		WriteToResponse(w, http.StatusBadRequest,
+			fmt.Errorf("type has to be in query"))
 	}
-	status, dealId := server.db.MakeDeal(adId, subscriberId, initiatorId, isAuction)
+	//subscriberId, status := server.db.GetSubscriberIdForDeal(typeArr[0], params)
+	//if status != database.OK {
+	//	DealRequestFromDB(w, "OK", status)
+	//	return
+	//}
+	status, dealId, subscriberId := server.db.MakeDeal(adId, initiatorId, typeArr[0], params)
 
 	if status == database.CREATED { // TODO: probably go func
 		server.MakeDealSendUpd(dealId, initiatorId, subscriberId, adId, r)
