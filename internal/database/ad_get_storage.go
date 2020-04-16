@@ -101,8 +101,9 @@ func (db *DB) GetAds(page int, rowsPerPage int, params map[string][]string, user
 	}
 
 	authorArr, ok := params["author_id"]
-
+	authorInQuery := false
 	if ok && len(authorArr) == 1 {
+		authorInQuery = true
 		if len(strArr) == 0 {
 			whereClause += Where + fmt.Sprintf(AuthorClause, 1)
 		} else {
@@ -163,18 +164,17 @@ func (db *DB) GetAds(page int, rowsPerPage int, params map[string][]string, user
 			//perform some sort by distance(ad geo, given geo)
 		}
 	}
-
-	if len(strArr) == 0 {
-		whereClause += Where + "status = 'offer' "
-	} else {
-		whereClause += And + "status = 'offer' "
-	}
-
-	//if len(strArr) == 0 {
-	//	whereClause += Where + fmt.Sprintf("(hidden = false OR author_id = $%d)", len(strArr)+1)
-	//} else {
+	if !authorInQuery {
+		if len(strArr) == 0 {
+			whereClause += Where + "status = 'offer' "
+		} else {
+			whereClause += And + " status = 'offer' "
+		}
 		whereClause += And + fmt.Sprintf(" (hidden = false OR author_id = $%d)", len(strArr)+1)
-	//}
+
+	} else {
+		whereClause += And + fmt.Sprintf(" (hidden = false OR author_id = $%d)", len(strArr)+1)
+	}
 
 	strArr = append(strArr, userId)
 	query = fmt.Sprintf(GetAds, whereClause, innerSortByClause, len(strArr)+1, len(strArr)+2, outerSortByClause)
