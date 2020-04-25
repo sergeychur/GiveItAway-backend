@@ -1,16 +1,16 @@
-DROP TABLE IF EXISTS deal;
-DROP TABLE IF EXISTS ad_subscribers;
-DROP TABLE IF EXISTS ad_photos;
-DROP TABLE IF EXISTS ad;
-DROP TABLE IF EXISTS users;
-DROP TABLE IF EXISTS ad_view;
-DROP TABLE IF EXISTS notifications;
-DROP TABLE IF EXISTS comment;
+-- DROP TABLE IF EXISTS deal;
+-- DROP TABLE IF EXISTS ad_subscribers;
+-- DROP TABLE IF EXISTS ad_photos;
+-- DROP TABLE IF EXISTS ad;
+-- DROP TABLE IF EXISTS users;
+-- DROP TABLE IF EXISTS ad_view;
+-- DROP TABLE IF EXISTS notifications;
+-- DROP TABLE IF EXISTS comment;
 
-DROP FUNCTION IF EXISTS make_deal;
-DROP FUNCTION IF EXISTS close_deal_success;
-DROP FUNCTION IF EXISTS close_deal_fail_by_subscriber;
-DROP FUNCTION IF EXISTS close_deal_fail_by_author;
+-- DROP FUNCTION IF EXISTS make_deal;
+-- DROP FUNCTION IF EXISTS close_deal_success;
+-- DROP FUNCTION IF EXISTS close_deal_fail_by_subscriber;
+-- DROP FUNCTION IF EXISTS close_deal_fail_by_author;
 DROP TRIGGER IF EXISTS update_comments_count ON comment;
 DROP FUNCTION IF EXISTS update_comments_count;
 drop trigger if exists ad_view_create on ad;
@@ -19,15 +19,15 @@ drop trigger if exists users_stats_create on users;
 drop function if exists user_stats_create();
 
 
-DROP INDEX IF EXISTS ad_geos;
-DROP INDEX IF EXISTS richest;
+-- DROP INDEX IF EXISTS ad_geos;
+-- DROP INDEX IF EXISTS richest;
 
 
 CREATE EXTENSION IF NOT EXISTS citext;
 CREATE EXTENSION IF NOT EXISTS postgis;
 
 
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     vk_id bigint NOT NULL CONSTRAINT user_pk PRIMARY KEY,
     name citext,
     surname citext,
@@ -35,7 +35,7 @@ CREATE TABLE users (
     registration_date_time TIMESTAMP WITH TIME ZONE default (now() at time zone 'utc')
 );
 
-CREATE TABLE users_carma (
+CREATE TABLE IF NOT EXISTS users_carma (
     user_id bigint,
     CONSTRAINT users_carma_users FOREIGN KEY (user_id)
         REFERENCES users (vk_id) ON UPDATE CASCADE ON DELETE NO ACTION,
@@ -46,7 +46,7 @@ CREATE TABLE users_carma (
     last_updated  TIMESTAMP WITH TIME ZONE default (now() at time zone 'utc')
 );
 
-CREATE TABLE users_stats (
+CREATE TABLE IF NOT EXISTS users_stats (
     user_stats_id bigserial CONSTRAINT users_stats_pk PRIMARY KEY,
     user_id bigint,
     CONSTRAINT users_stats_users FOREIGN KEY (user_id)
@@ -63,7 +63,7 @@ DROP TYPE IF EXISTS ad_status;
 CREATE TYPE feedback AS ENUM ('ls', 'comments', 'other');
 CREATE TYPE ad_status AS ENUM ('offer', 'chosen', 'closed', 'aborted');
 
-CREATE TABLE ad (
+CREATE TABLE IF NOT EXISTS ad (
     ad_id bigserial CONSTRAINT ad_pk PRIMARY KEY,
     author_id bigint,
     CONSTRAINT ad_author FOREIGN KEY (author_id)
@@ -85,7 +85,7 @@ CREATE TABLE ad (
     hidden BOOLEAN NOT NULL DEFAULT FALSE
 );
 
-CREATE TABLE ad_view (
+CREATE TABLE IF NOT EXISTS ad_view (
     ad_view_id bigserial CONSTRAINT ad_view_pk PRIMARY KEY ,
     ad_id bigint,
     CONSTRAINT ad_view_ad FOREIGN KEY (ad_id)
@@ -94,7 +94,7 @@ CREATE TABLE ad_view (
     CONSTRAINT ad_view_unique UNIQUE (ad_id)
 );
 
-CREATE TABLE ad_photos (
+CREATE TABLE IF NOT EXISTS ad_photos (
     ad_photos_id bigserial CONSTRAINT ad_photos_pk PRIMARY KEY ,
     ad_id bigint,
     CONSTRAINT ad_photos_ad FOREIGN KEY (ad_id)
@@ -102,7 +102,7 @@ CREATE TABLE ad_photos (
     photo_url text
 );
 
-CREATE TABLE ad_subscribers (
+CREATE TABLE IF NOT EXISTS ad_subscribers (
     ad_subscribers_id bigserial CONSTRAINT ad_subscribers_pk PRIMARY KEY ,
     ad_id bigint,
     CONSTRAINT ad_subscribers_ad FOREIGN KEY (ad_id)
@@ -117,7 +117,7 @@ CREATE TABLE ad_subscribers (
 DROP TYPE IF EXISTS deal_status;
 CREATE TYPE deal_status AS ENUM ('open', 'success');
 
-CREATE TABLE deal (
+CREATE TABLE IF NOT EXISTS deal (
     deal_id bigserial CONSTRAINT deal_pk PRIMARY KEY,
     ad_id bigint,
     CONSTRAINT deal_ad FOREIGN KEY (ad_id)
@@ -243,11 +243,11 @@ BEGIN
 END;
 $$ LANGUAGE 'plpgsql';
 
-CREATE INDEX ad_geos
+CREATE INDEX IF NOT EXISTS ad_geos
     ON ad
         USING GIST (geo_position);
 
-CREATE TABLE notifications (
+CREATE TABLE IF NOT EXISTS notifications (
     notification_id bigserial CONSTRAINT notification_pk PRIMARY KEY,
     user_id bigint,
     CONSTRAINT notification_user FOREIGN KEY (user_id)
@@ -258,7 +258,7 @@ CREATE TABLE notifications (
     is_read boolean NOT NULL DEFAULT false
 );
 
-CREATE TABLE comment (
+CREATE TABLE IF NOT EXISTS comment (
     comment_id bigserial CONSTRAINT comment_pk PRIMARY KEY,
     ad_id bigint,
     CONSTRAINT comment_ad FOREIGN KEY (ad_id)
@@ -306,4 +306,4 @@ $user_stats_create$ LANGUAGE plpgsql;
 CREATE TRIGGER users_stats_create AFTER INSERT ON users
     FOR EACH ROW EXECUTE PROCEDURE user_stats_create();
 
-CREATE INDEX richest ON ad_subscribers (bid);
+CREATE INDEX IF NOT EXISTS richest ON ad_subscribers (bid);
