@@ -156,9 +156,9 @@ func (db *DB) GetAds(page int, rowsPerPage int, params map[string][]string, user
 			if err != nil {
 				return nil, WRONG_INPUT
 			}
-			innerSortByClause = fmt.Sprintf("geo_position <-> ST_SetSRID(ST_POINT($%d, $%d), 4326))",
+			innerSortByClause = fmt.Sprintf("geo_position <-> ST_SetSRID(ST_POINT($%d, $%d), 4326)",
 				len(strArr)+1, len(strArr)+2)
-			outerSortByClause = fmt.Sprintf("a.geo_position <-> ST_SetSRID(ST_POINT($%d, $%d), 4326))",
+			outerSortByClause = fmt.Sprintf("a.geo_position <-> ST_SetSRID(ST_POINT($%d, $%d), 4326)",
 				len(strArr)+1, len(strArr)+2)
 			strArr = append(strArr, lat, long)
 			//perform some sort by distance(ad geo, given geo)

@@ -63,3 +63,4 @@ func (server *Server) GetCentrifugoToken(w http.ResponseWriter, r *http.Request)
 func (server *Server) TestCentrifugo(w http.ResponseWriter, r *http.Request) {
 	server.NotificationSender.PublishTest(r.Context())
 }
+
