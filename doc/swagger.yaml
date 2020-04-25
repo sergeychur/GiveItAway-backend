@@ -39,7 +39,7 @@ paths:
         404:
           description: Not Found
 
-  /ad/create:
+  /post/create:
     post:
       tags:
         - "ad"
@@ -68,7 +68,7 @@ paths:
           description: "Invalid input"
         404:
           description: "user doesn't exist"
-  /ad/{ad_id}/edit:
+  /post/{ad_id}/edit:
     put:
       tags:
         - "ad"
@@ -101,7 +101,7 @@ paths:
           description: "Ad not found"
         200:
           description: "Modification succeeded"
-  /ad/{ad_id}/details:
+  /post/{ad_id}/details:
     get:
       tags:
         - "ad"
@@ -123,7 +123,7 @@ paths:
             "The details of ad"
           schema:
             $ref: "#/definitions/AdForUsersDetailed"
-  /ad/{ad_id}/set_hidden:
+  /post/{ad_id}/set_hidden:
     post:
       tags:
         - "ad"
@@ -148,7 +148,7 @@ paths:
           description:
             "bad parameters"
 
-  /ad/{ad_id}/set_visible:
+  /post/{ad_id}/set_visible:
     post:
       tags:
         - "ad"
@@ -172,7 +172,7 @@ paths:
         400:
           description:
             "bad parameters"
-  /ad/find:
+  /post/find:
     get:
       tags:
         - "ad"
@@ -238,7 +238,7 @@ paths:
           description: "Invalid parameters"
         404:
           description: "Found nothing"
-  /ad/{ad_id}/upload_image:
+  /post/{ad_id}/upload_image:
     post:
       tags:
         - ad
@@ -272,7 +272,7 @@ paths:
           description: Error in the path
         '500':
           description: Error while uploading the file
-  /ad/{ad_id}/subscribe:
+  /post/{ad_id}/subscribe:
     post:
       summary: "Подписаться на объявление (быть среди тех, кто хочет забрать)"
       tags:
@@ -298,7 +298,7 @@ paths:
           description: "no auth"
         409:
           description: "not enough carma to subscribe"
-  /ad/{ad_id}/subscribers:
+  /post/{ad_id}/subscribers:
     get:
       summary: "Посмотреть подписавшихся на объвлениe"
       tags:
@@ -325,7 +325,7 @@ paths:
           description: "some parameters are bad"
         404:
           description: "ad or subscribers are not found"
-  /ad/{ad_id}/unsubscribe:
+  /post/{ad_id}/unsubscribe:
     post:
       summary: "Отписаться от объявления"
       tags:
@@ -349,7 +349,7 @@ paths:
           description: "user wasn't subscribed"
         401:
           description: "no auth"
-  /ad/{ad_id}/delete:
+  /post/{ad_id}/delete:
     post:
       summary: "Закрыть объявление без сделки(удалить его насовсем)"
       tags:
@@ -374,7 +374,7 @@ paths:
         400:
           description: "bad parameters"
 
-  /ad/{ad_id}/delete_photo:
+  /post/{ad_id}/delete_photo:
     post:
       summary: "Удалить фото, принадлежащее объявлению"
       tags:
@@ -406,7 +406,7 @@ paths:
         400:
           description: "bad parameters"
 
-  /ad/{ad_id}/make_deal:
+  /post/{ad_id}/make_deal:
     put:
       summary: "Выбрать пользователя, с которым заключить сделку об отдаче товара"
       tags:
@@ -436,7 +436,7 @@ paths:
           description: "no subscriber id in subscribers list or deal already exists"
         401:
           description: "no auth"
-  /ad/{ad_id}/deal:
+  /post/{ad_id}/deal:
     get:
       summary: "Получить параметры сделки, ассоциированной с этим объявлением"
       tags:
@@ -455,7 +455,7 @@ paths:
           description: "wrong parameters"
         404:
           description: "no pending deal for ad"
-  /ad/{ad_id}/bid_for_user:
+  /post/{ad_id}/bid_for_user:
     get:
       summary: "Получить текущую цену на пользователя"
       tags:
@@ -475,7 +475,7 @@ paths:
         404:
           description: "no ad or user"
 
-  /ad/{ad_id}/max_bid:
+  /post/{ad_id}/max_bid:
     get:
       summary: "Получить максимальную ставку в аукционе"
       tags:
@@ -492,7 +492,7 @@ paths:
             $ref: "#/definitions/Bid"
         400:
           description: "wrong parameters"
-  /ad/{ad_id}/comments:
+  /post/{ad_id}/comments:
     get:
       tags:
         - "comment"
@@ -850,7 +850,7 @@ paths:
         404:
           description: "Found nothing"
 
-  /ad/wanted:
+  /post/wanted:
     get:
       tags:
         - "ad"
