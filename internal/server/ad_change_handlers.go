@@ -48,7 +48,7 @@ func (server *Server) AddPhotoToAd(w http.ResponseWriter, r *http.Request) {
 		WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("id should be int"))
 	}
 	pathToPhoto, err := filesystem.UploadFile(w, r, function,
-		server.config.UploadPath, fmt.Sprintf("ad_%d", adId))
+		server.config.UploadPath, fmt.Sprintf("post_%d", adId))
 	if err != nil {
 		log.Println(err.Error())
 		w.WriteHeader(http.StatusBadRequest)
