@@ -48,28 +48,28 @@ func NewServer(pathToConfig string) (*Server, error) {
 
 	subRouter := chi.NewRouter()
 	// ad
-	needLogin.Post("/ad/create", server.CreateAd)
-	needLogin.Put(fmt.Sprintf("/ad/{ad_id:%s}/edit", idPattern), server.EditAd)
-	needLogin.Get(fmt.Sprintf("/ad/{ad_id:%s}/details", idPattern), server.GetAdInfo)
-	needLogin.Get("/ad/find", server.FindAds)
-	needLogin.Post(fmt.Sprintf("/ad/{ad_id:%s}/upload_image", idPattern), server.AddPhotoToAd)
-	needLogin.Post(fmt.Sprintf("/ad/{ad_id:%s}/delete", idPattern), server.DeleteAd)
-	needLogin.Post(fmt.Sprintf("/ad/{ad_id:%s}/delete_photo", idPattern), server.DeleteAdPhoto)
-	needLogin.Post(fmt.Sprintf("/ad/{ad_id:%s}/set_hidden", idPattern), server.SetHidden)
-	needLogin.Post(fmt.Sprintf("/ad/{ad_id:%s}/set_visible", idPattern), server.SetVisible)
+	needLogin.Post("/post/create", server.CreateAd)
+	needLogin.Put(fmt.Sprintf("/post/{ad_id:%s}/edit", idPattern), server.EditAd)
+	needLogin.Get(fmt.Sprintf("/post/{ad_id:%s}/details", idPattern), server.GetAdInfo)
+	needLogin.Get("/post/find", server.FindAds)
+	needLogin.Post(fmt.Sprintf("/post/{ad_id:%s}/upload_image", idPattern), server.AddPhotoToAd)
+	needLogin.Post(fmt.Sprintf("/post/{ad_id:%s}/delete", idPattern), server.DeleteAd)
+	needLogin.Post(fmt.Sprintf("/post/{ad_id:%s}/delete_photo", idPattern), server.DeleteAdPhoto)
+	needLogin.Post(fmt.Sprintf("/post/{ad_id:%s}/set_hidden", idPattern), server.SetHidden)
+	needLogin.Post(fmt.Sprintf("/post/{ad_id:%s}/set_visible", idPattern), server.SetVisible)
 
 	// deal
-	needLogin.Post(fmt.Sprintf("/ad/{ad_id:%s}/subscribe", idPattern), server.SubscribeToAd)
-	subRouter.Get(fmt.Sprintf("/ad/{ad_id:%s}/subscribers", idPattern), server.GetAdSubscribers) // think about it
-	needLogin.Post(fmt.Sprintf("/ad/{ad_id:%s}/unsubscribe", idPattern), server.UnsubscribeFromAd)
-	needLogin.Put(fmt.Sprintf("/ad/{ad_id:%s}/make_deal", idPattern), server.MakeDeal)
-	needLogin.Get(fmt.Sprintf("/ad/{ad_id:%s}/deal", idPattern), server.CancelDeal)
-	needLogin.Get(fmt.Sprintf("/ad/{ad_id:%s}/bid_for_user", idPattern), server.GetBidForUser)
-	needLogin.Get(fmt.Sprintf("/ad/{ad_id:%s}/max_bid", idPattern), server.GetMaxBid)
+	needLogin.Post(fmt.Sprintf("/post/{ad_id:%s}/subscribe", idPattern), server.SubscribeToAd)
+	subRouter.Get(fmt.Sprintf("/post/{ad_id:%s}/subscribers", idPattern), server.GetAdSubscribers) // think about it
+	needLogin.Post(fmt.Sprintf("/post/{ad_id:%s}/unsubscribe", idPattern), server.UnsubscribeFromAd)
+	needLogin.Put(fmt.Sprintf("/post/{ad_id:%s}/make_deal", idPattern), server.MakeDeal)
+	needLogin.Get(fmt.Sprintf("/post/{ad_id:%s}/deal", idPattern), server.CancelDeal)
+	needLogin.Get(fmt.Sprintf("/post/{ad_id:%s}/bid_for_user", idPattern), server.GetBidForUser)
+	needLogin.Get(fmt.Sprintf("/post/{ad_id:%s}/max_bid", idPattern), server.GetMaxBid)
 
 	needLogin.Post(fmt.Sprintf("/deal/{deal_id:%s}/fulfill", idPattern), server.FulfillDeal)
 	needLogin.Post(fmt.Sprintf("/deal/{deal_id:%s}/cancel", idPattern), server.CancelDeal)
-	subRouter.Get(fmt.Sprintf("/ad/{ad_id:%s}/deal", idPattern), server.GetDealForAd)
+	subRouter.Get(fmt.Sprintf("/post/{ad_id:%s}/deal", idPattern), server.GetDealForAd)
 
 	// notifications
 	needLogin.Get("/notifications", server.GetNotifications)
@@ -80,12 +80,12 @@ func NewServer(pathToConfig string) (*Server, error) {
 	subRouter.Get(fmt.Sprintf("/user/{user_id:%s}/profile", idPattern), server.GetUserInfo)
 	subRouter.Get(fmt.Sprintf("/user/{user_id:%s}/given", idPattern), server.GetGiven)
 	subRouter.Get(fmt.Sprintf("/user/{user_id:%s}/received", idPattern), server.GetReceived)
-	needLogin.Get("/ad/wanted", server.GetWanted)
+	needLogin.Get("/post/wanted", server.GetWanted)
 
 
 	// comments
-	subRouter.Get(fmt.Sprintf("/ad/{ad_id:%s}/comments", idPattern), server.GetAdComments)
-	needLogin.Post(fmt.Sprintf("/ad/{ad_id:%s}/comments", idPattern), server.CommentAd)
+	subRouter.Get(fmt.Sprintf("/post/{ad_id:%s}/comments", idPattern), server.GetAdComments)
+	needLogin.Post(fmt.Sprintf("/post/{ad_id:%s}/comments", idPattern), server.CommentAd)
 	needLogin.Put(fmt.Sprintf("/comment/{comment_id:%s}", idPattern), server.EditComment)
 	needLogin.Delete(fmt.Sprintf("/comment/{comment_id:%s}", idPattern), server.DeleteComment)
 
