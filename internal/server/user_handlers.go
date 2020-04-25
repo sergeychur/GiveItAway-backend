@@ -33,7 +33,7 @@ func (server *Server) AuthUser(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	err = SetJWTToCookie([]byte(server.config.Secret), userId, w, 60, server.CookieField)
+	err = SetJWTToCookie([]byte(server.config.Secret), userId, w, 60 * 24, server.CookieField)
 	if err != nil {
 		WriteToResponse(w, http.StatusInternalServerError, fmt.Errorf("auth failed"))
 		return
