@@ -19,7 +19,7 @@ const (
 	GetAdById = "SELECT a.ad_id, u.vk_id, u.name, u.surname, u.photo_url, a.header, a.text, a.region," +
 		" a.district, a.is_auction, a.feedback_type, a.extra_field, a.creation_datetime, a.lat, a.long, a.status," +
 		" a.category, a.comments_count, aw.views_count, a.hidden FROM ad a JOIN users u ON (a.author_id = u.vk_id) " +
-		"JOIN ad_view aw ON (a.ad_id = aw.ad_id) WHERE a.ad_id = $1 AND (a.author_id = $2 OR a.hidden = false)"
+		"JOIN ad_view aw ON (a.ad_id = aw.ad_id) WHERE a.ad_id = $1"
 
 	// get ads query
 	GetAds = "SELECT a.ad_id, u.vk_id, u.name, u.surname, u.photo_url, a.header, a.region," +
@@ -39,7 +39,7 @@ const (
 )
 
 func (db *DB) GetAd(adId int, userId int) (models.AdForUsersDetailed, int) {
-	row := db.db.QueryRow(GetAdById, adId, userId)
+	row := db.db.QueryRow(GetAdById, adId)
 	ad := models.AdForUsersDetailed{}
 	ad.GeoPosition = new(models.GeoPosition)
 	ad.Author = new(models.User)
@@ -165,18 +165,20 @@ func (db *DB) GetAds(page int, rowsPerPage int, params map[string][]string, user
 		}
 	}
 	if !authorInQuery {
+		// it's a minimal disjunctive normal form for the "if show" function
+		showClose := fmt.Sprintf("(status != 'closed' AND author_id = $%d OR status='offer' AND hidden = false) ",
+			len(strArr) + 1)
 		if len(strArr) == 0 {
-			whereClause += Where + "status = 'offer' "
+			whereClause += Where + showClose
 		} else {
-			whereClause += And + " status = 'offer' "
+			whereClause += And + showClose
 		}
 		whereClause += And + fmt.Sprintf(" (hidden = false OR author_id = $%d)", len(strArr)+1)
-
+		strArr = append(strArr, userId)
 	} else {
 		whereClause += And + fmt.Sprintf(" (hidden = false OR author_id = $%d)", len(strArr)+1)
 	}
 
-	strArr = append(strArr, userId)
 	query = fmt.Sprintf(GetAds, whereClause, innerSortByClause, len(strArr)+1, len(strArr)+2, outerSortByClause)
 	strArr = append(strArr, rowsPerPage, offset)
 	ads := make([]models.AdForUsers, 0)
