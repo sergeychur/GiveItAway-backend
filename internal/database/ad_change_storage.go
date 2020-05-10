@@ -8,22 +8,23 @@ import (
 
 const (
 	// create ad query
-	CreateAd = "INSERT INTO ad (author_id, header, text, region, district, is_auction, feedback_type, category%s)" +
-		" VALUES($1, $2, $3, $4, $5, $6, $7, $8%s) RETURNING ad_id"
+	CreateAd = "INSERT INTO ad (author_id, header, text, region, district, ad_type, ls_enabled, comments_enabled, extra_enabled, category%s)" +
+		" VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10%s) RETURNING ad_id"
 	ExtraField                = ", extra_field"
 	GeoPosition               = ", geo_position, lat, long"
 	Blank                     = ""
 	NoExtraFieldNoGeoPosition = ""
-	NoExtraFieldGeoPosition   = ", ST_SetSRID(ST_POINT($9, $10), 4326), $9, $10"
-	ExtraFieldNoGeoPosition   = ", $9"
-	ExtraFieldGeoPosition     = ", $9, ST_SetSRID(ST_POINT($10, $11), 4326), $10, $11"
+	NoExtraFieldGeoPosition   = ", ST_SetSRID(ST_POINT($11, $12), 4326), $11, $12"
+	ExtraFieldNoGeoPosition   = ", $11"
+	ExtraFieldGeoPosition     = ", $11, ST_SetSRID(ST_POINT($12, $13), 4326), $12, $13"
 
 	// edit ad query
-	EditAd                        = "UPDATE ad SET header=$1, text=$2, region=$3, district=$4, is_auction=$5, feedback_type=$6, category=$7%s where ad_id=$%d"
+	EditAd                        = "UPDATE ad SET header=$1, text=$2, region=$3, district=$4, ad_type=$5, ls_enabled=$6, comments_enabled=$7, " +
+		"extra_enabled=$8, category=$9%s where ad_id=$%d"
 	NoExtraFieldNoGeoPositionEdit = ", extra_field=NULL"
-	NoExtraFieldGeoPositionEdit   = ", geo_position=ST_SetSRID(ST_POINT($8, $9), 4326), lat=$8, long=$9"
-	ExtraFieldNoGeoPositionEdit   = ", extra_field=$8"
-	ExtraFieldGeoPositionEdit     = ", extra_field=$8, geo_position=ST_SetSRID(ST_POINT($9, $10), 4326), lat=$9, long=$10"
+	NoExtraFieldGeoPositionEdit   = ", geo_position=ST_SetSRID(ST_POINT($10, $11), 4326), lat=$10, long=$11"
+	ExtraFieldNoGeoPositionEdit   = ", extra_field=$10"
+	ExtraFieldGeoPositionEdit     = ", extra_field=$10, geo_position=ST_SetSRID(ST_POINT($11, $12), 4326), lat=$11, long=$12"
 
 	// add photo to ad query
 	checkAdExist = "SELECT author_id FROM ad WHERE ad_id = $1"
@@ -57,7 +58,7 @@ func (db *DB) CreateAd(ad models.Ad) (int, models.AdCreationResult) {
 	query := ""
 	res := models.AdCreationResult{}
 	sign := 0
-	if ad.FeedbackType == Other {
+	if ad.ExtraEnabled {
 		sign = 10
 	}
 	if ad.GeoPosition != nil {
@@ -67,20 +68,23 @@ func (db *DB) CreateAd(ad models.Ad) (int, models.AdCreationResult) {
 	switch sign {
 	case 0:
 		query = fmt.Sprintf(CreateAd, Blank, NoExtraFieldNoGeoPosition)
-		err = db.db.QueryRow(query, ad.AuthorId, ad.Header, ad.Text, ad.Region, ad.District, ad.IsAuction,
-			ad.FeedbackType, ad.Category).Scan(&res.AdId)
+		err = db.db.QueryRow(query, ad.AuthorId, ad.Header, ad.Text, ad.Region, ad.District, ad.AdType,
+			ad.LSEnabled, ad.CommentsEnabled, ad.ExtraEnabled, ad.Category).Scan(&res.AdId)
 	case 1:
 		query = fmt.Sprintf(CreateAd, GeoPosition, NoExtraFieldGeoPosition)
-		err = db.db.QueryRow(query, ad.AuthorId, ad.Header, ad.Text, ad.Region, ad.District, ad.IsAuction,
-			ad.FeedbackType, ad.Category, ad.GeoPosition.Latitude, ad.GeoPosition.Longitude).Scan(&res.AdId)
+		err = db.db.QueryRow(query, ad.AuthorId, ad.Header, ad.Text, ad.Region, ad.District, ad.AdType,
+			ad.LSEnabled, ad.CommentsEnabled, ad.ExtraEnabled,
+			ad.Category, ad.GeoPosition.Latitude, ad.GeoPosition.Longitude).Scan(&res.AdId)
 	case 10:
 		query = fmt.Sprintf(CreateAd, ExtraField, ExtraFieldNoGeoPosition)
-		err = db.db.QueryRow(query, ad.AuthorId, ad.Header, ad.Text, ad.Region, ad.District, ad.IsAuction,
-			ad.FeedbackType, ad.Category, ad.ExtraField).Scan(&res.AdId)
+		err = db.db.QueryRow(query, ad.AuthorId, ad.Header, ad.Text, ad.Region, ad.District, ad.AdType,
+			ad.LSEnabled, ad.CommentsEnabled, ad.ExtraEnabled,
+			ad.Category, ad.ExtraField).Scan(&res.AdId)
 	case 11:
 		query = fmt.Sprintf(CreateAd, ExtraField+GeoPosition, ExtraFieldGeoPosition)
-		err = db.db.QueryRow(query, ad.AuthorId, ad.Header, ad.Text, ad.Region, ad.District, ad.IsAuction,
-			ad.FeedbackType, ad.Category, ad.ExtraField, ad.GeoPosition.Latitude, ad.GeoPosition.Longitude).Scan(&res.AdId)
+		err = db.db.QueryRow(query, ad.AuthorId, ad.Header, ad.Text, ad.Region, ad.District, ad.AdType,
+			ad.LSEnabled, ad.CommentsEnabled, ad.ExtraEnabled,
+			ad.Category, ad.ExtraField, ad.GeoPosition.Latitude, ad.GeoPosition.Longitude).Scan(&res.AdId)
 	}
 	if err != nil {
 		return DB_ERROR, res
@@ -234,20 +238,23 @@ func (db *DB) EditAd(adId int, userId int, ad models.Ad) int {
 	switch sign {
 	case 0:
 		query = fmt.Sprintf(EditAd, NoExtraFieldNoGeoPositionEdit, 8)
-		_, err = tx.Exec(query, ad.Header, ad.Text, ad.Region, ad.District, ad.IsAuction,
-			ad.FeedbackType, ad.Category, adId)
+		_, err = tx.Exec(query, ad.Header, ad.Text, ad.Region, ad.District, ad.AdType,
+			ad.LSEnabled, ad.CommentsEnabled, ad.ExtraEnabled, ad.Category, adId)
 	case 1:
 		query = fmt.Sprintf(EditAd, NoExtraFieldGeoPositionEdit, 10)
-		_, err = tx.Exec(query, ad.Header, ad.Text, ad.Region, ad.District, ad.IsAuction,
-			ad.FeedbackType, ad.Category, ad.GeoPosition.Latitude, ad.GeoPosition.Longitude, adId)
+		_, err = tx.Exec(query, ad.Header, ad.Text, ad.Region, ad.District, ad.AdType,
+			ad.LSEnabled, ad.CommentsEnabled, ad.ExtraEnabled,
+			ad.Category, ad.GeoPosition.Latitude, ad.GeoPosition.Longitude, adId)
 	case 10:
 		query = fmt.Sprintf(EditAd, ExtraFieldNoGeoPositionEdit, 9)
-		_, err = tx.Exec(query, ad.Header, ad.Text, ad.Region, ad.District, ad.IsAuction,
-			ad.FeedbackType, ad.Category, ad.ExtraField, adId)
+		_, err = tx.Exec(query, ad.Header, ad.Text, ad.Region, ad.District, ad.AdType,
+			ad.LSEnabled, ad.CommentsEnabled, ad.ExtraEnabled,
+			ad.Category, ad.ExtraField, adId)
 	case 11:
 		query = fmt.Sprintf(EditAd, ExtraFieldGeoPositionEdit, 11)
-		_, err = tx.Exec(query, ad.Header, ad.Text, ad.Region, ad.District, ad.IsAuction,
-			ad.FeedbackType, ad.Category, ad.ExtraField, ad.GeoPosition.Latitude, ad.GeoPosition.Longitude, adId)
+		_, err = tx.Exec(query, ad.Header, ad.Text, ad.Region, ad.District, ad.AdType,
+			ad.LSEnabled, ad.CommentsEnabled, ad.ExtraEnabled,
+			ad.Category, ad.ExtraField, ad.GeoPosition.Latitude, ad.GeoPosition.Longitude, adId)
 	}
 	if err != nil {
 		return DB_ERROR

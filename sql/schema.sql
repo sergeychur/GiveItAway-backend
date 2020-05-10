@@ -58,10 +58,10 @@ CREATE TABLE IF NOT EXISTS users_stats (
     total_aborted_ads bigint not null default 0
 );
 
-DROP TYPE IF EXISTS feedback;
-DROP TYPE IF EXISTS ad_status;
-CREATE TYPE feedback AS ENUM ('ls', 'comments', 'other');
-CREATE TYPE ad_status AS ENUM ('offer', 'chosen', 'closed', 'aborted');
+-- DROP TYPE IF EXISTS feedback;
+-- DROP TYPE IF EXISTS ad_status;
+-- CREATE TYPE feedback AS ENUM ('ls', 'comments', 'other');
+-- CREATE TYPE ad_status AS ENUM ('offer', 'chosen', 'closed', 'aborted');
 
 CREATE TABLE IF NOT EXISTS ad (
     ad_id bigserial CONSTRAINT ad_pk PRIMARY KEY,
@@ -72,17 +72,20 @@ CREATE TABLE IF NOT EXISTS ad (
     text citext,
     region citext,
     district citext,
-    is_auction boolean,
-    feedback_type feedback,
+    ad_type text default 'choice',
+--     feedback_type text,
     extra_field citext,
     creation_datetime TIMESTAMP WITH TIME ZONE default (now() at time zone 'utc'),
     lat float,
     long float,
     geo_position geography,
-    status ad_status DEFAULT 'offer',
+    status text DEFAULT 'offer',
     category citext,    -- mb change for enum of categories too
     comments_count int DEFAULT 0,
-    hidden BOOLEAN NOT NULL DEFAULT FALSE
+    hidden BOOLEAN NOT NULL DEFAULT FALSE,
+    ls_enabled boolean default true,
+    comments_enabled boolean default true,
+    extra_enabled boolean default true
 );
 
 CREATE TABLE IF NOT EXISTS ad_view (
@@ -114,8 +117,8 @@ CREATE TABLE IF NOT EXISTS ad_subscribers (
     bid int NOT NULL default 0
 );
 
-DROP TYPE IF EXISTS deal_status;
-CREATE TYPE deal_status AS ENUM ('open', 'success');
+-- DROP TYPE IF EXISTS deal_status;
+-- CREATE TYPE deal_status AS ENUM ('open', 'success');
 
 CREATE TABLE IF NOT EXISTS deal (
     deal_id bigserial CONSTRAINT deal_pk PRIMARY KEY,
@@ -123,7 +126,7 @@ CREATE TABLE IF NOT EXISTS deal (
     CONSTRAINT deal_ad FOREIGN KEY (ad_id)
         REFERENCES ad (ad_id) ON UPDATE CASCADE ON DELETE CASCADE,
     subscriber_id bigint,
-    status deal_status DEFAULT 'open',
+    status text DEFAULT 'open',
     CONSTRAINT deal_ad_subscriber_unique UNIQUE (ad_id, subscriber_id),
     CONSTRAINT deal_user FOREIGN KEY (subscriber_id)
         REFERENCES users (vk_id) ON UPDATE CASCADE ON DELETE NO ACTION
@@ -154,7 +157,7 @@ CREATE OR REPLACE FUNCTION close_deal_success(deal_id_to_upd INT, price_coeff IN
         UPDATE ad SET status = 'closed' WHERE ad_id = _ad_id;
 
         -- acquiring needed variables
-        SELECT author_id, is_auction FROM ad WHERE ad_id = _ad_id INTO _author_id, _is_auction;
+        SELECT author_id, ad_type='auction' FROM ad WHERE ad_id = _ad_id INTO _author_id, _is_auction;
         SELECT subscriber_id FROM deal WHERE deal_id = deal_id_to_upd INTO _subscriber_id;
 
         -- deal with stats
@@ -172,8 +175,8 @@ CREATE OR REPLACE FUNCTION close_deal_success(deal_id_to_upd INT, price_coeff IN
             UPDATE users_carma SET current_carma = current_carma - _author_gain WHERE user_id = _subscriber_id;
             -- author
             UPDATE users_carma SET current_carma = current_carma + _author_gain WHERE user_id = _author_id;
-            UPDATE users_stats SET total_earned_carma = total_earned_carma + _author_gain FROM users_carma
-                WHERE users_carma.user_id = users_stats.user_id AND users_stats.user_id = _author_id;
+            UPDATE users_stats SET total_earned_carma = total_earned_carma + _author_gain WHERE user_id = _author_id;
+            UPDATE users_stats SET total_spent_carma = total_spent_carma + _author_gain WHERE user_id = _subscriber_id;
 
         else
             -- all the subscribers
@@ -189,6 +192,7 @@ CREATE OR REPLACE FUNCTION close_deal_success(deal_id_to_upd INT, price_coeff IN
             -- author, we add carma in amount of (subscribers_num * coeff)
             SELECT COUNT(*) FROM ad_subscribers WHERE ad_id = _ad_id INTO _subscribers_num;
             UPDATE users_carma SET current_carma = current_carma + _subscribers_num * price_coeff WHERE user_id = _author_id;
+            UPDATE users_stats SET total_earned_carma = total_earned_carma + _subscribers_num * price_coeff WHERE user_id = _author_id;
         end if;
         -- delete subscribers
         DELETE FROM ad_subscribers WHERE ad_id = _ad_id;
@@ -201,7 +205,7 @@ CREATE OR REPLACE FUNCTION close_deal_fail_by_author(deal_id_to_cls INT) RETURNS
             _subscriber_id INT;
     BEGIN
         _ad_id := (SELECT ad_id FROM deal WHERE deal_id = deal_id_to_cls);
-        SELECT is_auction FROM ad WHERE ad_id = _ad_id INTO _is_auction;
+        SELECT ad_type='auction' FROM ad WHERE ad_id = _ad_id INTO _is_auction;
         if _is_auction then
             SELECT subscriber_id FROM deal WHERE deal_id = deal_id_to_cls INTO _subscriber_id;
             UPDATE users_carma SET frozen_carma = frozen_carma - a_s.bid FROM ad_subscribers a_s
@@ -226,7 +230,7 @@ BEGIN
     SELECT subscriber_id FROM deal WHERE deal_id = deal_id_to_cls INTO _subscriber_id;
     DELETE FROM deal WHERE deal_id = deal_id_to_cls;
 
-    SELECT is_auction FROM ad WHERE ad_id = _ad_id INTO _is_auction;
+    SELECT ad_type='auction' FROM ad WHERE ad_id = _ad_id INTO _is_auction;
     IF _is_auction THEN
         UPDATE users_carma SET frozen_carma = frozen_carma - a_s.bid FROM ad_subscribers a_s
             WHERE users_carma.user_id = a_s.subscriber_id and a_s.subscriber_id = _subscriber_id AND a_s.ad_id = _ad_id;
@@ -307,3 +311,10 @@ CREATE TRIGGER users_stats_create AFTER INSERT ON users
     FOR EACH ROW EXECUTE PROCEDURE user_stats_create();
 
 CREATE INDEX IF NOT EXISTS richest ON ad_subscribers (bid);
+
+ALTER TABLE ad DROP column if exists is_auction;
+ALTER TABLE ad ADD column if not exists ad_type text default 'choice';
+ALTER TABLE ad DROP column if exists feedback_type;
+alter table ad add column ls_enabled boolean default true,
+    add column comments_enabled boolean default true,
+    add column extra_enabled boolean default true;

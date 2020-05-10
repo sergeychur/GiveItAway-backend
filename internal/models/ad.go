@@ -13,9 +13,15 @@ type Ad struct {
 
 	District string `json:"district,omitempty"`
 
-	IsAuction bool `json:"is_auction"`
+	//IsAuction bool `json:"is_auction"`
+	AdType string `json:"ad_type"`
 
-	FeedbackType string `json:"feedback_type"`
+	//FeedbackType string `json:"feedback_type"`
+	LSEnabled bool `json:"ls_enabled"`
+
+	CommentsEnabled bool `json:"comments_enabled"`
+
+	ExtraEnabled bool `json:"extra_enabled"`
 
 	ExtraField string `json:"extra_field,omitempty"`
 
@@ -49,9 +55,14 @@ type AdForUsers struct {
 
 	District string `json:"district,omitempty"`
 
-	IsAuction bool `json:"is_auction"`
+	AdType string `json:"ad_type"`
 
-	FeedbackType string `json:"feedback_type"`
+	//FeedbackType string `json:"feedback_type"`
+	LSEnabled bool `json:"ls_enabled"`
+
+	CommentsEnabled bool `json:"comments_enabled"`
+
+	ExtraEnabled bool `json:"extra_enabled"`
 
 	ExtraField string `json:"extra_field,omitempty"`
 
@@ -82,9 +93,14 @@ type AdForUsersDetailed struct {
 
 	District string `json:"district,omitempty"`
 
-	IsAuction bool `json:"is_auction"`
+	AdType string `json:"ad_type"`
 
-	FeedbackType string `json:"feedback_type"`
+	//FeedbackType string `json:"feedback_type"`
+	LSEnabled bool `json:"ls_enabled"`
+
+	CommentsEnabled bool `json:"comments_enabled"`
+
+	ExtraEnabled bool `json:"extra_enabled"`
 
 	ExtraField string `json:"extra_field,omitempty"`
 

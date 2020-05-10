@@ -11,7 +11,7 @@ const (
 	ZerofyIfExceeded = "UPDATE users_carma SET cost_frozen = 1, casback_frozen = 1," +
 		" last_updated = (now() at time zone 'utc') WHERE user_id = $1" +
 		" AND last_updated - (now() at time zone 'utc') >= '%s'::interval AND frozen_carma = 0"
-	checkIfAuction        = "SELECT is_auction FROM ad where ad_id = $1"
+	checkIfAuction        = "SELECT ad_type = 'auction' FROM ad where ad_id = $1"
 	checkIfEnoughCarma    = "SELECT current_carma - frozen_carma >= $1 * cost_frozen FROM users_carma WHERE user_id = $2"
 
 	getMaxBidInAuction = "select bid from ad_subscribers where ad_id = $1 order by bid desc limit 1" // todo: повесить индекс

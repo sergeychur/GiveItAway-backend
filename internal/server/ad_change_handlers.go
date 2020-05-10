@@ -25,10 +25,10 @@ func (server *Server) CreateAd(w http.ResponseWriter, r *http.Request) {
 		WriteToResponse(w, http.StatusInternalServerError, fmt.Errorf("server cannot get userId from cookie"))
 		return
 	}
-	if ad.FeedbackType != database.Comments && ad.FeedbackType != database.LS && ad.FeedbackType != database.Other {
-		WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("wrong feedback type"))
-		return
-	}
+	//if ad.FeedbackType != database.Comments && ad.FeedbackType != database.LS && ad.FeedbackType != database.Other {
+	//	WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("wrong feedback type"))
+	//	return
+	//}
 	status, adId := server.db.CreateAd(ad)
 	DealRequestFromDB(w, &adId, status)
 }
@@ -145,10 +145,10 @@ func (server *Server) EditAd(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
-	if ad.FeedbackType != database.Comments && ad.FeedbackType != database.LS && ad.FeedbackType != database.Other {
-		WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("wrong feedback type"))
-		return
-	}
+	//if ad.FeedbackType != database.Comments && ad.FeedbackType != database.LS && ad.FeedbackType != database.Other {
+	//	WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("wrong feedback type"))
+	//	return
+	//}
 	// TODO(EDIT): check this
 
 	status := server.db.EditAd(adId, userId, ad)

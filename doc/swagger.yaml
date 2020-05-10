@@ -73,7 +73,7 @@ paths:
       tags:
         - "ad"
       summary: "Обновить объявление"
-      description: "Можно изменять header, text, region, ditrict, is_auction, feedback_type, extra_field, geo_position, category, "
+      description: "Можно изменять header, text, region, ditrict, ad_type, feedback_type, extra_field, geo_position, category, "
       operationId: "updateAd"
       consumes:
         - "application/json"
@@ -1053,14 +1053,18 @@ definitions:
         type: "string"
       district:
         type: "string"
-      is_auction:
-        type: "boolean"
-      feedback_type:
+      ad_type:
         type: "string"
         enum:
-          - "ls"
-          - "comments"
-          - "other"
+          - "choice"
+          - "random"
+          - "auction"
+      ls_enabled:
+        type: "boolean"
+      comments_enabled:
+        type: "boolean"
+      extra_enabled:
+        type: "boolean"
       extra_field:
         type: "string"
       creation_date:
@@ -1096,14 +1100,18 @@ definitions:
         type: "string"
       district:
         type: "string"
-      is_auction:
-        type: "boolean"
-      feedback_type:
+      ad_type:
         type: "string"
         enum:
-          - "ls"
-          - "comments"
-          - "other"
+          - "choice"
+          - "random"
+          - "auction"
+      ls_enabled:
+        type: "boolean"
+      comments_enabled:
+        type: "boolean"
+      extra_enabled:
+        type: "boolean"
       extra_field:
         type: "string"
       creation_date:
@@ -1137,14 +1145,18 @@ definitions:
         type: "string"
       district:
         type: "string"
-      is_auction:
-        type: "boolean"
-      feedback_type:
+      ad_type:
         type: "string"
         enum:
-          - "ls"
-          - "comments"
-          - "other"
+          - "choice"
+          - "random"
+          - "auction"
+      ls_enabled:
+        type: "boolean"
+      comments_enabled:
+        type: "boolean"
+      extra_enabled:
+        type: "boolean"
       extra_field:
         type: "string"
       creation_date:
