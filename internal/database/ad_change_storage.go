@@ -229,7 +229,7 @@ func (db *DB) EditAd(adId int, userId int, ad models.Ad) int {
 	sign := 0
 	query := ""
 	err = nil
-	if ad.FeedbackType == Other {
+	if ad.ExtraEnabled {
 		sign = 10
 	}
 	if ad.GeoPosition != nil {

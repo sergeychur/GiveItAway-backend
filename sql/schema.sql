@@ -14,9 +14,11 @@
 DROP TRIGGER IF EXISTS update_comments_count ON comment;
 DROP FUNCTION IF EXISTS update_comments_count;
 drop trigger if exists ad_view_create on ad;
-drop function if exists ad_view_create();
+drop function if exists ad_view_create;
 drop trigger if exists users_stats_create on users;
-drop function if exists user_stats_create();
+drop function if exists user_stats_create;
+drop trigger if exists update_subscribers_count on ad;
+drop function if exists update_subscribers_count;
 
 
 -- DROP INDEX IF EXISTS ad_geos;
@@ -85,7 +87,8 @@ CREATE TABLE IF NOT EXISTS ad (
     hidden BOOLEAN NOT NULL DEFAULT FALSE,
     ls_enabled boolean default true,
     comments_enabled boolean default true,
-    extra_enabled boolean default true
+    extra_enabled boolean default true,
+    subscribers_num int default 0
 );
 
 CREATE TABLE IF NOT EXISTS ad_view (
@@ -288,6 +291,20 @@ $update_comments_count$ LANGUAGE plpgsql;
 CREATE TRIGGER update_comments_count AFTER INSERT OR DELETE ON comment
     FOR EACH ROW EXECUTE PROCEDURE update_comments_count();
 
+CREATE FUNCTION update_subscribers_count() RETURNS trigger AS $update_subscribers_count$
+BEGIN
+    IF (TG_OP = 'DELETE') THEN
+        UPDATE ad SET subscribers_count = subscribers_count - 1 WHERE ad_id = OLD.ad_id;
+    ELSEIF (TG_OP = 'INSERT') THEN
+        UPDATE ad SET subscribers_count = subscribers_count + 1 WHERE ad_id = NEW.ad_id;
+    end if;
+    RETURN NULL;
+END;
+$update_subscribers_count$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_subscribers_count AFTER INSERT OR DELETE ON ad_subscribers
+    FOR EACH ROW EXECUTE PROCEDURE update_subscribers_count();
+
 CREATE FUNCTION ad_view_create() RETURNS trigger AS $ad_view_create$
     BEGIN
         INSERT INTO ad_view (ad_id, views_count) VALUES (new.ad_id, 0);
@@ -315,6 +332,7 @@ CREATE INDEX IF NOT EXISTS richest ON ad_subscribers (bid);
 ALTER TABLE ad DROP column if exists is_auction;
 ALTER TABLE ad ADD column if not exists ad_type text default 'choice';
 ALTER TABLE ad DROP column if exists feedback_type;
-alter table ad add column ls_enabled boolean default true,
-    add column comments_enabled boolean default true,
-    add column extra_enabled boolean default true;
+alter table ad add column if not exists ls_enabled boolean default true,
+    add column if not exists comments_enabled boolean default true,
+    add column if not exists extra_enabled boolean default true,
+    add column if not exists subscribers_count int default 0;

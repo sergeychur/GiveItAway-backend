@@ -71,6 +71,7 @@ func NewServer(pathToConfig string) (*Server, error) {
 	needLogin.Post(fmt.Sprintf("/deal/{deal_id:%s}/cancel", idPattern), server.CancelDeal)
 	subRouter.Get(fmt.Sprintf("/post/{ad_id:%s}/deal", idPattern), server.GetDealForAd)
 
+
 	// notifications
 	needLogin.Get("/notifications", server.GetNotifications)
 	needLogin.Get("/notifications_count", server.CountUnreadNotes)

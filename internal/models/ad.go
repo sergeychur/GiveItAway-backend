@@ -117,6 +117,7 @@ type AdForUsersDetailed struct {
 	CommentsCount int32 `json:"comments_count,omitempty"`
 	ViewsCount    int32 `json:"views_count"`
 	Hidden        bool  `json:"hidden"`
+	SubscribersNum int32 `json:"subscribers_num"`
 }
 
 type AdPhoto struct {

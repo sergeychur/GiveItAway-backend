@@ -19,7 +19,7 @@ const (
 	GetAdById = "SELECT a.ad_id, u.vk_id, u.name, u.surname, u.photo_url, a.header, a.text, a.region," +
 		" a.district, a.ad_type, a.ls_enabled, a.comments_enabled, a.extra_enabled, " +
 		"a.extra_field, a.creation_datetime, a.lat, a.long, a.status," +
-		" a.category, a.comments_count, aw.views_count, a.hidden FROM ad a JOIN users u ON (a.author_id = u.vk_id) " +
+		" a.category, a.comments_count, aw.views_count, a.hidden, a.subscribers_count FROM ad a JOIN users u ON (a.author_id = u.vk_id) " +
 		"JOIN ad_view aw ON (a.ad_id = aw.ad_id) WHERE a.ad_id = $1"
 
 	// get ads query
@@ -53,7 +53,7 @@ func (db *DB) GetAd(adId int, userId int) (models.AdForUsersDetailed, int) {
 		&ad.Author.PhotoUrl, &ad.Header, &ad.Text, &ad.Region, &ad.District, &ad.AdType,
 		&ad.LSEnabled, &ad.CommentsEnabled, &ad.ExtraEnabled,
 		&extraFieldTry, &timeStamp, &lat, &long, &ad.Status, &ad.Category,
-		&ad.CommentsCount, &ad.ViewsCount, &ad.Hidden)
+		&ad.CommentsCount, &ad.ViewsCount, &ad.Hidden, &ad.SubscribersNum)
 	if err == pgx.ErrNoRows {
 		return ad, EMPTY_RESULT
 	}

@@ -1131,6 +1131,8 @@ definitions:
         type: "string"
       comments_count:
         type: integer
+      subscribers_num:
+        type: integer
   AdForUsers:
     type: "object"
     properties:
