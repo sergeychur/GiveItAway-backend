@@ -7,6 +7,7 @@ type Notification struct {
 	CreationDateTime string      `json:"creation_date_time"`
 	Payload          interface{} `json:"payload"`
 	IsRead           bool        `json:"is_read"`
+	AdId int64 `json:"-"`
 }
 
 type AdForNotification struct {

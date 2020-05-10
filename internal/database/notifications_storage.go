@@ -12,7 +12,8 @@ import (
 const (
 	GetNotifications = "SELECT n.notification_id, n.notification_type, n.creation_datetime, n.payload, " +
 		"n.is_read FROM notifications n JOIN (SELECT notification_id FROM notifications" +
-		" WHERE user_id = $1 ORDER BY is_read, notification_id DESC LIMIT $2 OFFSET $3) l" +
+		" WHERE user_id = $1 AND (is_read = false OR notification_type='ad_close')" +
+		" ORDER BY is_read, notification_id DESC LIMIT $2 OFFSET $3) l" +
 		" ON (n.notification_id = l.notification_id) ORDER BY n.is_read, n.notification_id DESC"
 
 	SetReadTrue = "UPDATE notifications SET is_read = true WHERE notification_id = $1"
@@ -20,7 +21,7 @@ const (
 	GetAdNotifWithUserAndDeal = "SELECT a.ad_id, a.header, a.status, u.vk_id, u.name, u.surname, u.photo_url " +
 		"FROM ad a JOIN users u ON (a.author_id = u.vk_id) JOIN deal d ON (d.ad_id = a.ad_id) WHERE d.deal_id = $1"
 
-	InsertNotification = "INSERT INTO notifications (user_id, notification_type, payload, creation_datetime) VALUES ($1, $2, $3, $4)"
+	InsertNotification = "INSERT INTO notifications (user_id, notification_type, payload, creation_datetime, ad_id) VALUES ($1, $2, $3, $4, $5)"
 
 	GetAdForNotif = "SELECT a.ad_id, a.header, a.status, a.author_id FROM ad a WHERE a.ad_id = $1"
 
@@ -85,6 +86,7 @@ func (db *DB) FormAdClosedNotification(dealId int, initiatorId int, subscriberId
 		return models.Notification{}, err
 	}
 	note.Payload = val
+	note.AdId = val.Ad.AdId
 	return note, nil
 }
 
@@ -108,6 +110,7 @@ func (db *DB) FormRespondNotification(subscriberId int, adId int) (models.Notifi
 	}
 	val.Author = user
 	note.Payload = val
+	note.AdId = val.Ad.AdId
 	return note, nil
 }
 
@@ -134,6 +137,7 @@ func (db *DB) FormStatusChangedNotification(adId int, isDeleted bool, noteType s
 		}
 	}
 	note.Payload = val
+	note.AdId = val.Ad.AdId
 	return note, nil
 }
 
@@ -223,11 +227,13 @@ func (db *DB) FormCancelNotification(cancelType string, initiatorId int, adId in
 		}
 		val.Author = user
 		note.Payload = val
+		note.AdId = val.Ad.AdId
 	} else {
 		note.NotificationType = notifications.AUTHOR_CANCELLED
 		val := models.AuthorCancelled{}
 		val.Ad = ad
 		note.Payload = val
+		note.AdId = val.Ad.AdId
 	}
 	return note, nil
 }
@@ -242,7 +248,7 @@ func (db *DB) InsertNotification(whomId int, notification models.Notification) e
 	if err != nil {
 		return err
 	}
-	_, err = db.db.Exec(InsertNotification, whomId, notification.NotificationType, payload, creation)
+	_, err = db.db.Exec(InsertNotification, whomId, notification.NotificationType, payload, creation, notification.AdId)
 	return err
 }
 
@@ -260,7 +266,7 @@ func (db *DB) InsertNotifications(notes []models.Notification) error {
 		if err != nil {
 			return err
 		}
-		_, err = db.db.Exec(stmt.Name, notification.WhomId, notification.NotificationType, payload, creation)
+		_, err = db.db.Exec(stmt.Name, notification.WhomId, notification.NotificationType, payload, creation, notification.AdId)
 		if err != nil {
 			return err
 		}

@@ -60,4 +60,3 @@ func (server *Server) GetAdInfo(w http.ResponseWriter, r *http.Request) {
 	ad, status := server.db.GetAd(adId, userId)
 	DealRequestFromDB(w, &ad, status)
 }
-

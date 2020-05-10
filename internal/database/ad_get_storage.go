@@ -83,6 +83,10 @@ func (db *DB) GetAd(adId int, userId int) (models.AdForUsersDetailed, int) {
 	if err != nil {
 		return ad, DB_ERROR
 	}
+	err = db.db.QueryRow(CheckIfSubscriber, adId, userId).Scan(&ad.IsSubscriber)
+	if err != nil {
+		return ad, DB_ERROR
+	}
 	return ad, FOUND
 }
 

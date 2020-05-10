@@ -118,6 +118,7 @@ type AdForUsersDetailed struct {
 	ViewsCount    int32 `json:"views_count"`
 	Hidden        bool  `json:"hidden"`
 	SubscribersNum int32 `json:"subscribers_num"`
+	IsSubscriber bool `json:"is_subscriber"`
 }
 
 type AdPhoto struct {

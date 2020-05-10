@@ -199,6 +199,7 @@ CREATE OR REPLACE FUNCTION close_deal_success(deal_id_to_upd INT, price_coeff IN
         end if;
         -- delete subscribers
         DELETE FROM ad_subscribers WHERE ad_id = _ad_id;
+        DELETE FROM notifications WHERE ad_id = _ad_id AND user_id = _subscriber_id AND notification_type='ad_closed';
     END;
 $$ LANGUAGE 'plpgsql';
 
@@ -217,6 +218,7 @@ CREATE OR REPLACE FUNCTION close_deal_fail_by_author(deal_id_to_cls INT) RETURNS
         end if;
         UPDATE ad SET status = 'offer' WHERE ad_id = _ad_id;
         DELETE FROM deal WHERE deal_id = deal_id_to_cls;
+        DELETE FROM notifications WHERE ad_id = _ad_id AND user_id = _subscriber_id AND notification_type='ad_closed';
     END;
 $$ LANGUAGE 'plpgsql';
 
@@ -247,6 +249,8 @@ BEGIN
     DELETE FROM ad_subscribers WHERE ad_id = _ad_id;
     SELECT author_id FROM ad WHERE ad_id = _ad_id INTO _author_id;
     UPDATE users_stats SET total_aborted_ads = total_aborted_ads + 1 WHERE user_id = _author_id;
+
+    DELETE FROM notifications WHERE ad_id = _ad_id AND user_id = _subscriber_id AND notification_type='ad_closed';
 END;
 $$ LANGUAGE 'plpgsql';
 
@@ -259,6 +263,7 @@ CREATE TABLE IF NOT EXISTS notifications (
     user_id bigint,
     CONSTRAINT notification_user FOREIGN KEY (user_id)
         REFERENCES users (vk_id) ON UPDATE CASCADE ON DELETE NO ACTION,
+    ad_id bigint,
     notification_type citext,
     creation_datetime TIMESTAMP WITH TIME ZONE default (now() at time zone 'utc'),
     payload bytea,
@@ -336,3 +341,4 @@ alter table ad add column if not exists ls_enabled boolean default true,
     add column if not exists comments_enabled boolean default true,
     add column if not exists extra_enabled boolean default true,
     add column if not exists subscribers_count int default 0;
+alter table notifications add column if not exists ad_id bigint;
