@@ -138,7 +138,9 @@ func (server *Server) DeleteComment(w http.ResponseWriter, r *http.Request) {
 	// Todo: check
 	if status == database.OK {
 		// todo: mb go func
-		note := FormDeleteCommentUpdate()
+		note := FormDeleteCommentUpdate(models.CommentId{
+			CommentId: commentId,
+		})
 		server.NotificationSender.SendToChannel(r.Context(), note, fmt.Sprintf("ad_%d", adId))
 	}
 	DealRequestFromDB(w, "OK", status)

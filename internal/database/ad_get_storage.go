@@ -34,6 +34,7 @@ const (
 	AuthorClause   = " author_id = $%d "
 	RegionClause   = " region = $%d "
 	DistrictClause = " district = $%d "
+	RadiusClause = " ST_DWithin(geo_position, ST_SetSRID(ST_MakePoint($%d, $%d), 4326), $%d) "
 	GetAdPhotos    = "SELECT ad_photos_id, photo_url FROM ad_photos WHERE ad_id = $1"
 
 	ViewAd = "INSERT INTO ad_view (ad_id, views_count) VALUES ($1, 1)" +
@@ -138,6 +139,36 @@ func (db *DB) GetAds(page int, rowsPerPage int, params map[string][]string, user
 		}
 		strArr = append(strArr, districtArr[0])
 	}
+	radiusArr, ok := params["radius"]
+	if ok && len(radiusArr) == 1 {
+		radius, err := strconv.ParseFloat(radiusArr[0], 64)
+		if err != nil {
+			return nil, DB_ERROR
+		}
+		latArr, ok := params["lat"]
+		if !ok || len(latArr) != 1 {
+			return []models.AdForUsers{}, WRONG_INPUT
+		}
+		lat, err := strconv.ParseFloat(latArr[0], 64)
+		if err != nil {
+			return nil, DB_ERROR
+		}
+		longArr, ok := params["long"]
+		if !ok || len(longArr) != 1 {
+			return []models.AdForUsers{}, WRONG_INPUT
+		}
+		long, err := strconv.ParseFloat(longArr[0], 64)
+		if err != nil {
+			return nil, DB_ERROR
+		}
+
+		if len(strArr) == 0 {
+			whereClause += Where + fmt.Sprintf(RadiusClause, 1, 2, 3)
+		} else {
+			whereClause += And + fmt.Sprintf(RadiusClause, len(strArr)+1, len(strArr) + 2, len(strArr) + 3)
+		}
+		strArr = append(strArr, long, lat, radius * 1000)
+	}
 
 	sortByArr, ok := params["sort_by"]
 	if ok && len(sortByArr) == 1 {
@@ -173,7 +204,7 @@ func (db *DB) GetAds(page int, rowsPerPage int, params map[string][]string, user
 	}
 	if !authorInQuery {
 		// it's a minimal disjunctive normal form for the "if show" function
-		showClose := fmt.Sprintf("(status != 'closed' AND author_id = $%d OR status='offer' AND hidden = false) ",
+		showClose := fmt.Sprintf("(status != 'closed' AND status != 'aborted' AND author_id = $%d OR status='offer' AND hidden = false) ",
 			len(strArr) + 1)
 		if len(strArr) == 0 {
 			whereClause += Where + showClose

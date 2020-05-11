@@ -199,7 +199,7 @@ CREATE OR REPLACE FUNCTION close_deal_success(deal_id_to_upd INT, price_coeff IN
         end if;
         -- delete subscribers
         DELETE FROM ad_subscribers WHERE ad_id = _ad_id;
-        DELETE FROM notifications WHERE ad_id = _ad_id AND user_id = _subscriber_id AND notification_type='ad_closed';
+        DELETE FROM notifications WHERE ad_id = _ad_id AND user_id = _subscriber_id AND notification_type='ad_close';
     END;
 $$ LANGUAGE 'plpgsql';
 
@@ -218,7 +218,7 @@ CREATE OR REPLACE FUNCTION close_deal_fail_by_author(deal_id_to_cls INT) RETURNS
         end if;
         UPDATE ad SET status = 'offer' WHERE ad_id = _ad_id;
         DELETE FROM deal WHERE deal_id = deal_id_to_cls;
-        DELETE FROM notifications WHERE ad_id = _ad_id AND user_id = _subscriber_id AND notification_type='ad_closed';
+        DELETE FROM notifications WHERE ad_id = _ad_id AND user_id = _subscriber_id AND notification_type='ad_close';
     END;
 $$ LANGUAGE 'plpgsql';
 
@@ -250,7 +250,7 @@ BEGIN
     SELECT author_id FROM ad WHERE ad_id = _ad_id INTO _author_id;
     UPDATE users_stats SET total_aborted_ads = total_aborted_ads + 1 WHERE user_id = _author_id;
 
-    DELETE FROM notifications WHERE ad_id = _ad_id AND user_id = _subscriber_id AND notification_type='ad_closed';
+    DELETE FROM notifications WHERE ad_id = _ad_id AND user_id = _subscriber_id AND notification_type='ad_close';
 END;
 $$ LANGUAGE 'plpgsql';
 

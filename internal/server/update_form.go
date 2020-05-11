@@ -26,9 +26,9 @@ func FormEditCommentUpdate(comment models.CommentForUser) models.AdUpdate {
 	}
 }
 
-func FormDeleteCommentUpdate() models.AdUpdate {
+func FormDeleteCommentUpdate(commentId models.CommentId) models.AdUpdate {
 	return models.AdUpdate{
-		Payload: nil,
+		Payload: commentId,
 		Type: DELETE_COMMENT,
 	}
 }

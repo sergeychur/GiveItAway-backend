@@ -55,3 +55,7 @@ type NewComment struct {
 	Ad AdForNotification `json:"ad"`
 	Comment CommentForUser `json:"comment"`
 }
+
+type CommentId struct {
+	CommentId int `json:"comment_id"`
+}

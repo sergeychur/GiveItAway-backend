@@ -219,6 +219,10 @@ paths:
           #   - "time"
           #   - "geo"
           # default: "time"
+        - name: radius
+          in: "query"
+          description: "radius for getting ads in radius from your place"
+          type: "string"
         - name: lat
           description: "lattitude of user's geoposition"
           in: "query"
