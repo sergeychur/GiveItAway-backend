@@ -6,6 +6,7 @@ import (
 	"gopkg.in/jackc/pgx.v2"
 	"log"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -35,6 +36,7 @@ const (
 	RegionClause   = " region = $%d "
 	DistrictClause = " district = $%d "
 	RadiusClause = " ST_DWithin(geo_position, ST_SetSRID(ST_MakePoint($%d, $%d), 4326), $%d) "
+	QueryClause = " fts @@ to_tsquery('ru', $%d)"
 	GetAdPhotos    = "SELECT ad_photos_id, photo_url FROM ad_photos WHERE ad_id = $1"
 
 	ViewAd = "INSERT INTO ad_view (ad_id, views_count) VALUES ($1, 1)" +
@@ -107,7 +109,21 @@ func (db *DB) GetAds(page int, rowsPerPage int, params map[string][]string, user
 		strArr = append(strArr, categoryArr[0])
 		whereClause += Where + fmt.Sprintf(CategoryClause, 1)
 	}
-
+	is_query_in_req := false
+	query_pos := -1
+	queryArr, ok := params["query"]
+	if ok && len(queryArr) == 1 {
+		query := queryArr[0]
+		query = strings.Replace(query, " ", "&", -1)
+		if len(strArr) == 0 {
+			whereClause += Where + fmt.Sprintf(QueryClause, 1)
+		} else {
+			whereClause += And + fmt.Sprintf(QueryClause, len(strArr)+1)
+		}
+		strArr = append(strArr, query)
+		query_pos = len(strArr)
+		is_query_in_req = true
+	}
 	authorArr, ok := params["author_id"]
 	authorInQuery := false
 	if ok && len(authorArr) == 1 {
@@ -200,6 +216,13 @@ func (db *DB) GetAds(page int, rowsPerPage int, params map[string][]string, user
 				len(strArr)+1, len(strArr)+2)
 			strArr = append(strArr, lat, long)
 			//perform some sort by distance(ad geo, given geo)
+		}
+		//queryArr, ok := params["query"]
+		//if ok && len(queryArr) == 1 {
+		//	query := queryArr[0]
+		//	query = strings.Replace(query, " ", "&", -1)
+		if is_query_in_req {
+			innerSortByClause += fmt.Sprintf(", ts_rank(fts, to_tsquery('ru', $%d) ", query_pos)
 		}
 	}
 	if !authorInQuery {

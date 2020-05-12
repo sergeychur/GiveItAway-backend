@@ -11,6 +11,7 @@
 -- DROP FUNCTION IF EXISTS close_deal_success;
 -- DROP FUNCTION IF EXISTS close_deal_fail_by_subscriber;
 -- DROP FUNCTION IF EXISTS close_deal_fail_by_author;
+
 DROP TRIGGER IF EXISTS update_comments_count ON comment;
 DROP FUNCTION IF EXISTS update_comments_count;
 drop trigger if exists ad_view_create on ad;
@@ -333,12 +334,3 @@ CREATE TRIGGER users_stats_create AFTER INSERT ON users
     FOR EACH ROW EXECUTE PROCEDURE user_stats_create();
 
 CREATE INDEX IF NOT EXISTS richest ON ad_subscribers (bid);
-
-ALTER TABLE ad DROP column if exists is_auction;
-ALTER TABLE ad ADD column if not exists ad_type text default 'choice';
-ALTER TABLE ad DROP column if exists feedback_type;
-alter table ad add column if not exists ls_enabled boolean default true,
-    add column if not exists comments_enabled boolean default true,
-    add column if not exists extra_enabled boolean default true,
-    add column if not exists subscribers_count int default 0;
-alter table notifications add column if not exists ad_id bigint;

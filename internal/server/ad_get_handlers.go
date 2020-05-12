@@ -3,7 +3,6 @@ package server
 import (
 	"fmt"
 	"github.com/go-chi/chi"
-	"github.com/sergeychur/give_it_away/internal/models"
 	"net/http"
 	"strconv"
 )
@@ -34,15 +33,16 @@ func (server *Server) FindAds(w http.ResponseWriter, r *http.Request) {
 		WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("page and rows per page have to be in get params and int"))
 		return
 	}
-	queryArr, ok := params["query"]
-	status := 0
-	ads := make([]models.AdForUsers, 0)
-	if ok && len(queryArr) == 1 {
+	//queryArr, ok := params["query"]
+	//status := 0
+	//ads := make([]models.AdForUsers, 0)
+	/*if ok && len(queryArr) == 1 {
 		query := queryArr[0]
 		ads, status = server.db.FindAds(query, page, rowsPerPage, params, userId)
 	} else {
-		ads, status = server.db.GetAds(page, rowsPerPage, params, userId)
-	}
+
+	}*/
+	ads, status := server.db.GetAds(page, rowsPerPage, params, userId)
 	DealRequestFromDB(w, ads, status)
 }
 
