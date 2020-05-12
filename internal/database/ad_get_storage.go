@@ -109,8 +109,8 @@ func (db *DB) GetAds(page int, rowsPerPage int, params map[string][]string, user
 		strArr = append(strArr, categoryArr[0])
 		whereClause += Where + fmt.Sprintf(CategoryClause, 1)
 	}
-	is_query_in_req := false
-	query_pos := -1
+	isQueryInReq := false
+	queryPos := -1
 	queryArr, ok := params["query"]
 	if ok && len(queryArr) == 1 {
 		query := queryArr[0]
@@ -121,8 +121,8 @@ func (db *DB) GetAds(page int, rowsPerPage int, params map[string][]string, user
 			whereClause += And + fmt.Sprintf(QueryClause, len(strArr)+1)
 		}
 		strArr = append(strArr, query)
-		query_pos = len(strArr)
-		is_query_in_req = true
+		queryPos = len(strArr)
+		isQueryInReq = true
 	}
 	authorArr, ok := params["author_id"]
 	authorInQuery := false
@@ -183,7 +183,7 @@ func (db *DB) GetAds(page int, rowsPerPage int, params map[string][]string, user
 		} else {
 			whereClause += And + fmt.Sprintf(RadiusClause, len(strArr)+1, len(strArr) + 2, len(strArr) + 3)
 		}
-		strArr = append(strArr, long, lat, radius * 1000)
+		strArr = append(strArr, lat, long, radius * 1000)
 	}
 
 	sortByArr, ok := params["sort_by"]
@@ -221,9 +221,9 @@ func (db *DB) GetAds(page int, rowsPerPage int, params map[string][]string, user
 		//if ok && len(queryArr) == 1 {
 		//	query := queryArr[0]
 		//	query = strings.Replace(query, " ", "&", -1)
-		if is_query_in_req {
-			innerSortByClause += fmt.Sprintf(", ts_rank(fts, to_tsquery('ru', $%d) ", query_pos)
-		}
+	}
+	if isQueryInReq {
+		innerSortByClause += fmt.Sprintf(", ts_rank(fts, to_tsquery('ru', $%d)) ", queryPos)
 	}
 	if !authorInQuery {
 		// it's a minimal disjunctive normal form for the "if show" function
@@ -234,7 +234,7 @@ func (db *DB) GetAds(page int, rowsPerPage int, params map[string][]string, user
 		} else {
 			whereClause += And + showClose
 		}
-		whereClause += And + fmt.Sprintf(" (hidden = false OR author_id = $%d)", len(strArr)+1)
+		//whereClause += And + fmt.Sprintf(" (hidden = false OR author_id = $%d)", len(strArr)+1)
 		strArr = append(strArr, userId)
 	} else {
 		whereClause += And + fmt.Sprintf(" (hidden = false OR author_id = $%d)", len(strArr)+1)
