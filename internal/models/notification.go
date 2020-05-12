@@ -47,6 +47,10 @@ type AuthorCancelled struct {
 	Ad AdForNotification `json:"ad"`
 }
 
+type Unsubscribed struct {
+	UserId int `json:"user_id"`
+}
+
 type NotesNumber struct {
 	Number int `json:"number"`
 }

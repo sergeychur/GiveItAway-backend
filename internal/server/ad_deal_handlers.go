@@ -77,6 +77,9 @@ func (server *Server) UnsubscribeFromAd(w http.ResponseWriter, r *http.Request) 
 	}
 	// todo maybe send notification to ad viewers here too
 	status := server.db.UnsubscribeFromAd(adId, userId)
+	if status == database.OK {
+		server.UnsubscribeToAdSendUpd(userId, adId, r)
+	}
 	DealRequestFromDB(w, "OK", status)
 
 }
@@ -93,34 +96,12 @@ func (server *Server) MakeDeal(w http.ResponseWriter, r *http.Request) {
 		WriteToResponse(w, http.StatusInternalServerError, fmt.Errorf("server cannot get userId from cookie"))
 	}
 	params := r.URL.Query()
-	/*isAuctionArr, ok := params["is_auction"]
-	subscriberId := 0
-	isAuction := false
-	if !ok || len(isAuctionArr) != 1  {
-		subscriberArr, ok := params["subscriber_id"]
-		if !ok || len(subscriberArr) != 1 {
-			WriteToResponse(w, http.StatusBadRequest,
-				fmt.Errorf("subscriber_id has to be in get params and positive int"))
-			return
-		}
-		subscriberId, err = strconv.Atoi(subscriberArr[0])
-		if err != nil {
-			WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("subscriber_id should be int"))
-			return
-		}
-	} else {
-		isAuction = isAuctionArr[0] == "true"
-	}*/
 	typeArr, ok := params["type"]
 	if !ok || len(typeArr) != 1  {
 		WriteToResponse(w, http.StatusBadRequest,
 			fmt.Errorf("type has to be in query"))
 	}
-	//subscriberId, status := server.db.GetSubscriberIdForDeal(typeArr[0], params)
-	//if status != database.OK {
-	//	DealRequestFromDB(w, "OK", status)
-	//	return
-	//}
+
 	status, dealId, subscriberId := server.db.MakeDeal(adId, initiatorId, typeArr[0], params)
 
 	if status == database.CREATED { // TODO: probably go func

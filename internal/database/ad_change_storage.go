@@ -8,23 +8,23 @@ import (
 
 const (
 	// create ad query
-	CreateAd = "INSERT INTO ad (author_id, header, text, region, district, ad_type, ls_enabled, comments_enabled, extra_enabled, category%s)" +
-		" VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10%s) RETURNING ad_id"
+	CreateAd = "INSERT INTO ad (author_id, header, text, region, district, ad_type, ls_enabled, comments_enabled, extra_enabled, category, metro, full_adress%s)" +
+		" VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12%s) RETURNING ad_id"
 	ExtraField                = ", extra_field"
 	GeoPosition               = ", geo_position, lat, long"
 	Blank                     = ""
 	NoExtraFieldNoGeoPosition = ""
-	NoExtraFieldGeoPosition   = ", ST_SetSRID(ST_POINT($11, $12), 4326), $11, $12"
-	ExtraFieldNoGeoPosition   = ", $11"
-	ExtraFieldGeoPosition     = ", $11, ST_SetSRID(ST_POINT($12, $13), 4326), $12, $13"
+	NoExtraFieldGeoPosition   = ", ST_SetSRID(ST_POINT($13, $14), 4326), $13, $14"
+	ExtraFieldNoGeoPosition   = ", $13"
+	ExtraFieldGeoPosition     = ", $13, ST_SetSRID(ST_POINT($14, $15), 4326), $14, $15"
 
 	// edit ad query
 	EditAd                        = "UPDATE ad SET header=$1, text=$2, region=$3, district=$4, ad_type=$5, ls_enabled=$6, comments_enabled=$7, " +
-		"extra_enabled=$8, category=$9%s where ad_id=$%d"
+		"extra_enabled=$8, category=$9,  metro=$10, full_adress=$11%s where ad_id=$%d"
 	NoExtraFieldNoGeoPositionEdit = ", extra_field=NULL"
-	NoExtraFieldGeoPositionEdit   = ", geo_position=ST_SetSRID(ST_POINT($10, $11), 4326), lat=$10, long=$11"
-	ExtraFieldNoGeoPositionEdit   = ", extra_field=$10"
-	ExtraFieldGeoPositionEdit     = ", extra_field=$10, geo_position=ST_SetSRID(ST_POINT($11, $12), 4326), lat=$11, long=$12"
+	NoExtraFieldGeoPositionEdit   = ", geo_position=ST_SetSRID(ST_POINT($12, $13), 4326), lat=$12, long=$13"
+	ExtraFieldNoGeoPositionEdit   = ", extra_field=$12"
+	ExtraFieldGeoPositionEdit     = ", extra_field=$12, geo_position=ST_SetSRID(ST_POINT($13, $14), 4326), lat=$13, long=$14"
 
 	// add photo to ad query
 	checkAdExist = "SELECT author_id FROM ad WHERE ad_id = $1"
@@ -64,27 +64,34 @@ func (db *DB) CreateAd(ad models.Ad) (int, models.AdCreationResult) {
 	if ad.GeoPosition != nil {
 		sign += 1
 	}
-
+	metro := pgx.NullString{String: ad.Metro}
+	if ad.Metro != "" {
+		metro.Valid = true
+	}
+	fullAdress := pgx.NullString{String: ad.FullAdress}
+	if ad.FullAdress != "" {
+		fullAdress.Valid = true
+	}
 	switch sign {
 	case 0:
 		query = fmt.Sprintf(CreateAd, Blank, NoExtraFieldNoGeoPosition)
 		err = db.db.QueryRow(query, ad.AuthorId, ad.Header, ad.Text, ad.Region, ad.District, ad.AdType,
-			ad.LSEnabled, ad.CommentsEnabled, ad.ExtraEnabled, ad.Category).Scan(&res.AdId)
+			ad.LSEnabled, ad.CommentsEnabled, ad.ExtraEnabled, ad.Category, metro, fullAdress).Scan(&res.AdId)
 	case 1:
 		query = fmt.Sprintf(CreateAd, GeoPosition, NoExtraFieldGeoPosition)
 		err = db.db.QueryRow(query, ad.AuthorId, ad.Header, ad.Text, ad.Region, ad.District, ad.AdType,
 			ad.LSEnabled, ad.CommentsEnabled, ad.ExtraEnabled,
-			ad.Category, ad.GeoPosition.Latitude, ad.GeoPosition.Longitude).Scan(&res.AdId)
+			ad.Category, metro, fullAdress, ad.GeoPosition.Latitude, ad.GeoPosition.Longitude).Scan(&res.AdId)
 	case 10:
 		query = fmt.Sprintf(CreateAd, ExtraField, ExtraFieldNoGeoPosition)
 		err = db.db.QueryRow(query, ad.AuthorId, ad.Header, ad.Text, ad.Region, ad.District, ad.AdType,
 			ad.LSEnabled, ad.CommentsEnabled, ad.ExtraEnabled,
-			ad.Category, ad.ExtraField).Scan(&res.AdId)
+			ad.Category, metro, fullAdress, ad.ExtraField).Scan(&res.AdId)
 	case 11:
 		query = fmt.Sprintf(CreateAd, ExtraField+GeoPosition, ExtraFieldGeoPosition)
 		err = db.db.QueryRow(query, ad.AuthorId, ad.Header, ad.Text, ad.Region, ad.District, ad.AdType,
 			ad.LSEnabled, ad.CommentsEnabled, ad.ExtraEnabled,
-			ad.Category, ad.ExtraField, ad.GeoPosition.Latitude, ad.GeoPosition.Longitude).Scan(&res.AdId)
+			ad.Category, metro, fullAdress, ad.ExtraField, ad.GeoPosition.Latitude, ad.GeoPosition.Longitude).Scan(&res.AdId)
 	}
 	if err != nil {
 		return DB_ERROR, res
@@ -235,26 +242,34 @@ func (db *DB) EditAd(adId int, userId int, ad models.Ad) int {
 	if ad.GeoPosition != nil {
 		sign += 1
 	}
+	metro := pgx.NullString{String: ad.Metro}
+	if ad.Metro != "" {
+		metro.Valid = true
+	}
+	fullAdress := pgx.NullString{String: ad.FullAdress}
+	if ad.FullAdress != "" {
+		fullAdress.Valid = true
+	}
 	switch sign {
 	case 0:
 		query = fmt.Sprintf(EditAd, NoExtraFieldNoGeoPositionEdit, 8)
 		_, err = tx.Exec(query, ad.Header, ad.Text, ad.Region, ad.District, ad.AdType,
-			ad.LSEnabled, ad.CommentsEnabled, ad.ExtraEnabled, ad.Category, adId)
+			ad.LSEnabled, ad.CommentsEnabled, ad.ExtraEnabled, ad.Category, adId, metro, fullAdress)
 	case 1:
 		query = fmt.Sprintf(EditAd, NoExtraFieldGeoPositionEdit, 10)
 		_, err = tx.Exec(query, ad.Header, ad.Text, ad.Region, ad.District, ad.AdType,
 			ad.LSEnabled, ad.CommentsEnabled, ad.ExtraEnabled,
-			ad.Category, ad.GeoPosition.Latitude, ad.GeoPosition.Longitude, adId)
+			ad.Category, metro, fullAdress, ad.GeoPosition.Latitude, ad.GeoPosition.Longitude, adId)
 	case 10:
 		query = fmt.Sprintf(EditAd, ExtraFieldNoGeoPositionEdit, 9)
 		_, err = tx.Exec(query, ad.Header, ad.Text, ad.Region, ad.District, ad.AdType,
 			ad.LSEnabled, ad.CommentsEnabled, ad.ExtraEnabled,
-			ad.Category, ad.ExtraField, adId)
+			ad.Category,  metro, fullAdress, ad.ExtraField, adId)
 	case 11:
 		query = fmt.Sprintf(EditAd, ExtraFieldGeoPositionEdit, 11)
 		_, err = tx.Exec(query, ad.Header, ad.Text, ad.Region, ad.District, ad.AdType,
 			ad.LSEnabled, ad.CommentsEnabled, ad.ExtraEnabled,
-			ad.Category, ad.ExtraField, ad.GeoPosition.Latitude, ad.GeoPosition.Longitude, adId)
+			ad.Category,  metro, fullAdress, ad.ExtraField, ad.GeoPosition.Latitude, ad.GeoPosition.Longitude, adId)
 	}
 	if err != nil {
 		return DB_ERROR

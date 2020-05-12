@@ -23,3 +23,6 @@ $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER  tsvectorupdate before insert or update
     on ad for each row execute procedure ad_trigger();
+
+alter table ad add column if not exists metro citext,
+    add column if not exists full_adress citext;

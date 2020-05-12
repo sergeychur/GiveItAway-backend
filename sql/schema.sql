@@ -215,7 +215,7 @@ CREATE OR REPLACE FUNCTION close_deal_fail_by_author(deal_id_to_cls INT) RETURNS
             SELECT subscriber_id FROM deal WHERE deal_id = deal_id_to_cls INTO _subscriber_id;
             UPDATE users_carma SET frozen_carma = frozen_carma - a_s.bid FROM ad_subscribers a_s
                 WHERE users_carma.user_id = a_s.subscriber_id and a_s.subscriber_id = _subscriber_id AND a_s.ad_id = _ad_id;
-            DELETE FROM ad_subscribers WHERE ad_id = _ad_id AND subscriber_id = _subscriber_id;
+--             DELETE FROM ad_subscribers WHERE ad_id = _ad_id AND subscriber_id = _subscriber_id;
         end if;
         UPDATE ad SET status = 'offer' WHERE ad_id = _ad_id;
         DELETE FROM deal WHERE deal_id = deal_id_to_cls;

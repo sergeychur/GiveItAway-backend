@@ -36,6 +36,9 @@ type Ad struct {
 	Category string `json:"category"`
 
 	CommentsCount int32 `json:"comments_count,omitempty"`
+
+	Metro string `json:"metro"`
+	FullAdress string `json:"full_adress"`
 }
 
 type AdCreationResult struct {
@@ -78,6 +81,7 @@ type AdForUsers struct {
 
 	CommentsCount int32 `json:"comments_count,omitempty"`
 	Hidden        bool  `json:"hidden"`
+	Metro string `json:"metro"`
 }
 
 type AdForUsersDetailed struct {
@@ -119,6 +123,8 @@ type AdForUsersDetailed struct {
 	Hidden        bool  `json:"hidden"`
 	SubscribersNum int32 `json:"subscribers_num"`
 	IsSubscriber bool `json:"is_subscriber"`
+	Metro string `json:"metro"`
+	FullAdress string `json:"full_adress"`
 }
 
 type AdPhoto struct {

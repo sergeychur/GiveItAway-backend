@@ -108,3 +108,11 @@ func (server *Server) SubscribeToAdSendUpd(userId, adId int, r *http.Request) {
 		}
 	}
 }
+
+
+func (server *Server) UnsubscribeToAdSendUpd(userId, adId int, r *http.Request) {
+	newSubUpd := FormUnsubscribeUpdate(userId)
+	if newSubUpd != nil {
+		server.NotificationSender.SendToChannel(r.Context(), *newSubUpd, fmt.Sprintf("ad_%d", adId))
+	}
+}

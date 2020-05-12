@@ -8,6 +8,7 @@ const (
 	DELETE_COMMENT = "delete_comment"
 	EDIT_AD = "edit_ad"
 	NEW_SUBSCRIBER = "new_subscriber"
+	UNSUBSCRIBED = "unsubscribed"
 	AD_CLOSE = "ad_close"
 	STATUS_CHANGED = "status_changed"
 )
@@ -41,7 +42,7 @@ func FormEditAdUpdate(ad models.AdForUsersDetailed) models.AdUpdate {
 }
 
 func FormNewSubscriberUpdate(note models.Notification) *models.AdUpdate {
-	subscribed, ok := note.Payload.(models.UserSubscribed)
+	subscribed, ok := note.Payload.(*models.UserSubscribed)
 	if !ok {
 		return nil
 	}
@@ -49,6 +50,15 @@ func FormNewSubscriberUpdate(note models.Notification) *models.AdUpdate {
 	return &models.AdUpdate{
 		Payload: user,
 		Type: NEW_SUBSCRIBER,
+	}
+}
+
+func FormUnsubscribeUpdate(userId int) *models.AdUpdate {
+	return &models.AdUpdate{
+		Payload: models.Unsubscribed{
+			UserId: userId,
+		},
+		Type: UNSUBSCRIBED,
 	}
 }
 
@@ -76,7 +86,7 @@ func FormFulfillDealUpdate(note models.Notification) (*models.AdUpdate, int) {
 }
 
 func FormCancelDealUpdate(note models.Notification) (*models.AdUpdate, int) {
-	cancelInfoAuthor, ok := note.Payload.(models.AuthorCancelled)
+	cancelInfoAuthor, ok := note.Payload.(*models.AuthorCancelled)
 	if ok {
 		newStatus := models.AdNewStatus{
 			NewStatus: cancelInfoAuthor.Ad.Status,
@@ -87,7 +97,7 @@ func FormCancelDealUpdate(note models.Notification) (*models.AdUpdate, int) {
 			Type: STATUS_CHANGED,
 		}, int(cancelInfoAuthor.Ad.AdId)
 	} else {
-		cancelInfoSubscriber, ok := note.Payload.(models.SubscriberCancelled)
+		cancelInfoSubscriber, ok := note.Payload.(*models.SubscriberCancelled)
 		if ok {
 			newStatus := models.AdNewStatus{
 				NewStatus: cancelInfoSubscriber.Ad.Status,

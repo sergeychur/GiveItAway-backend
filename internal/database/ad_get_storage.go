@@ -20,14 +20,14 @@ const (
 	GetAdById = "SELECT a.ad_id, u.vk_id, u.name, u.surname, u.photo_url, a.header, a.text, a.region," +
 		" a.district, a.ad_type, a.ls_enabled, a.comments_enabled, a.extra_enabled, " +
 		"a.extra_field, a.creation_datetime, a.lat, a.long, a.status," +
-		" a.category, a.comments_count, aw.views_count, a.hidden, a.subscribers_count FROM ad a JOIN users u ON (a.author_id = u.vk_id) " +
+		" a.category, a.comments_count, aw.views_count, a.hidden, a.subscribers_count, a.metro, a.full_adress FROM ad a JOIN users u ON (a.author_id = u.vk_id) " +
 		"JOIN ad_view aw ON (a.ad_id = aw.ad_id) WHERE a.ad_id = $1"
 
 	// get ads query
 	GetAds = "SELECT a.ad_id, u.vk_id, u.name, u.surname, u.photo_url, a.header, a.region," +
 		" a.district, a.ad_type, a.ls_enabled, a.comments_enabled, a.extra_enabled, " +
 		"a.extra_field, a.creation_datetime, a.status," +
-		" a.category, a.comments_count, a.hidden FROM ad a JOIN users u ON (a.author_id = u.vk_id) " +
+		" a.category, a.comments_count, a.hidden, a.metro FROM ad a JOIN users u ON (a.author_id = u.vk_id) " +
 		"JOIN (SELECT ad_id FROM ad%s ORDER BY %s LIMIT $%d OFFSET $%d) l ON (l.ad_id = a.ad_id) ORDER BY %s"
 	And            = "AND"
 	Where          = " WHERE "
@@ -52,11 +52,13 @@ func (db *DB) GetAd(adId int, userId int) (models.AdForUsersDetailed, int) {
 	lat := pgx.NullFloat64{}
 	long := pgx.NullFloat64{}
 	timeStamp := time.Time{}
+	metro := pgx.NullString{}
+	fullAdress := pgx.NullString{}
 	err := row.Scan(&ad.AdId, &ad.Author.VkId, &ad.Author.Name, &ad.Author.Surname,
 		&ad.Author.PhotoUrl, &ad.Header, &ad.Text, &ad.Region, &ad.District, &ad.AdType,
 		&ad.LSEnabled, &ad.CommentsEnabled, &ad.ExtraEnabled,
 		&extraFieldTry, &timeStamp, &lat, &long, &ad.Status, &ad.Category,
-		&ad.CommentsCount, &ad.ViewsCount, &ad.Hidden, &ad.SubscribersNum)
+		&ad.CommentsCount, &ad.ViewsCount, &ad.Hidden, &ad.SubscribersNum, &metro, &fullAdress)
 	if err == pgx.ErrNoRows {
 		return ad, EMPTY_RESULT
 	}
@@ -80,6 +82,12 @@ func (db *DB) GetAd(adId int, userId int) (models.AdForUsersDetailed, int) {
 		ad.GeoPosition.Longitude = long.Float64
 	} else {
 		ad.GeoPosition = nil
+	}
+	if metro.Valid {
+		ad.Metro = metro.String
+	}
+	if fullAdress.Valid {
+		ad.FullAdress = fullAdress.String
 	}
 
 	ad.PathesToPhoto, err = db.GetAdPhotos(ad.AdId)
@@ -272,12 +280,13 @@ func (db *DB) WorkWithOneAd(rows *pgx.Rows, ads Ads) (Ads, error) {
 	extraFieldTry := pgx.NullString{}
 	/*lat := pgx.NullFloat64{}
 	long := pgx.NullFloat64{}*/
+	metro := pgx.NullString{}
 	timeStamp := time.Time{}
 	err := rows.Scan(&ad.AdId, &ad.Author.VkId, &ad.Author.Name, &ad.Author.Surname,
 		&ad.Author.PhotoUrl, &ad.Header /*&ad.Text,*/, &ad.Region, &ad.District, &ad.AdType,
 		&ad.LSEnabled, &ad.CommentsEnabled, &ad.ExtraEnabled,
 		&extraFieldTry, &timeStamp /*&lat, &long,*/, &ad.Status, &ad.Category,
-		&ad.CommentsCount, &ad.Hidden)
+		&ad.CommentsCount, &ad.Hidden, &metro)
 	if err != nil {
 		return nil, err
 	}
@@ -287,6 +296,9 @@ func (db *DB) WorkWithOneAd(rows *pgx.Rows, ads Ads) (Ads, error) {
 	ad.CreationDate = timeStamp.Format("02 Jan 06 15:04 UTC")
 	if extraFieldTry.Valid {
 		ad.ExtraField = extraFieldTry.String
+	}
+	if metro.Valid {
+		ad.Metro = metro.String
 	}
 	ad.PathesToPhoto, err = db.GetAdPhotos(ad.AdId)
 	if err != nil {
