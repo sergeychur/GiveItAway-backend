@@ -238,6 +238,29 @@ func (db *DB) FormCancelNotification(cancelType string, initiatorId int, adId in
 	return note, nil
 }
 
+func (db *DB) FormMaxBidUpdatedNote(adId, whomId, newBid, newUserId int) (models.Notification, error) {
+	timeStamp := time.Now()
+	loc, _ := time.LoadLocation("UTC")
+	timeStamp.In(loc)
+	user := models.User{}
+	err := db.db.QueryRow(GetUserById, newUserId).Scan(&user.VkId, &user.Name, &user.Surname, &user.PhotoUrl)
+	if err != nil {
+		return models.Notification{}, err
+	}
+	note := models.Notification{
+		AdId: int64(adId),
+		WhomId: whomId,
+		NotificationType: notifications.MAX_BID_UPDATED,
+		Payload: models.MaxBidUpdated{
+			NewBid: newBid,
+			User: user,
+		},
+		CreationDateTime: timeStamp.Format("02 Jan 06 15:04 UTC"),
+		IsRead: false,
+	}
+	return note, err
+}
+
 func (db *DB) InsertNotification(whomId int, notification models.Notification) error {
 	// 2009-11-10 23:00:00 +0000 UTC
 	creation, err := time.Parse("02 Jan 06 15:04 UTC", notification.CreationDateTime)

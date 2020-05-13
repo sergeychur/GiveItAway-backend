@@ -63,3 +63,8 @@ type NewComment struct {
 type CommentId struct {
 	CommentId int `json:"comment_id"`
 }
+
+type MaxBidUpdated struct {
+	NewBid int `json:"new_bid"`
+	User User `json:"user"`
+}

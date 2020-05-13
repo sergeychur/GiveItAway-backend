@@ -15,6 +15,10 @@ const (
 	checkIfEnoughCarma    = "SELECT current_carma - frozen_carma >= $1 * cost_frozen FROM users_carma WHERE user_id = $2"
 
 	getMaxBidInAuction = "select bid from ad_subscribers where ad_id = $1 order by bid desc limit 1" // todo: повесить индекс
+	getMaxBidInAuctionWithUserId = "select bid, subscriber_id from ad_subscribers where ad_id = $1 order by bid desc limit 1"
+	getMaxBidUserInAuction = "select a_s.bid, u.vk_id, u.name, u.surname, u.photo_url from ad_subscribers a_s" +
+		" join users u on (u.vk_id = a_s.subscriber_id) where a_s.ad_id = $1 order by a_s.bid desc limit 1"
+	getUserBid = "select bid from ad_subscribers where ad_id = $1 and subscriber_id = $2"
 
 	checkIfEnoughCarmaAuction = "SELECT current_carma - frozen_carma > $1 FROM users_carma WHERE user_id = $2"
 	updateFrozenSubscribe = "UPDATE users_carma SET frozen_carma = frozen_carma + $1 * cost_frozen WHERE user_id = $2 " +
@@ -35,50 +39,58 @@ const (
 
 	GetUserCostFreeze = "SELECT cost_frozen FROM users_carma WHERE user_id = $1"
 
+	updateBid = "update ad_subscribers set bid=$1 where ad_id=$2 and subscriber_id=$3"
+
 )
 
-func (db *DB) DealWithCarmaSubscribe(tx *pgx.Tx, adId, userId int) (bool, int, error){
+func (db *DB) DealWithCarmaSubscribe(tx *pgx.Tx, adId, userId int) (bool, int, error, *models.Notification){
 	_, err := tx.Exec(fmt.Sprintf(ZerofyIfExceeded, global_constants.ZeroingTime), userId)
 	if err != nil {
-		return false, 0, err
+		return false, 0, err, nil
 	}
 	isAuction := false
 	err = tx.QueryRow(checkIfAuction, adId).Scan(&isAuction)
 	if err != nil {
-		return false, 0, err
+		return false, 0, err, nil
 	}
 	if isAuction {
 		return db.DealWithCarmaSubscribeAuct(tx, adId, userId)
 	}
-	return db.DealWithCarmaSubscribeNonAuct(tx, adId, userId)
+	canSubscribe, carma, err := db.DealWithCarmaSubscribeNonAuct(tx, adId, userId)
+	return canSubscribe, carma, err, nil
 }
 
-func (db *DB) DealWithCarmaSubscribeAuct(tx *pgx.Tx, adId, userId int) (bool, int, error) {
+func (db *DB) DealWithCarmaSubscribeAuct(tx *pgx.Tx, adId, userId int) (bool, int, error, *models.Notification) {
 	carmaForAuct := 0
-	err := tx.QueryRow(getMaxBidInAuction, adId).Scan(&carmaForAuct)
+	prevMaxBidId := 0
+	err := tx.QueryRow(getMaxBidInAuctionWithUserId, adId).Scan(&carmaForAuct, &prevMaxBidId)
 	if err == pgx.ErrNoRows {
 		err = nil
 		carmaForAuct = global_constants.InitialBid
 	}
 	if err != nil {
-		return false, 0, err
+		return false, 0, err, nil
 	}
 	enoughCarma := false
 	err = tx.QueryRow(checkIfEnoughCarmaAuction, carmaForAuct, userId).Scan(&enoughCarma)
 	if err != nil {
-		return false, 0, err
+		return false, 0, err, nil
 	}
 	if !enoughCarma {
-		return false, 0, nil
+		return false, 0, nil, nil
 	}
 
 	frozenCarma := carmaForAuct + 1
 	_, err = tx.Exec(updateFrozenSubscribeAuct, frozenCarma, userId)
 	if err != nil {
-		return false, 0, err
+		return false, 0, err, nil
 	}
 	// took auction out of usual flow
-	return true, frozenCarma, nil
+	note, err := db.FormMaxBidUpdatedNote(adId, prevMaxBidId, frozenCarma, userId)
+	if err != nil {
+		return false, 0, err, nil
+	}
+	return true, frozenCarma, nil, &note
 }
 
 func (db *DB) DealWithCarmaSubscribeNonAuct(tx *pgx.Tx, adId, userId int) (bool, int, error) {
@@ -154,6 +166,24 @@ func (db *DB) GetMaxBidForAd (adId int) (models.Bid, int) {
 	return bid, FOUND
 }
 
+func (db *DB) GetMaxBidUserForAd (adId int) (models.BidUser, int) {
+	bid := models.BidUser{}
+	isAuction := false
+	err := db.db.QueryRow(checkIfAuction, adId).Scan(&isAuction)
+	if !isAuction {
+		return models.BidUser{}, FORBIDDEN
+	}
+	err = db.db.QueryRow(getMaxBidUserInAuction, adId).Scan(&bid.Bid,
+		&bid.User.VkId, &bid.User.Name, &bid.User.Surname, &bid.User.PhotoUrl)
+	if err == pgx.ErrNoRows {
+		return models.BidUser{}, EMPTY_RESULT
+	}
+	if err != nil {
+		return models.BidUser{}, DB_ERROR
+	}
+	return bid, FOUND
+}
+
 func (db *DB) GetUserBidForAd(adId, userId int) (models.Bid, int) {
 	isAuction := false
 	err := db.db.QueryRow(checkIfAuction, adId).Scan(&isAuction)
@@ -177,4 +207,69 @@ func (db *DB) GetUserBidForAd(adId, userId int) (models.Bid, int) {
 		return models.Bid{}, DB_ERROR
 	}
 	return bid, FOUND
+}
+
+func (db *DB) GetReturnBid(adId, userId int) (models.Bid, int) {
+	bid := models.Bid{}
+	err := db.db.QueryRow(getUserBid, adId, userId).Scan(&bid.Bid)
+	if err == pgx.ErrNoRows {
+		return models.Bid{}, EMPTY_RESULT
+	}
+	if err != nil {
+		return models.Bid{}, DB_ERROR
+	}
+	return bid, FOUND
+}
+
+func (db *DB) IncreaseBid(adId, userId int) (models.Notification, int) {
+	isAuction := false
+	tx, err := db.StartTransaction()
+	if err != nil {
+		return models.Notification{}, DB_ERROR
+	}
+	defer func() {
+		_ = tx.Rollback()
+	}()
+	err = tx.QueryRow(checkIfAuction, adId).Scan(&isAuction)
+	if err == pgx.ErrNoRows {
+		return models.Notification{}, EMPTY_RESULT
+	}
+	if err != nil {
+		return models.Notification{}, DB_ERROR
+	}
+	if !isAuction {
+		return models.Notification{}, FORBIDDEN
+	}
+	isSubscriber := false
+	err = tx.QueryRow(CheckIfSubscriber, adId, userId).Scan(&isSubscriber)
+	if err == pgx.ErrNoRows {
+		return models.Notification{}, EMPTY_RESULT
+	}
+	if err != nil {
+		return models.Notification{}, DB_ERROR
+	}
+	if !isSubscriber {
+		return models.Notification{}, EMPTY_RESULT
+	}
+	maxBid := 0
+	prevMaxId := 0
+	err = tx.QueryRow(getMaxBidInAuctionWithUserId, adId).Scan(&maxBid, &prevMaxId)
+	if err == pgx.ErrNoRows {
+		maxBid = 0
+	}
+	enoughCarma := false
+	err = tx.QueryRow(checkIfEnoughCarmaAuction, maxBid, userId).Scan(&enoughCarma)
+	if !enoughCarma {
+		return models.Notification{}, CONFLICT
+	}
+	_, err = tx.Exec(updateBid, maxBid+1, adId, userId)
+	err = tx.Commit()
+	if err != nil {
+		return models.Notification{}, DB_ERROR
+	}
+	note, err := db.FormMaxBidUpdatedNote(adId, prevMaxId, maxBid + 1, userId)
+	if err != nil {
+		return models.Notification{}, DB_ERROR
+	}
+	return note, OK
 }

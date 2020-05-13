@@ -101,10 +101,6 @@ func (db *DB) GetAd(adId int, userId int) (models.AdForUsersDetailed, int) {
 	return ad, FOUND
 }
 
-func (db *DB) FindAds(query string, page int, rowsPerPage int, params map[string][]string, userId int) ([]models.AdForUsers, int) {
-	panic("not implemented")
-}
-
 func (db *DB) GetAds(page int, rowsPerPage int, params map[string][]string, userId int) ([]models.AdForUsers, int) {
 	offset := rowsPerPage * (page - 1)
 	query := GetAds

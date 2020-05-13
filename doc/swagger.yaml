@@ -9,8 +9,6 @@ tags:
     description: "Объявления"
   - name: "comment"
     description: "Комментарии к объявлениям"
-  - name: "donat"
-    description: "Пожертвования"
   - name: "deal"
     description: "Сделка по объявлению"
   - name: "upload"
@@ -496,6 +494,67 @@ paths:
             $ref: "#/definitions/Bid"
         400:
           description: "wrong parameters"
+  /post/{ad_id}/max_bid_user:
+    get:
+      summary: "Получить пользователя с максимальной ставкой в аукционе"
+      tags:
+        - deal
+      parameters:
+        - name: ad_id
+          in: path
+          required: true
+          type: integer
+      responses:
+        200:
+          description: "there is a evaluated price"
+          schema:
+            $ref: "#/definitions/BidUser"
+        404:
+          description: "no bids for ad"
+        403:
+          description: "it is not auction"
+        400:
+          description: "wrong parameters"
+  /post/{ad_id}/return_bid_size:
+    get:
+      summary: "Сколько юзер получит обратно при отписке"
+      tags:
+        - deal
+      parameters:
+        - name: ad_id
+          in: path
+          required: true
+          type: integer
+      responses:
+        200:
+          description: "there is a evaluated price"
+          schema:
+            $ref: "#/definitions/Bid"
+        400:
+          description: "wrong parameters"
+        404:
+          description: "user is not a subscriber"
+  /post/{ad_id}/increase_bid:
+    get:
+      summary: "Повысить ставку в аукционе, сделав ее max_bid+1"
+      tags:
+        - deal
+      parameters:
+        - name: ad_id
+          in: path
+          required: true
+          type: integer
+      responses:
+        200:
+          description: "success"
+        400:
+          description: "wrong parameters"
+        404:
+          description: "user is not a subscriber or ad doesn't exist"
+        403:
+          description: "ad is not auction"
+        409:
+          description: "user has not enough carma"
   /post/{ad_id}/comments:
     get:
       tags:
@@ -645,102 +704,6 @@ paths:
           description: "user cannot change this deal"
         401:
           description: "no auth"
-  /donat/create:
-    post:
-      tags: ["donat"]
-      summary: "Создать новую цель для сбора денег"
-      parameters:
-        - name: donat
-          in: body
-          schema:
-            $ref: "#/definitions/DonationRequest"
-      responses:
-        201:
-          description: "created"
-        400:
-          description: "some errors in request parameters"
-        401:
-          description: "no auth"
-  /donat/{donat_id}/close:
-    post:
-      tags: ["donat"]
-      summary: "Закрыть сбор средств"
-      parameters:
-        - name: "donat_id"
-          in: path
-          required: true
-          type: integer
-      responses:
-        200:
-          description: "success"
-        404:
-          description: "no such donation"
-        403:
-          description: "not an author of donation, cannot close"
-        401:
-          description: "no auth"
-  /donat/donate:
-    post:
-      tags: ["donat"]
-      summary: "Пожертвовать"
-      parameters:
-        - name: donat
-          in: body
-          required: true
-          schema:
-            $ref: "#/definitions/Donation"
-      responses:
-        200:
-          description: "success"
-        404:
-          description: "no such donation"
-        401:
-          description: "no auth"
-  /donat/find:
-    get:
-      tags: ["donat"]
-      summary: "искать запросы на пожертвование"
-      operationId: "findDonationRequests"
-      produces:
-        - "application/json"
-      parameters:
-        - name: "category"
-          in: "query"
-          type: "string"
-          description: "Category where to search"
-        - name: "region"
-          in: "query"
-          type: "string"
-          description: "Region where to search"
-        - name: "district"
-          in: "query"
-          type: "string"
-          description: "District where to search"
-        - name: "query"
-          in: "query"
-          type: "string"
-          description: "Query"
-        - name: "page"
-          in: "query"
-          type: "string"
-          description: "page for pagination"
-          required: true
-        - name: "rows_per_page"
-          in: "query"
-          type: "string"
-          description: "rows per page for pagination"
-          required: true
-      responses:
-        200:
-          description: "found smth"
-          schema:
-            type: "array"
-            items:
-              $ref: "#/definitions/DonationRequest"
-        400:
-          description: "Invalid parameters"
-        404:
-          description: "Found nothing"
   /user/{vk_id}:
     get:
       tags:
@@ -1004,43 +967,7 @@ definitions:
         type: string
         enum: ["open", "success"]
         default: "open"
-  DonationRequest:
-    type: object
-    properties:
-      donation_id:
-        type: integer
-      author_id:
-        type: integer
-      sum_needed:
-        type: integer
-      expire_date:
-        type: string
-      # creation_date:
-      #   type: string
-      # sum_given:
-      #   type: integer
-      # not in model mb?
-      status:
-        type: string
-        enum: ["open", "closed"]
-        default: "closed"
-      description:
-        type: string
-  Donation:
-    type: "object"
-    properties:
-      user_id:
-        type: integer
-      donat_id:
-        type: integer
-      region:
-        type: "string"
-      district:
-        type: "string"
-      sum:
-        type: integer
-      category:
-        type: "string"
+
   Ad:
     type: "object"
     properties:
@@ -1137,6 +1064,10 @@ definitions:
         type: integer
       subscribers_num:
         type: integer
+      full_adress:
+        type: string
+      metro:
+        type: string
   AdForUsers:
     type: "object"
     properties:
@@ -1159,6 +1090,8 @@ definitions:
           - "auction"
       ls_enabled:
         type: "boolean"
+      metro:
+        type: string
       comments_enabled:
         type: "boolean"
       extra_enabled:
@@ -1235,3 +1168,10 @@ definitions:
     properties:
       bid:
         type: integer
+  BidUser:
+    type: "object"
+    properties:
+      bid:
+        type: integer
+      user:
+        $ref: "#/definitions/User"

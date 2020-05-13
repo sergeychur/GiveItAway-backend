@@ -20,9 +20,30 @@ func (server *Server) SubscribeToAd(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		WriteToResponse(w, http.StatusInternalServerError, fmt.Errorf("server cannot get userId from cookie"))
 	}
-	status := server.db.SubscribeToAd(adId, userId, global_constants.PriceCoeff)
+	status, maxBidNote := server.db.SubscribeToAd(adId, userId, global_constants.PriceCoeff)
 	if status == database.OK {
 		server.SubscribeToAdSendUpd(userId, adId, r)
+		if maxBidNote != nil {
+			server.NewMaxBidUpd(*maxBidNote, r)
+		}
+	}
+	DealRequestFromDB(w, "OK", status)
+}
+
+func (server *Server) IncreaseBid(w http.ResponseWriter, r *http.Request) {
+	adIdStr := chi.URLParam(r, "ad_id")
+	adId, err := strconv.Atoi(adIdStr)
+	if err != nil {
+		WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("id should be int"))
+		return
+	}
+	userId, err := server.GetUserIdFromCookie(r)
+	if err != nil {
+		WriteToResponse(w, http.StatusInternalServerError, fmt.Errorf("server cannot get userId from cookie"))
+	}
+	note, status := server.db.IncreaseBid(adId, userId)
+	if status == database.OK {
+		server.NewMaxBidUpd(note, r)
 	}
 	DealRequestFromDB(w, "OK", status)
 }
@@ -185,5 +206,31 @@ func (server *Server) GetMaxBid (w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	maxBid, status := server.db.GetMaxBidForAd(adId)
+	DealRequestFromDB(w, maxBid, status)
+}
+
+func (server *Server) GetMaxBidUser (w http.ResponseWriter, r *http.Request) {
+	adIdStr := chi.URLParam(r, "ad_id")
+	adId, err := strconv.Atoi(adIdStr)
+	if err != nil {
+		WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("ad_id should be int"))
+		return
+	}
+	maxBid, status := server.db.GetMaxBidUserForAd(adId)
+	DealRequestFromDB(w, maxBid, status)
+}
+
+func (server * Server) GetReturnSize(w http.ResponseWriter, r *http.Request) {
+	userId, err := server.GetUserIdFromCookie(r)
+	if err != nil {
+		WriteToResponse(w, http.StatusInternalServerError, fmt.Errorf("server cannot get userId from cookie"))
+	}
+	adIdStr := chi.URLParam(r, "ad_id")
+	adId, err := strconv.Atoi(adIdStr)
+	if err != nil {
+		WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("ad_id should be int"))
+		return
+	}
+	maxBid, status := server.db.GetReturnBid(adId, userId)
 	DealRequestFromDB(w, maxBid, status)
 }
