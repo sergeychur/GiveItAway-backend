@@ -89,7 +89,7 @@ CREATE TABLE IF NOT EXISTS ad (
     ls_enabled boolean default true,
     comments_enabled boolean default true,
     extra_enabled boolean default true,
-    subscribers_num int default 0
+    subscribers_count int default 0
 );
 
 CREATE TABLE IF NOT EXISTS ad_view (

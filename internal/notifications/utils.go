@@ -44,6 +44,9 @@ var (
 		COMMENT_CREATED: func() interface{} {
 			return &models.NewComment{}
 		},
+		MAX_BID_UPDATED: func() interface{} {
+			return &models.MaxBidUpdated{}
+		},
 	}
 )
 
