@@ -252,21 +252,21 @@ func (db *DB) EditAd(adId int, userId int, ad models.Ad) int {
 	}
 	switch sign {
 	case 0:
-		query = fmt.Sprintf(EditAd, NoExtraFieldNoGeoPositionEdit, 8)
+		query = fmt.Sprintf(EditAd, NoExtraFieldNoGeoPositionEdit, 12)
 		_, err = tx.Exec(query, ad.Header, ad.Text, ad.Region, ad.District, ad.AdType,
 			ad.LSEnabled, ad.CommentsEnabled, ad.ExtraEnabled, ad.Category, adId, metro, fullAdress)
 	case 1:
-		query = fmt.Sprintf(EditAd, NoExtraFieldGeoPositionEdit, 10)
+		query = fmt.Sprintf(EditAd, NoExtraFieldGeoPositionEdit, 14)
 		_, err = tx.Exec(query, ad.Header, ad.Text, ad.Region, ad.District, ad.AdType,
 			ad.LSEnabled, ad.CommentsEnabled, ad.ExtraEnabled,
 			ad.Category, metro, fullAdress, ad.GeoPosition.Latitude, ad.GeoPosition.Longitude, adId)
 	case 10:
-		query = fmt.Sprintf(EditAd, ExtraFieldNoGeoPositionEdit, 9)
+		query = fmt.Sprintf(EditAd, ExtraFieldNoGeoPositionEdit, 13)
 		_, err = tx.Exec(query, ad.Header, ad.Text, ad.Region, ad.District, ad.AdType,
 			ad.LSEnabled, ad.CommentsEnabled, ad.ExtraEnabled,
 			ad.Category,  metro, fullAdress, ad.ExtraField, adId)
 	case 11:
-		query = fmt.Sprintf(EditAd, ExtraFieldGeoPositionEdit, 11)
+		query = fmt.Sprintf(EditAd, ExtraFieldGeoPositionEdit, 15)
 		_, err = tx.Exec(query, ad.Header, ad.Text, ad.Region, ad.District, ad.AdType,
 			ad.LSEnabled, ad.CommentsEnabled, ad.ExtraEnabled,
 			ad.Category,  metro, fullAdress, ad.ExtraField, ad.GeoPosition.Latitude, ad.GeoPosition.Longitude, adId)
