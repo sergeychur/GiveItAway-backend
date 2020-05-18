@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 )
 
 const (
@@ -117,16 +118,23 @@ func (db *DB) GetAds(page int, rowsPerPage int, params map[string][]string, user
 	queryPos := -1
 	queryArr, ok := params["query"]
 	if ok && len(queryArr) == 1 {
-		query := queryArr[0]
-		query = strings.Replace(query, " ", "&", -1)
-		if len(strArr) == 0 {
-			whereClause += Where + fmt.Sprintf(QueryClause, 1)
-		} else {
-			whereClause += And + fmt.Sprintf(QueryClause, len(strArr)+1)
+		f := func(c rune) bool {
+			return !unicode.IsLetter(c) && !unicode.IsNumber(c)
 		}
-		strArr = append(strArr, query)
-		queryPos = len(strArr)
-		isQueryInReq = true
+		lexems := strings.FieldsFunc(queryArr[0], f)
+		if len(lexems) != 0 {
+			lexems[len(lexems) - 1] += ":*"
+			query = strings.Join(lexems, "&")
+			if len(strArr) == 0 {
+				whereClause += Where + fmt.Sprintf(QueryClause, 1)
+			} else {
+				whereClause += And + fmt.Sprintf(QueryClause, len(strArr)+1)
+			}
+			strArr = append(strArr, query)
+			queryPos = len(strArr)
+			isQueryInReq = true
+		}
+
 	}
 	authorArr, ok := params["author_id"]
 	authorInQuery := false
