@@ -199,6 +199,7 @@ func (db *DB) GetAds(page int, rowsPerPage int, params map[string][]string, user
 	}
 
 	sortByArr, ok := params["sort_by"]
+	sortArgsLen := 0
 	if ok && len(sortByArr) == 1 {
 		if sortByArr[0] == "time" {
 			log.Println("got order by time")
@@ -227,6 +228,7 @@ func (db *DB) GetAds(page int, rowsPerPage int, params map[string][]string, user
 			outerSortByClause = fmt.Sprintf("a.geo_position <-> ST_SetSRID(ST_POINT($%d, $%d), 4326)",
 				len(strArr)+1, len(strArr)+2)
 			strArr = append(strArr, lat, long)
+			sortArgsLen = 2
 			//perform some sort by distance(ad geo, given geo)
 		}
 		//queryArr, ok := params["query"]
@@ -241,7 +243,7 @@ func (db *DB) GetAds(page int, rowsPerPage int, params map[string][]string, user
 		// it's a minimal disjunctive normal form for the "if show" function
 		showClose := fmt.Sprintf("(status != 'closed' AND status != 'aborted' AND author_id = $%d OR status='offer' AND hidden = false) ",
 			len(strArr) + 1)
-		if len(strArr) == 0 {
+		if len(strArr) - sortArgsLen == 0 {
 			whereClause += Where + showClose
 		} else {
 			whereClause += And + showClose
