@@ -1,7 +1,6 @@
 package models
 
 type Donation struct {
-
 	UserId int32 `json:"user_id,omitempty"`
 
 	DonatId int32 `json:"donat_id,omitempty"`

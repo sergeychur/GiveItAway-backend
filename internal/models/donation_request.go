@@ -1,7 +1,6 @@
 package models
 
 type DonationRequest struct {
-
 	DonationId int32 `json:"donation_id,omitempty"`
 
 	AuthorId int32 `json:"author_id,omitempty"`
