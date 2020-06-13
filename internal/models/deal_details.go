@@ -13,3 +13,8 @@ type DealDetails struct {
 type Bid struct {
 	Bid int `json:"bid"`
 }
+
+type BidUser struct {
+	Bid int `json:"bid"`
+	User User 	`json:"user"`
+}

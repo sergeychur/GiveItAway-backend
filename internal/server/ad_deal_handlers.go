@@ -20,9 +20,30 @@ func (server *Server) SubscribeToAd(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		WriteToResponse(w, http.StatusInternalServerError, fmt.Errorf("server cannot get userId from cookie"))
 	}
-	status := server.db.SubscribeToAd(adId, userId, global_constants.PriceCoeff)
+	status, maxBidNote := server.db.SubscribeToAd(adId, userId, global_constants.PriceCoeff)
 	if status == database.OK {
 		server.SubscribeToAdSendUpd(userId, adId, r)
+		if maxBidNote != nil {
+			server.NewMaxBidUpd(*maxBidNote, r)
+		}
+	}
+	DealRequestFromDB(w, "OK", status)
+}
+
+func (server *Server) IncreaseBid(w http.ResponseWriter, r *http.Request) {
+	adIdStr := chi.URLParam(r, "ad_id")
+	adId, err := strconv.Atoi(adIdStr)
+	if err != nil {
+		WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("id should be int"))
+		return
+	}
+	userId, err := server.GetUserIdFromCookie(r)
+	if err != nil {
+		WriteToResponse(w, http.StatusInternalServerError, fmt.Errorf("server cannot get userId from cookie"))
+	}
+	note, status := server.db.IncreaseBid(adId, userId)
+	if status == database.OK {
+		server.NewMaxBidUpd(note, r)
 	}
 	DealRequestFromDB(w, "OK", status)
 }
@@ -77,6 +98,9 @@ func (server *Server) UnsubscribeFromAd(w http.ResponseWriter, r *http.Request) 
 	}
 	// todo maybe send notification to ad viewers here too
 	status := server.db.UnsubscribeFromAd(adId, userId)
+	if status == database.OK {
+		server.UnsubscribeToAdSendUpd(userId, adId, r)
+	}
 	DealRequestFromDB(w, "OK", status)
 
 }
@@ -93,34 +117,12 @@ func (server *Server) MakeDeal(w http.ResponseWriter, r *http.Request) {
 		WriteToResponse(w, http.StatusInternalServerError, fmt.Errorf("server cannot get userId from cookie"))
 	}
 	params := r.URL.Query()
-	/*isAuctionArr, ok := params["is_auction"]
-	subscriberId := 0
-	isAuction := false
-	if !ok || len(isAuctionArr) != 1  {
-		subscriberArr, ok := params["subscriber_id"]
-		if !ok || len(subscriberArr) != 1 {
-			WriteToResponse(w, http.StatusBadRequest,
-				fmt.Errorf("subscriber_id has to be in get params and positive int"))
-			return
-		}
-		subscriberId, err = strconv.Atoi(subscriberArr[0])
-		if err != nil {
-			WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("subscriber_id should be int"))
-			return
-		}
-	} else {
-		isAuction = isAuctionArr[0] == "true"
-	}*/
 	typeArr, ok := params["type"]
 	if !ok || len(typeArr) != 1  {
 		WriteToResponse(w, http.StatusBadRequest,
 			fmt.Errorf("type has to be in query"))
 	}
-	//subscriberId, status := server.db.GetSubscriberIdForDeal(typeArr[0], params)
-	//if status != database.OK {
-	//	DealRequestFromDB(w, "OK", status)
-	//	return
-	//}
+
 	status, dealId, subscriberId := server.db.MakeDeal(adId, initiatorId, typeArr[0], params)
 
 	if status == database.CREATED { // TODO: probably go func
@@ -204,5 +206,31 @@ func (server *Server) GetMaxBid (w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	maxBid, status := server.db.GetMaxBidForAd(adId)
+	DealRequestFromDB(w, maxBid, status)
+}
+
+func (server *Server) GetMaxBidUser (w http.ResponseWriter, r *http.Request) {
+	adIdStr := chi.URLParam(r, "ad_id")
+	adId, err := strconv.Atoi(adIdStr)
+	if err != nil {
+		WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("ad_id should be int"))
+		return
+	}
+	maxBid, status := server.db.GetMaxBidUserForAd(adId)
+	DealRequestFromDB(w, maxBid, status)
+}
+
+func (server * Server) GetReturnSize(w http.ResponseWriter, r *http.Request) {
+	userId, err := server.GetUserIdFromCookie(r)
+	if err != nil {
+		WriteToResponse(w, http.StatusInternalServerError, fmt.Errorf("server cannot get userId from cookie"))
+	}
+	adIdStr := chi.URLParam(r, "ad_id")
+	adId, err := strconv.Atoi(adIdStr)
+	if err != nil {
+		WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("ad_id should be int"))
+		return
+	}
+	maxBid, status := server.db.GetReturnBid(adId, userId)
 	DealRequestFromDB(w, maxBid, status)
 }

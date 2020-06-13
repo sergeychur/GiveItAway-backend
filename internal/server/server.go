@@ -60,16 +60,22 @@ func NewServer(pathToConfig string) (*Server, error) {
 
 	// deal
 	needLogin.Post(fmt.Sprintf("/post/{ad_id:%s}/subscribe", idPattern), server.SubscribeToAd)
+	needLogin.Put(fmt.Sprintf("/post/{ad_id:%s}/increase_bid", idPattern), server.IncreaseBid)
 	subRouter.Get(fmt.Sprintf("/post/{ad_id:%s}/subscribers", idPattern), server.GetAdSubscribers) // think about it
 	needLogin.Post(fmt.Sprintf("/post/{ad_id:%s}/unsubscribe", idPattern), server.UnsubscribeFromAd)
 	needLogin.Put(fmt.Sprintf("/post/{ad_id:%s}/make_deal", idPattern), server.MakeDeal)
 	needLogin.Get(fmt.Sprintf("/post/{ad_id:%s}/deal", idPattern), server.CancelDeal)
 	needLogin.Get(fmt.Sprintf("/post/{ad_id:%s}/bid_for_user", idPattern), server.GetBidForUser)
 	needLogin.Get(fmt.Sprintf("/post/{ad_id:%s}/max_bid", idPattern), server.GetMaxBid)
+	needLogin.Get(fmt.Sprintf("/post/{ad_id:%s}/max_bid_user", idPattern), server.GetMaxBidUser)
+	needLogin.Get(fmt.Sprintf("/post/{ad_id:%s}/return_bid_size", idPattern), server.GetReturnSize)
+
+
 
 	needLogin.Post(fmt.Sprintf("/deal/{deal_id:%s}/fulfill", idPattern), server.FulfillDeal)
 	needLogin.Post(fmt.Sprintf("/deal/{deal_id:%s}/cancel", idPattern), server.CancelDeal)
 	subRouter.Get(fmt.Sprintf("/post/{ad_id:%s}/deal", idPattern), server.GetDealForAd)
+
 
 	// notifications
 	needLogin.Get("/notifications", server.GetNotifications)

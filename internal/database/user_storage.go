@@ -21,19 +21,19 @@ const (
 	GrantInitialCarma = "UPDATE users_carma SET current_carma = $1"
 
 	GetReceived = "SELECT a.ad_id, u.vk_id, u.name, u.surname, u.photo_url, a.header, a.region," +
-		" a.district, a.is_auction, a.feedback_type, a.extra_field, a.creation_datetime, a.status," +
-		" a.category, a.comments_count, a.hidden FROM deal d JOIN (SELECT deal_id FROM deal WHERE subscriber_id = $1" +
+		" a.district, a.ad_type, a.ls_enabled, a.comments_enabled, a.extra_enabled, a.extra_field, a.creation_datetime, a.status," +
+		" a.category, a.comments_count, a.hidden, a.metro FROM deal d JOIN (SELECT deal_id FROM deal WHERE subscriber_id = $1" +
 		" AND status = 'success' ORDER BY deal_id LIMIT $2 OFFSET $3) l ON (l.deal_id = d.deal_id) JOIN ad a ON (d.ad_id = a.ad_id)" +
 		" JOIN users u ON (a.author_id = u.vk_id) ORDER BY d.deal_id"
 
 	GetGiven = "SELECT a.ad_id, u.vk_id, u.name, u.surname, u.photo_url, a.header, a.region," +
-		" a.district, a.is_auction, a.feedback_type, a.extra_field, a.creation_datetime, a.status," +
-		" a.category, a.comments_count, a.hidden FROM ad a JOIN (SELECT ad_id FROM ad WHERE status = 'closed'" +
+		" a.district, a.ad_type, a.ls_enabled, a.comments_enabled, a.extra_enabled, a.extra_field, a.creation_datetime, a.status," +
+		" a.category, a.comments_count, a.hidden, a.metro FROM ad a JOIN (SELECT ad_id FROM ad WHERE status = 'closed'" +
 		" AND author_id = $1 ORDER BY ad_id LIMIT $2 OFFSET $3) l ON (l.ad_id = a.ad_id) JOIN users u ON (a.author_id = u.vk_id) ORDER BY ad_id"
 
 	GetWanted = "SELECT a.ad_id, u.vk_id, u.name, u.surname, u.photo_url, a.header, a.region," +
-		" a.district, a.is_auction, a.feedback_type, a.extra_field, a.creation_datetime, a.status," +
-		" a.category, a.comments_count, a.hidden FROM ad_subscribers a_s JOIN (SELECT ad_subscribers_id FROM ad_subscribers WHERE subscriber_id = $1" +
+		" a.district, a.ad_type, a.ls_enabled, a.comments_enabled, a.extra_enabled, a.extra_field, a.creation_datetime, a.status," +
+		" a.category, a.comments_count, a.hidden, a.metro FROM ad_subscribers a_s JOIN (SELECT ad_subscribers_id FROM ad_subscribers WHERE subscriber_id = $1" +
 		" ORDER BY ad_subscribers_id LIMIT $2 OFFSET $3) l ON (l.ad_subscribers_id = a_s.ad_subscribers_id) JOIN ad a ON (a_s.ad_id = a.ad_id)" +
 		" JOIN users u ON (a.author_id = u.vk_id) ORDER BY a_s.ad_subscribers_id"
 )

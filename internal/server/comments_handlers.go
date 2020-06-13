@@ -70,16 +70,19 @@ func (server *Server) CommentAd(w http.ResponseWriter, r *http.Request) {
 		note := FormNewCommentUpdate(retVal)
 		server.NotificationSender.SendToChannel(r.Context(), note, fmt.Sprintf("ad_%d", adId))
 		noteToAuthor, err := server.db.FormNewCommentNotif(retVal, adId)
+
 		if err != nil {
 			log.Println(err)
 			return
 		}
-		err = server.db.InsertNotification(noteToAuthor.WhomId, noteToAuthor)
-		if err != nil {
-			log.Println(err)
-			return
+		if noteToAuthor.WhomId != userId {
+			err = server.db.InsertNotification(noteToAuthor.WhomId, noteToAuthor)
+			if err != nil {
+				log.Println(err)
+				return
+			}
+			server.NotificationSender.SendOneClient(r.Context(), noteToAuthor, noteToAuthor.WhomId)
 		}
-		server.NotificationSender.SendOneClient(r.Context(), noteToAuthor, noteToAuthor.WhomId)
 	}
 }
 
@@ -135,7 +138,9 @@ func (server *Server) DeleteComment(w http.ResponseWriter, r *http.Request) {
 	// Todo: check
 	if status == database.OK {
 		// todo: mb go func
-		note := FormDeleteCommentUpdate()
+		note := FormDeleteCommentUpdate(models.CommentId{
+			CommentId: commentId,
+		})
 		server.NotificationSender.SendToChannel(r.Context(), note, fmt.Sprintf("ad_%d", adId))
 	}
 	DealRequestFromDB(w, "OK", status)

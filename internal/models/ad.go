@@ -13,9 +13,15 @@ type Ad struct {
 
 	District string `json:"district,omitempty"`
 
-	IsAuction bool `json:"is_auction"`
+	//IsAuction bool `json:"is_auction"`
+	AdType string `json:"ad_type"`
 
-	FeedbackType string `json:"feedback_type"`
+	//FeedbackType string `json:"feedback_type"`
+	LSEnabled bool `json:"ls_enabled"`
+
+	CommentsEnabled bool `json:"comments_enabled"`
+
+	ExtraEnabled bool `json:"extra_enabled"`
 
 	ExtraField string `json:"extra_field,omitempty"`
 
@@ -30,6 +36,9 @@ type Ad struct {
 	Category string `json:"category"`
 
 	CommentsCount int32 `json:"comments_count,omitempty"`
+
+	Metro string `json:"metro"`
+	FullAdress string `json:"full_adress"`
 }
 
 type AdCreationResult struct {
@@ -49,9 +58,14 @@ type AdForUsers struct {
 
 	District string `json:"district,omitempty"`
 
-	IsAuction bool `json:"is_auction"`
+	AdType string `json:"ad_type"`
 
-	FeedbackType string `json:"feedback_type"`
+	//FeedbackType string `json:"feedback_type"`
+	LSEnabled bool `json:"ls_enabled"`
+
+	CommentsEnabled bool `json:"comments_enabled"`
+
+	ExtraEnabled bool `json:"extra_enabled"`
 
 	ExtraField string `json:"extra_field,omitempty"`
 
@@ -67,6 +81,7 @@ type AdForUsers struct {
 
 	CommentsCount int32 `json:"comments_count,omitempty"`
 	Hidden        bool  `json:"hidden"`
+	Metro string `json:"metro"`
 }
 
 type AdForUsersDetailed struct {
@@ -82,9 +97,14 @@ type AdForUsersDetailed struct {
 
 	District string `json:"district,omitempty"`
 
-	IsAuction bool `json:"is_auction"`
+	AdType string `json:"ad_type"`
 
-	FeedbackType string `json:"feedback_type"`
+	//FeedbackType string `json:"feedback_type"`
+	LSEnabled bool `json:"ls_enabled"`
+
+	CommentsEnabled bool `json:"comments_enabled"`
+
+	ExtraEnabled bool `json:"extra_enabled"`
 
 	ExtraField string `json:"extra_field,omitempty"`
 
@@ -101,6 +121,10 @@ type AdForUsersDetailed struct {
 	CommentsCount int32 `json:"comments_count,omitempty"`
 	ViewsCount    int32 `json:"views_count"`
 	Hidden        bool  `json:"hidden"`
+	SubscribersNum int32 `json:"subscribers_num"`
+	IsSubscriber bool `json:"is_subscriber"`
+	Metro string `json:"metro"`
+	FullAdress string `json:"full_adress"`
 }
 
 type AdPhoto struct {

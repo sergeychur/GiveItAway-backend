@@ -7,6 +7,7 @@ type Notification struct {
 	CreationDateTime string      `json:"creation_date_time"`
 	Payload          interface{} `json:"payload"`
 	IsRead           bool        `json:"is_read"`
+	AdId int64 `json:"-"`
 }
 
 type AdForNotification struct {
@@ -46,6 +47,10 @@ type AuthorCancelled struct {
 	Ad AdForNotification `json:"ad"`
 }
 
+type Unsubscribed struct {
+	UserId int `json:"user_id"`
+}
+
 type NotesNumber struct {
 	Number int `json:"number"`
 }
@@ -53,4 +58,13 @@ type NotesNumber struct {
 type NewComment struct {
 	Ad AdForNotification `json:"ad"`
 	Comment CommentForUser `json:"comment"`
+}
+
+type CommentId struct {
+	CommentId int `json:"comment_id"`
+}
+
+type MaxBidUpdated struct {
+	NewBid int `json:"new_bid"`
+	User User `json:"user"`
 }

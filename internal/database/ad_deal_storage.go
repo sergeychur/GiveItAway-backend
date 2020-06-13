@@ -44,11 +44,11 @@ const (
 
 )
 
-func (db *DB) SubscribeToAd(adId int, userId int, priceCoeff int) int {
+func (db *DB) SubscribeToAd(adId int, userId int, priceCoeff int) (int, *models.Notification) {
 	// todo check if user can subscribe; two different functions for auction and usual ad
 	tx, err := db.StartTransaction()
 	if err != nil {
-		return DB_ERROR
+		return DB_ERROR, nil
 	}
 	defer func() {
 		_ = tx.Rollback()
@@ -56,37 +56,37 @@ func (db *DB) SubscribeToAd(adId int, userId int, priceCoeff int) int {
 	authorId := 0
 	err = tx.QueryRow(checkAdExist, adId).Scan(&authorId)
 	if err == pgx.ErrNoRows {
-		return EMPTY_RESULT
+		return EMPTY_RESULT, nil
 	}
 	if err != nil {
-		return DB_ERROR
+		return DB_ERROR, nil
 	}
 
 	if authorId == userId {
-		return FORBIDDEN
+		return FORBIDDEN, nil
 	}
 	isSubscribed := false
 	err = tx.QueryRow(CheckIfSubscriber, adId, userId).Scan(&isSubscribed)
 	if isSubscribed {
-		return FORBIDDEN
+		return FORBIDDEN, nil
 	}
-	canSubscribe, frozencarma, err := db.DealWithCarmaSubscribe(tx, adId, userId)
+	canSubscribe, frozencarma, err, note := db.DealWithCarmaSubscribe(tx, adId, userId)
 	if err != nil {
-		return DB_ERROR
+		return DB_ERROR, nil
 	}
 
 	if !canSubscribe {
-		return CONFLICT
+		return CONFLICT, nil
 	}
 	_, err = tx.Exec(SubscribeToAd, adId, userId, frozencarma)
 	if err != nil {
-		return DB_ERROR
+		return DB_ERROR, nil
 	}
 	err = tx.Commit()
 	if err != nil {
-		return DB_ERROR
+		return DB_ERROR, nil
 	}
-	return OK
+	return OK, note
 }
 
 func (db *DB) UnsubscribeFromAd(adId int, userId int) int {

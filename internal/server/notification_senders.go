@@ -95,16 +95,31 @@ func (server *Server) SubscribeToAdSendUpd(userId, adId int, r *http.Request) {
 	notification, err := server.db.FormRespondNotification(userId, adId)
 	if err == nil {
 		err = server.db.InsertNotification(notification.WhomId, notification)
-		// todo: done
 		if err != nil {
 			log.Println(err)
 		} else {
 			server.NotificationSender.SendOneClient(r.Context(), notification, notification.WhomId)
-			// todo: maybe remake, talk with Artyom
 			newSubUpd := FormNewSubscriberUpdate(notification)
 			if newSubUpd != nil {
 				server.NotificationSender.SendToChannel(r.Context(), *newSubUpd, fmt.Sprintf("ad_%d", adId))
 			}
 		}
+	}
+}
+
+func (server *Server) NewMaxBidUpd(note models.Notification, r *http.Request) {
+	err := server.db.InsertNotification(note.WhomId, note)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	server.NotificationSender.SendOneClient(r.Context(), note, note.WhomId)
+}
+
+
+func (server *Server) UnsubscribeToAdSendUpd(userId, adId int, r *http.Request) {
+	newSubUpd := FormUnsubscribeUpdate(userId)
+	if newSubUpd != nil {
+		server.NotificationSender.SendToChannel(r.Context(), *newSubUpd, fmt.Sprintf("ad_%d", adId))
 	}
 }

@@ -15,6 +15,7 @@ const (
 	AUTHOR_CANCELLED     = "authorCancel"
 	SUBSCRIBER_CANCELLED = "subscriberCancel"
 	COMMENT_CREATED = "new_comment"
+	MAX_BID_UPDATED = "max_bid_upd"
 )
 
 var (
@@ -42,6 +43,9 @@ var (
 		},
 		COMMENT_CREATED: func() interface{} {
 			return &models.NewComment{}
+		},
+		MAX_BID_UPDATED: func() interface{} {
+			return &models.MaxBidUpdated{}
 		},
 	}
 )
