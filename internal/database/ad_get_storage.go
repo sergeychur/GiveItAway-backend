@@ -21,14 +21,14 @@ const (
 	GetAdById = "SELECT a.ad_id, u.vk_id, u.name, u.surname, u.photo_url, a.header, a.text, a.region," +
 		" a.district, a.ad_type, a.ls_enabled, a.comments_enabled, a.extra_enabled, " +
 		"a.extra_field, a.creation_datetime, a.lat, a.long, a.status," +
-		" a.category, a.comments_count, aw.views_count, a.hidden, a.subscribers_count, a.metro, a.full_adress FROM ad a JOIN users u ON (a.author_id = u.vk_id) " +
+		" a.category, a.subcat_list, a.subcat, a.comments_count, aw.views_count, a.hidden, a.subscribers_count, a.metro, a.full_adress FROM ad a JOIN users u ON (a.author_id = u.vk_id) " +
 		"JOIN ad_view aw ON (a.ad_id = aw.ad_id) WHERE a.ad_id = $1"
 
 	// get ads query
 	GetAds = "SELECT a.ad_id, u.vk_id, u.name, u.surname, u.photo_url, a.header, a.region," +
 		" a.district, a.ad_type, a.ls_enabled, a.comments_enabled, a.extra_enabled, " +
 		"a.extra_field, a.creation_datetime, a.status," +
-		" a.category, a.comments_count, a.hidden, a.metro FROM ad a JOIN users u ON (a.author_id = u.vk_id) " +
+		" a.category, a.subcat_list, a.subcat, a.comments_count, a.hidden, a.metro FROM ad a JOIN users u ON (a.author_id = u.vk_id) " +
 		"JOIN (SELECT ad_id FROM ad%s ORDER BY %s LIMIT $%d OFFSET $%d) l ON (l.ad_id = a.ad_id) ORDER BY %s"
 	And            = "AND"
 	Where          = " WHERE "
@@ -36,6 +36,8 @@ const (
 	AuthorClause   = " author_id = $%d "
 	RegionClause   = " region = $%d "
 	DistrictClause = " district = $%d "
+	SubCatListClause = "subcat_list = $%d"
+	SubCatClause = "subcat = $%d"
 	RadiusClause = " ST_DWithin(geo_position, ST_SetSRID(ST_MakePoint($%d, $%d), 4326), $%d) "
 	QueryClause = " fts @@ to_tsquery('ru', $%d)"
 	GetAdPhotos    = "SELECT ad_photos_id, photo_url FROM ad_photos WHERE ad_id = $1"
@@ -55,10 +57,12 @@ func (db *DB) GetAd(adId int, userId int) (models.AdForUsersDetailed, int) {
 	timeStamp := time.Time{}
 	metro := pgx.NullString{}
 	fullAdress := pgx.NullString{}
+	subcatList := pgx.NullString{}
+	subcat := pgx.NullString{}
 	err := row.Scan(&ad.AdId, &ad.Author.VkId, &ad.Author.Name, &ad.Author.Surname,
 		&ad.Author.PhotoUrl, &ad.Header, &ad.Text, &ad.Region, &ad.District, &ad.AdType,
 		&ad.LSEnabled, &ad.CommentsEnabled, &ad.ExtraEnabled,
-		&extraFieldTry, &timeStamp, &lat, &long, &ad.Status, &ad.Category,
+		&extraFieldTry, &timeStamp, &lat, &long, &ad.Status, &ad.Category, &subcatList, &subcat,
 		&ad.CommentsCount, &ad.ViewsCount, &ad.Hidden, &ad.SubscribersNum, &metro, &fullAdress)
 	if err == pgx.ErrNoRows {
 		return ad, EMPTY_RESULT
@@ -89,6 +93,14 @@ func (db *DB) GetAd(adId int, userId int) (models.AdForUsersDetailed, int) {
 	}
 	if fullAdress.Valid {
 		ad.FullAdress = fullAdress.String
+	}
+
+	if subcatList.Valid {
+		ad.SubCatList = subcatList.String
+	}
+
+	if subcat.Valid {
+		ad.SubCat = subcat.String
 	}
 
 	ad.PathesToPhoto, err = db.GetAdPhotos(ad.AdId)
@@ -167,6 +179,27 @@ func (db *DB) GetAds(page int, rowsPerPage int, params map[string][]string, user
 		}
 		strArr = append(strArr, districtArr[0])
 	}
+
+	subCatListArr, ok := params["subcat_list"]
+	if ok && len(subCatListArr) == 1 {
+		if len(strArr) == 0 {
+			whereClause += Where + fmt.Sprintf(SubCatListClause, 1)
+		} else {
+			whereClause += And + fmt.Sprintf(SubCatListClause, len(strArr)+1)
+		}
+		strArr = append(strArr, subCatListArr[0])
+	}
+
+	subCatArr, ok := params["subcat"]
+	if ok && len(subCatArr) == 1 {
+		if len(strArr) == 0 {
+			whereClause += Where + fmt.Sprintf(SubCatClause, 1)
+		} else {
+			whereClause += And + fmt.Sprintf(SubCatClause, len(strArr)+1)
+		}
+		strArr = append(strArr, subCatArr[0])
+	}
+
 	radiusArr, ok := params["radius"]
 	if ok && len(radiusArr) == 1 {
 		radius, err := strconv.ParseFloat(radiusArr[0], 64)
@@ -287,11 +320,13 @@ func (db *DB) WorkWithOneAd(rows *pgx.Rows, ads Ads) (Ads, error) {
 	/*lat := pgx.NullFloat64{}
 	long := pgx.NullFloat64{}*/
 	metro := pgx.NullString{}
+	subcatList := pgx.NullString{}
+	subcat := pgx.NullString{}
 	timeStamp := time.Time{}
 	err := rows.Scan(&ad.AdId, &ad.Author.VkId, &ad.Author.Name, &ad.Author.Surname,
 		&ad.Author.PhotoUrl, &ad.Header /*&ad.Text,*/, &ad.Region, &ad.District, &ad.AdType,
 		&ad.LSEnabled, &ad.CommentsEnabled, &ad.ExtraEnabled,
-		&extraFieldTry, &timeStamp /*&lat, &long,*/, &ad.Status, &ad.Category,
+		&extraFieldTry, &timeStamp /*&lat, &long,*/, &ad.Status, &ad.Category, &subcatList, &subcat,
 		&ad.CommentsCount, &ad.Hidden, &metro)
 	if err != nil {
 		return nil, err
@@ -306,6 +341,15 @@ func (db *DB) WorkWithOneAd(rows *pgx.Rows, ads Ads) (Ads, error) {
 	if metro.Valid {
 		ad.Metro = metro.String
 	}
+
+	if subcatList.Valid {
+		ad.SubCatList = subcatList.String
+	}
+
+	if subcat.Valid {
+		ad.SubCat = subcat.String
+	}
+
 	ad.PathesToPhoto, err = db.GetAdPhotos(ad.AdId)
 	if err != nil {
 		return nil, err

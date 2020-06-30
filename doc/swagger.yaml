@@ -195,6 +195,14 @@ paths:
           in: "query"
           type: "string"
           description: "District where to search"
+        - name: "subcat_list"
+          in: "query"
+          type: "string"
+          description: "Subcategory list where to search"
+        - name: "subcat"
+          in: "query"
+          type: "string"
+          description: "Subcategory where to search"
         - name: "query"
           in: "query"
           type: "string"
@@ -836,9 +844,10 @@ paths:
           description: "rows per page for pagination"
           required: true
         - name: "user_id"
-          in: "path"
+          in: "body"
           required: true
-          type: integer
+          schema:
+            type: integer
       responses:
         200:
           description: "found smth"
@@ -1013,6 +1022,10 @@ definitions:
           $ref: "#/definitions/AdPhoto"
       category:
         type: "string"
+      subcat_list:
+        type: "string"
+      subcat:
+        type: "string"
       comments_count:
         type: integer
   AdForUsersDetailed:
@@ -1059,6 +1072,10 @@ definitions:
         items:
           $ref: "#/definitions/AdPhoto"
       category:
+        type: "string"
+      subcat_list:
+        type: "string"
+      subcat:
         type: "string"
       comments_count:
         type: integer
@@ -1110,6 +1127,10 @@ definitions:
         items:
           $ref: "#/definitions/AdPhoto"
       category:
+        type: "string"
+      subcat_list:
+        type: "string"
+      subcat:
         type: "string"
       comments_count:
         type: integer
