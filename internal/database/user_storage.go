@@ -90,6 +90,8 @@ func (db *DB) GetGiven(userId, page, rowsPerPage int) ([]models.AdForUsers, int)
 		return nil, EMPTY_RESULT
 	}
 	if err != nil {
+		log.Println("Error in GIVEN")
+		log.Println(err)
 		return nil, DB_ERROR
 	}
 	ads := make([]models.AdForUsers, 0)
@@ -97,6 +99,8 @@ func (db *DB) GetGiven(userId, page, rowsPerPage int) ([]models.AdForUsers, int)
 	for rows.Next() {
 		ads, err = db.WorkWithOneAd(rows, ads)
 		if err != nil {
+			log.Println("Error in GIVEN")
+			log.Println(err)
 			return nil, DB_ERROR
 		}
 	}
@@ -113,6 +117,8 @@ func (db *DB) GetReceived(userId, page, rowsPerPage int) ([]models.AdForUsers, i
 		return nil, EMPTY_RESULT
 	}
 	if err != nil {
+			log.Println("Error in received")
+                        log.Println(err)
 		return nil, DB_ERROR
 	}
 	ads := make([]models.AdForUsers, 0)
@@ -120,6 +126,8 @@ func (db *DB) GetReceived(userId, page, rowsPerPage int) ([]models.AdForUsers, i
 	for rows.Next() {
 		ads, err = db.WorkWithOneAd(rows, ads)
 		if err != nil {
+			log.Println("Error in received")
+                        log.Println(err)
 			return nil, DB_ERROR
 		}
 	}
@@ -136,6 +144,8 @@ func (db *DB) GetWanted(userId, page, rowsPerPage int) ([]models.AdForUsers, int
 		return nil, EMPTY_RESULT
 	}
 	if err != nil {
+		log.Println("Error in wanted")
+                log.Println(err)
 		return nil, DB_ERROR
 	}
 	ads := make([]models.AdForUsers, 0)
@@ -143,6 +153,8 @@ func (db *DB) GetWanted(userId, page, rowsPerPage int) ([]models.AdForUsers, int
 	for rows.Next() {
 		ads, err = db.WorkWithOneAd(rows, ads)
 		if err != nil {
+			log.Println("Error in wanted")
+	                log.Println(err)
 			return nil, DB_ERROR
 		}
 	}
