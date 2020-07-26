@@ -267,6 +267,9 @@ func (db *DB) IncreaseBid(adId, userId int) (models.Notification, int) {
 	if err != nil {
 		return models.Notification{}, DB_ERROR
 	}
+	if prevMaxId == userId {
+		return models.Notification{WhomId: global_constants.NoNote}, OK
+	}
 	note, err := db.FormMaxBidUpdatedNote(adId, prevMaxId, maxBid + 1, userId)
 	if err != nil {
 		return models.Notification{}, DB_ERROR
