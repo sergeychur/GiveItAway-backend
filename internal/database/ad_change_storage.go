@@ -32,6 +32,7 @@ const (
 
 	// deleteAd query
 	deleteAd = "DELETE FROM ad WHERE ad_id = $1"
+	clearNotes = "DELETE FROM notifications WHERE ad_id = $1"
 
 	// deletePhotos from ad query
 	deleteAdPhotos = "DELETE FROM ad_photos WHERE ad_photos_id IN (%s) RETURNING photo_url"
@@ -166,6 +167,10 @@ func (db *DB) DeleteAd(adId int, userId int) int {
 		return DB_ERROR
 	}
 	_, err = tx.Exec(deleteAd, adId)
+	if err != nil {
+		return DB_ERROR
+	}
+	_, err = tx.Exec(clearNotes, adId)
 	if err != nil {
 		return DB_ERROR
 	}
