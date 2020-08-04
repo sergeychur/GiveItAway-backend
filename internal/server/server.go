@@ -9,11 +9,14 @@ import (
 	"github.com/sergeychur/give_it_away/internal/config"
 	"github.com/sergeychur/give_it_away/internal/database"
 	"github.com/sergeychur/give_it_away/internal/middlewares"
+	"golang.org/x/net/netutil"
 	"google.golang.org/grpc"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 )
 
 type Server struct {
@@ -139,7 +142,23 @@ func (server *Server) Run() error {
 	}()
 
 	server.AuthClient = auth.NewAuthClient(grcpAuthConn)
-
-	log.Fatal(http.ListenAndServe(":"+port, server.router))
+	srv := http.Server{
+		Addr:         ":" + port,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 15 * time.Second,
+		IdleTimeout:  1 * time.Second,
+		MaxHeaderBytes: 16384,
+		Handler:      server.router,
+	}
+	l, err := net.Listen("tcp", ":" + port)
+	if err != nil {
+		return err
+	}
+	l = netutil.LimitListener(l, 500)
+	err = srv.Serve(l)
+	if err != nil {
+		return err
+	}
+	//log.Fatal(http.ListenAndServe(":"+port, server.router))
 	return nil
 }
