@@ -121,7 +121,6 @@ func (server *Server) NewMaxBidUpd(note models.Notification, r *http.Request) {
 	server.NotificationSender.SendOneClient(r.Context(), note, note.WhomId)
 }
 
-
 func (server *Server) UnsubscribeToAdSendUpd(userId, adId int, r *http.Request) {
 	newSubUpd := FormUnsubscribeUpdate(userId)
 	if newSubUpd != nil {

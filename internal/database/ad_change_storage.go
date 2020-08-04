@@ -19,7 +19,7 @@ const (
 	ExtraFieldGeoPosition     = ", $15, ST_SetSRID(ST_POINT($16, $17), 4326), $16, $17"
 
 	// edit ad query
-	EditAd                        = "UPDATE ad SET header=$1, text=$2, region=$3, district=$4, ad_type=$5, ls_enabled=$6, comments_enabled=$7, " +
+	EditAd = "UPDATE ad SET header=$1, text=$2, region=$3, district=$4, ad_type=$5, ls_enabled=$6, comments_enabled=$7, " +
 		"extra_enabled=$8, category=$9, subcat_list=$10, subcat=$11, metro=$12, full_adress=$13%s where ad_id=$%d"
 	NoExtraFieldNoGeoPositionEdit = ", extra_field=NULL"
 	NoExtraFieldGeoPositionEdit   = ", geo_position=ST_SetSRID(ST_POINT($14, $15), 4326), lat=$14, long=$15"
@@ -31,7 +31,7 @@ const (
 	AddPhotoToAd = "INSERT INTO ad_photos (ad_id, photo_url) VALUES ($1, $2)"
 
 	// deleteAd query
-	deleteAd = "DELETE FROM ad WHERE ad_id = $1"
+	deleteAd   = "DELETE FROM ad WHERE ad_id = $1"
 	clearNotes = "DELETE FROM notifications WHERE ad_id = $1"
 
 	// deletePhotos from ad query

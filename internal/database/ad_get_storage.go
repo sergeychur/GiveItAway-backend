@@ -30,17 +30,17 @@ const (
 		"a.extra_field, a.creation_datetime, a.status," +
 		" a.category, a.subcat_list, a.subcat, a.comments_count, a.hidden, a.metro FROM ad a JOIN users u ON (a.author_id = u.vk_id) " +
 		"JOIN (SELECT ad_id FROM ad%s ORDER BY %s LIMIT $%d OFFSET $%d) l ON (l.ad_id = a.ad_id) ORDER BY %s"
-	And            = "AND"
-	Where          = " WHERE "
-	CategoryClause = " category = $%d "
-	AuthorClause   = " author_id = $%d "
-	RegionClause   = " region = $%d "
-	DistrictClause = " district = $%d "
+	And              = "AND"
+	Where            = " WHERE "
+	CategoryClause   = " category = $%d "
+	AuthorClause     = " author_id = $%d "
+	RegionClause     = " region = $%d "
+	DistrictClause   = " district = $%d "
 	SubCatListClause = " subcat_list = $%d "
-	SubCatClause = " subcat = $%d "
-	RadiusClause = " ST_DWithin(geo_position, ST_SetSRID(ST_MakePoint($%d, $%d), 4326), $%d) "
-	QueryClause = " fts @@ to_tsquery('ru', $%d)"
-	GetAdPhotos    = "SELECT ad_photos_id, photo_url FROM ad_photos WHERE ad_id = $1"
+	SubCatClause     = " subcat = $%d "
+	RadiusClause     = " ST_DWithin(geo_position, ST_SetSRID(ST_MakePoint($%d, $%d), 4326), $%d) "
+	QueryClause      = " fts @@ to_tsquery('ru', $%d)"
+	GetAdPhotos      = "SELECT ad_photos_id, photo_url FROM ad_photos WHERE ad_id = $1"
 
 	ViewAd = "INSERT INTO ad_view (ad_id, views_count) VALUES ($1, 1)" +
 		" ON CONFLICT (ad_id) DO UPDATE SET views_count = ad_view.views_count + 1"
@@ -135,7 +135,7 @@ func (db *DB) GetAds(page int, rowsPerPage int, params map[string][]string, user
 		}
 		lexems := strings.FieldsFunc(queryArr[0], f)
 		if len(lexems) != 0 {
-			lexems[len(lexems) - 1] += ":*"
+			lexems[len(lexems)-1] += ":*"
 			query = strings.Join(lexems, "&")
 			if len(strArr) == 0 {
 				whereClause += Where + fmt.Sprintf(QueryClause, 1)
@@ -226,9 +226,9 @@ func (db *DB) GetAds(page int, rowsPerPage int, params map[string][]string, user
 		if len(strArr) == 0 {
 			whereClause += Where + fmt.Sprintf(RadiusClause, 1, 2, 3)
 		} else {
-			whereClause += And + fmt.Sprintf(RadiusClause, len(strArr)+1, len(strArr) + 2, len(strArr) + 3)
+			whereClause += And + fmt.Sprintf(RadiusClause, len(strArr)+1, len(strArr)+2, len(strArr)+3)
 		}
-		strArr = append(strArr, lat, long, radius * 1000)
+		strArr = append(strArr, lat, long, radius*1000)
 	}
 
 	sortByArr, ok := params["sort_by"]
@@ -275,8 +275,8 @@ func (db *DB) GetAds(page int, rowsPerPage int, params map[string][]string, user
 	if !authorInQuery {
 		// it's a minimal disjunctive normal form for the "if show" function
 		showClose := fmt.Sprintf("(status != 'closed' AND status != 'aborted' AND author_id = $%d OR status='offer' AND hidden = false) ",
-			len(strArr) + 1)
-		if len(strArr) - sortArgsLen == 0 {
+			len(strArr)+1)
+		if len(strArr)-sortArgsLen == 0 {
 			whereClause += Where + showClose
 		} else {
 			whereClause += And + showClose

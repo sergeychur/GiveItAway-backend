@@ -37,10 +37,10 @@ type Ad struct {
 
 	CommentsCount int32 `json:"comments_count,omitempty"`
 
-	Metro string `json:"metro"`
+	Metro      string `json:"metro"`
 	FullAdress string `json:"full_adress"`
 
-	SubCat string `json:"subcat,omitempty"`
+	SubCat     string `json:"subcat,omitempty"`
 	SubCatList string `json:"subcat_list,omitempty"`
 }
 
@@ -82,11 +82,11 @@ type AdForUsers struct {
 
 	Category string `json:"category"`
 
-	CommentsCount int32 `json:"comments_count,omitempty"`
-	Hidden        bool  `json:"hidden"`
-	Metro string `json:"metro"`
+	CommentsCount int32  `json:"comments_count,omitempty"`
+	Hidden        bool   `json:"hidden"`
+	Metro         string `json:"metro"`
 
-	SubCat string `json:"subcat,omitempty"`
+	SubCat     string `json:"subcat,omitempty"`
 	SubCatList string `json:"subcat_list,omitempty"`
 }
 
@@ -124,15 +124,15 @@ type AdForUsersDetailed struct {
 
 	Category string `json:"category"`
 
-	CommentsCount int32 `json:"comments_count,omitempty"`
-	ViewsCount    int32 `json:"views_count"`
-	Hidden        bool  `json:"hidden"`
-	SubscribersNum int32 `json:"subscribers_num"`
-	IsSubscriber bool `json:"is_subscriber"`
-	Metro string `json:"metro"`
-	FullAdress string `json:"full_adress"`
+	CommentsCount  int32  `json:"comments_count,omitempty"`
+	ViewsCount     int32  `json:"views_count"`
+	Hidden         bool   `json:"hidden"`
+	SubscribersNum int32  `json:"subscribers_num"`
+	IsSubscriber   bool   `json:"is_subscriber"`
+	Metro          string `json:"metro"`
+	FullAdress     string `json:"full_adress"`
 
-	SubCat string `json:"subcat,omitempty"`
+	SubCat     string `json:"subcat,omitempty"`
 	SubCatList string `json:"subcat_list,omitempty"`
 }
 

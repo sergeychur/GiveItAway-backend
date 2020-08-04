@@ -248,15 +248,15 @@ func (db *DB) FormMaxBidUpdatedNote(adId, whomId, newBid, newUserId int) (models
 		return models.Notification{}, err
 	}
 	note := models.Notification{
-		AdId: int64(adId),
-		WhomId: whomId,
+		AdId:             int64(adId),
+		WhomId:           whomId,
 		NotificationType: notifications.MAX_BID_UPDATED,
 		Payload: models.MaxBidUpdated{
 			NewBid: newBid,
-			User: user,
+			User:   user,
 		},
 		CreationDateTime: timeStamp.Format("02 Jan 06 15:04 UTC"),
-		IsRead: false,
+		IsRead:           false,
 	}
 	return note, err
 }

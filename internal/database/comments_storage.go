@@ -18,9 +18,9 @@ const (
 
 	CheckCommentExists = "SELECT author_id FROM comment WHERE comment_id = $1"
 
-	UpdateComment          = "UPDATE comment SET text = $2 WHERE comment_id = $1"
-	DeleteComment          = "DELETE FROM comment WHERE comment_id = $1"
-	GetCommentAdId         = "SELECT ad_id FROM comment WHERE comment_id = $1"
+	UpdateComment  = "UPDATE comment SET text = $2 WHERE comment_id = $1"
+	DeleteComment  = "DELETE FROM comment WHERE comment_id = $1"
+	GetCommentAdId = "SELECT ad_id FROM comment WHERE comment_id = $1"
 )
 
 func (db *DB) GetComments(adId int, page int, rowsPerPage int) ([]models.CommentForUser, int) {

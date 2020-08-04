@@ -73,12 +73,9 @@ func NewServer(pathToConfig string) (*Server, error) {
 	needLogin.Get(fmt.Sprintf("/post/{ad_id:%s}/max_bid_user", idPattern), server.GetMaxBidUser)
 	needLogin.Get(fmt.Sprintf("/post/{ad_id:%s}/return_bid_size", idPattern), server.GetReturnSize)
 
-
-
 	needLogin.Post(fmt.Sprintf("/deal/{deal_id:%s}/fulfill", idPattern), server.FulfillDeal)
 	needLogin.Post(fmt.Sprintf("/deal/{deal_id:%s}/cancel", idPattern), server.CancelDeal)
 	subRouter.Get(fmt.Sprintf("/post/{ad_id:%s}/deal", idPattern), server.GetDealForAd)
-
 
 	// notifications
 	needLogin.Get("/notifications", server.GetNotifications)
@@ -90,7 +87,6 @@ func NewServer(pathToConfig string) (*Server, error) {
 	subRouter.Get(fmt.Sprintf("/user/{user_id:%s}/given", idPattern), server.GetGiven)
 	subRouter.Get(fmt.Sprintf("/user/{user_id:%s}/received", idPattern), server.GetReceived)
 	needLogin.Get("/post/wanted", server.GetWanted)
-
 
 	// comments
 	subRouter.Get(fmt.Sprintf("/post/{ad_id:%s}/comments", idPattern), server.GetAdComments)
@@ -143,14 +139,14 @@ func (server *Server) Run() error {
 
 	server.AuthClient = auth.NewAuthClient(grcpAuthConn)
 	srv := http.Server{
-		Addr:         ":" + port,
-		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 15 * time.Second,
-		IdleTimeout:  1 * time.Second,
+		Addr:           ":" + port,
+		ReadTimeout:    10 * time.Second,
+		WriteTimeout:   15 * time.Second,
+		IdleTimeout:    1 * time.Second,
 		MaxHeaderBytes: 16384,
-		Handler:      server.router,
+		Handler:        server.router,
 	}
-	l, err := net.Listen("tcp", ":" + port)
+	l, err := net.Listen("tcp", ":"+port)
 	if err != nil {
 		return err
 	}

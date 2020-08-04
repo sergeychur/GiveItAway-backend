@@ -16,7 +16,7 @@ const (
 	GetUserById = "SELECT u.vk_id, u.name, u.surname, u.photo_url" +
 		" FROM users u WHERE vk_id = $1"
 
-	CreateUser  = "INSERT INTO users (vk_id, name, surname, photo_url) VALUES ($1, $2, $3, $4)"
+	CreateUser = "INSERT INTO users (vk_id, name, surname, photo_url) VALUES ($1, $2, $3, $4)"
 
 	GrantInitialCarma = "UPDATE users_carma SET current_carma = $1"
 
@@ -117,8 +117,8 @@ func (db *DB) GetReceived(userId, page, rowsPerPage int) ([]models.AdForUsers, i
 		return nil, EMPTY_RESULT
 	}
 	if err != nil {
-			log.Println("Error in received")
-                        log.Println(err)
+		log.Println("Error in received")
+		log.Println(err)
 		return nil, DB_ERROR
 	}
 	ads := make([]models.AdForUsers, 0)
@@ -127,7 +127,7 @@ func (db *DB) GetReceived(userId, page, rowsPerPage int) ([]models.AdForUsers, i
 		ads, err = db.WorkWithOneAd(rows, ads)
 		if err != nil {
 			log.Println("Error in received")
-                        log.Println(err)
+			log.Println(err)
 			return nil, DB_ERROR
 		}
 	}
@@ -145,7 +145,7 @@ func (db *DB) GetWanted(userId, page, rowsPerPage int) ([]models.AdForUsers, int
 	}
 	if err != nil {
 		log.Println("Error in wanted")
-                log.Println(err)
+		log.Println(err)
 		return nil, DB_ERROR
 	}
 	ads := make([]models.AdForUsers, 0)
@@ -154,7 +154,7 @@ func (db *DB) GetWanted(userId, page, rowsPerPage int) ([]models.AdForUsers, int
 		ads, err = db.WorkWithOneAd(rows, ads)
 		if err != nil {
 			log.Println("Error in wanted")
-	                log.Println(err)
+			log.Println(err)
 			return nil, DB_ERROR
 		}
 	}

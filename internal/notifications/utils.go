@@ -14,8 +14,8 @@ const (
 	AD_DELETED           = "deleted"
 	AUTHOR_CANCELLED     = "authorCancel"
 	SUBSCRIBER_CANCELLED = "subscriberCancel"
-	COMMENT_CREATED = "new_comment"
-	MAX_BID_UPDATED = "max_bid_upd"
+	COMMENT_CREATED      = "new_comment"
+	MAX_BID_UPDATED      = "max_bid_upd"
 )
 
 var (

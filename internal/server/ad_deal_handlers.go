@@ -118,7 +118,7 @@ func (server *Server) MakeDeal(w http.ResponseWriter, r *http.Request) {
 	}
 	params := r.URL.Query()
 	typeArr, ok := params["type"]
-	if !ok || len(typeArr) != 1  {
+	if !ok || len(typeArr) != 1 {
 		WriteToResponse(w, http.StatusBadRequest,
 			fmt.Errorf("type has to be in query"))
 	}
@@ -131,8 +131,6 @@ func (server *Server) MakeDeal(w http.ResponseWriter, r *http.Request) {
 
 	DealRequestFromDB(w, "OK", status)
 }
-
-
 
 func (server *Server) FulfillDeal(w http.ResponseWriter, r *http.Request) {
 	dealStr := chi.URLParam(r, "deal_id")
@@ -183,7 +181,7 @@ func (server *Server) GetDealForAd(w http.ResponseWriter, r *http.Request) {
 	DealRequestFromDB(w, deal, status)
 }
 
-func (server *Server) GetBidForUser (w http.ResponseWriter, r *http.Request) {
+func (server *Server) GetBidForUser(w http.ResponseWriter, r *http.Request) {
 	adIdStr := chi.URLParam(r, "ad_id")
 	adId, err := strconv.Atoi(adIdStr)
 	if err != nil {
@@ -198,7 +196,7 @@ func (server *Server) GetBidForUser (w http.ResponseWriter, r *http.Request) {
 	DealRequestFromDB(w, maxBid, status)
 }
 
-func (server *Server) GetMaxBid (w http.ResponseWriter, r *http.Request) {
+func (server *Server) GetMaxBid(w http.ResponseWriter, r *http.Request) {
 	adIdStr := chi.URLParam(r, "ad_id")
 	adId, err := strconv.Atoi(adIdStr)
 	if err != nil {
@@ -209,7 +207,7 @@ func (server *Server) GetMaxBid (w http.ResponseWriter, r *http.Request) {
 	DealRequestFromDB(w, maxBid, status)
 }
 
-func (server *Server) GetMaxBidUser (w http.ResponseWriter, r *http.Request) {
+func (server *Server) GetMaxBidUser(w http.ResponseWriter, r *http.Request) {
 	adIdStr := chi.URLParam(r, "ad_id")
 	adId, err := strconv.Atoi(adIdStr)
 	if err != nil {
@@ -220,7 +218,7 @@ func (server *Server) GetMaxBidUser (w http.ResponseWriter, r *http.Request) {
 	DealRequestFromDB(w, maxBid, status)
 }
 
-func (server * Server) GetReturnSize(w http.ResponseWriter, r *http.Request) {
+func (server *Server) GetReturnSize(w http.ResponseWriter, r *http.Request) {
 	userId, err := server.GetUserIdFromCookie(r)
 	if err != nil {
 		WriteToResponse(w, http.StatusInternalServerError, fmt.Errorf("server cannot get userId from cookie"))

@@ -33,7 +33,7 @@ func (server *Server) AuthUser(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	err = SetJWTToCookie([]byte(server.config.Secret), userId, w, 60 * 24, server.CookieField)
+	err = SetJWTToCookie([]byte(server.config.Secret), userId, w, 60*24, server.CookieField)
 	if err != nil {
 		WriteToResponse(w, http.StatusInternalServerError, fmt.Errorf("auth failed"))
 		return
@@ -151,5 +151,3 @@ func (server *Server) GetWanted(w http.ResponseWriter, r *http.Request) {
 	ads, status := server.db.GetWanted(userId, page, rowsPerPage)
 	DealRequestFromDB(w, ads, status)
 }
-
-
