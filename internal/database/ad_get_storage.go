@@ -288,7 +288,7 @@ func (db *DB) GetAds(page int, rowsPerPage int, params map[string][]string, user
 		}
 		log.Println("canAllow", allow, userId, WHITE_LIST)
 		if allow {
-			showClose = "(1=1)"
+			showClose = "(true)"
 		}
 
 		if len(strArr)-sortArgsLen == 0 {
@@ -309,6 +309,9 @@ func (db *DB) GetAds(page int, rowsPerPage int, params map[string][]string, user
 	strArr = append(strArr, rowsPerPage, offset)
 	ads := make([]models.AdForUsers, 0)
 	rows, err := db.db.Query(query, strArr...)
+	if err != nil {
+		log.Println("log err", err)
+	}
 	if err == pgx.ErrNoRows {
 		return nil, EMPTY_RESULT
 	}
