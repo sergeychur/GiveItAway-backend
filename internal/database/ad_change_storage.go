@@ -162,7 +162,7 @@ func (db *DB) DeleteAd(adId int, userId int) int {
 	}
 
 	var allow = false
-	for id := range WHITE_LIST {
+	for _, id := range WHITE_LIST {
 		if userId == id {
 			allow = true
 		}
@@ -337,7 +337,7 @@ func (db *DB) SetAdHidden(adId int, userId int) int {
 	}
 
 	var allow = false
-	for id := range WHITE_LIST {
+	for _, id := range WHITE_LIST {
 		if userId == id {
 			allow = true
 		}
@@ -374,7 +374,7 @@ func (db *DB) SetAdVisible(adId int, userId int) int {
 	}
 
 	var allow = false
-	for id := range WHITE_LIST {
+	for _, id := range WHITE_LIST {
 		if userId == id {
 			allow = true
 		}

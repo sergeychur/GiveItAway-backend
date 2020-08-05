@@ -122,7 +122,7 @@ func (db *DB) DeleteComment(commentId int, userId int) int {
 	}
 
 	var allow = false
-	for id := range WHITE_LIST {
+	for _, id := range WHITE_LIST {
 		if userId == id {
 			allow = true
 		}

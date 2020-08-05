@@ -293,7 +293,7 @@ func (db *DB) GetAds(page int, rowsPerPage int, params map[string][]string, user
 
 	// check this user is Admin
 	var allow = false
-	for id := range WHITE_LIST {
+	for _, id := range WHITE_LIST {
 		if userId == id {
 			allow = true
 		}
