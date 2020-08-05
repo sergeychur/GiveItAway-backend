@@ -2,6 +2,7 @@ package database
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/sergeychur/give_it_away/internal/models"
 	"gopkg.in/jackc/pgx.v2"
@@ -341,6 +342,7 @@ func (db *DB) SetAdHidden(adId int, userId int) int {
 			allow = true
 		}
 	}
+	log.Println("heello", userId, authorId, WHITE_LIST, allow)
 	if !allow {
 		return FORBIDDEN
 	}

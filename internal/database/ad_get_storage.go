@@ -275,20 +275,11 @@ func (db *DB) GetAds(page int, rowsPerPage int, params map[string][]string, user
 	}
 	if !authorInQuery {
 
-		// check is this use Admin
-		var allow = false
-		for id := range WHITE_LIST {
-			if userId == id {
-				allow = true
-			}
-		}
 		// it's a minimal disjunctive normal form for the "if show" function
 		showClose := fmt.Sprintf("(status != 'closed' AND status != 'aborted' "+
 			"AND author_id = $%d OR status='offer' AND hidden = false ) ",
 			len(strArr)+1)
-		if allow {
-			showClose = ""
-		}
+
 		if len(strArr)-sortArgsLen == 0 {
 			whereClause += Where + showClose
 		} else {
@@ -300,6 +291,17 @@ func (db *DB) GetAds(page int, rowsPerPage int, params map[string][]string, user
 		whereClause += And + fmt.Sprintf(" (hidden = false OR author_id = $%d)", len(strArr)+1)
 	}
 
+	// check this user is Admin
+	var allow = false
+	for id := range WHITE_LIST {
+		if userId == id {
+			allow = true
+		}
+	}
+	log.Println("canAllow", allow, userId, WHITE_LIST)
+	if allow {
+		whereClause = ""
+	}
 	query = fmt.Sprintf(GetAds, whereClause, innerSortByClause, len(strArr)+1, len(strArr)+2, outerSortByClause)
 	strArr = append(strArr, rowsPerPage, offset)
 	ads := make([]models.AdForUsers, 0)
