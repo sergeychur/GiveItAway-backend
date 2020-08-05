@@ -280,6 +280,17 @@ func (db *DB) GetAds(page int, rowsPerPage int, params map[string][]string, user
 			"AND author_id = $%d OR status='offer' AND hidden = false ) ",
 			len(strArr)+1)
 
+		var allow = false
+		for _, id := range WHITE_LIST {
+			if userId == id {
+				allow = true
+			}
+		}
+		log.Println("canAllow", allow, userId, WHITE_LIST)
+		if allow {
+			showClose = "(1=1)"
+		}
+
 		if len(strArr)-sortArgsLen == 0 {
 			whereClause += Where + showClose
 		} else {
@@ -292,17 +303,9 @@ func (db *DB) GetAds(page int, rowsPerPage int, params map[string][]string, user
 	}
 
 	// check this user is Admin
-	var allow = false
-	for _, id := range WHITE_LIST {
-		if userId == id {
-			allow = true
-		}
-	}
-	log.Println("canAllow", allow, userId, WHITE_LIST)
-	if allow {
-		whereClause = ""
-	}
+
 	query = fmt.Sprintf(GetAds, whereClause, innerSortByClause, len(strArr)+1, len(strArr)+2, outerSortByClause)
+	log.Println("query is", query)
 	strArr = append(strArr, rowsPerPage, offset)
 	ads := make([]models.AdForUsers, 0)
 	rows, err := db.db.Query(query, strArr...)
