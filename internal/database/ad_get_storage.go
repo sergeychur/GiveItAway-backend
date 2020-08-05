@@ -284,7 +284,8 @@ func (db *DB) GetAds(page int, rowsPerPage int, params map[string][]string, user
 			}
 		}
 		if allow {
-			showClose = "(status != 'closed' AND status != 'aborted')"
+			showClose = fmt.Sprintf("(status != 'closed' AND status != 'aborted' AND $%d != 0 OR status='offer') ",
+				len(strArr)+1)
 		}
 		if len(strArr)-sortArgsLen == 0 {
 			whereClause += Where + showClose
