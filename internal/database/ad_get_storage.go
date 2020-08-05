@@ -284,7 +284,7 @@ func (db *DB) GetAds(page int, rowsPerPage int, params map[string][]string, user
 			}
 		}
 		if allow {
-			showClose = "(true)"
+			showClose = "(status != 'closed' AND status != 'aborted')"
 		}
 		if len(strArr)-sortArgsLen == 0 {
 			whereClause += Where + showClose
@@ -301,6 +301,9 @@ func (db *DB) GetAds(page int, rowsPerPage int, params map[string][]string, user
 	strArr = append(strArr, rowsPerPage, offset)
 	ads := make([]models.AdForUsers, 0)
 	rows, err := db.db.Query(query, strArr...)
+	if err != nil {
+		log.Println("err is", err)
+	}
 	if err == pgx.ErrNoRows {
 		return nil, EMPTY_RESULT
 	}
