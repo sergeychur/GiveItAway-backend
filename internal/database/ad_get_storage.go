@@ -280,16 +280,16 @@ func (db *DB) GetAds(page int, rowsPerPage int, params map[string][]string, user
 			"AND author_id = $%d OR status='offer' AND hidden = false ) ",
 			len(strArr)+1)
 
-		var allow = false
-		for _, id := range WHITE_LIST {
-			if userId == id {
-				allow = true
-			}
-		}
-		log.Println("canAllow", allow, userId, WHITE_LIST)
-		if allow {
-			showClose = "(true)"
-		}
+		// var allow = false
+		// for _, id := range WHITE_LIST {
+		// 	if userId == id {
+		// 		allow = true
+		// 	}
+		// }
+		// log.Println("canAllow", allow, userId, WHITE_LIST)
+		// if allow {
+		// 	showClose = "(true)"
+		// }
 
 		if len(strArr)-sortArgsLen == 0 {
 			whereClause += Where + showClose
