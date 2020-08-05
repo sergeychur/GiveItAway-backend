@@ -2,13 +2,14 @@ package database
 
 import (
 	"fmt"
-	"github.com/sergeychur/give_it_away/internal/models"
-	"gopkg.in/jackc/pgx.v2"
 	"log"
 	"strconv"
 	"strings"
 	"time"
 	"unicode"
+
+	"github.com/sergeychur/give_it_away/internal/models"
+	"gopkg.in/jackc/pgx.v2"
 )
 
 const (
@@ -273,9 +274,21 @@ func (db *DB) GetAds(page int, rowsPerPage int, params map[string][]string, user
 		innerSortByClause += fmt.Sprintf(", ts_rank(fts, to_tsquery('ru', $%d)) ", queryPos)
 	}
 	if !authorInQuery {
+
+		// check is this use Admin
+		var allow = false
+		for id := range WHITE_LIST {
+			if userId == id {
+				allow = true
+			}
+		}
 		// it's a minimal disjunctive normal form for the "if show" function
-		showClose := fmt.Sprintf("(status != 'closed' AND status != 'aborted' AND author_id = $%d OR status='offer' AND hidden = false) ",
+		showClose := fmt.Sprintf("(status != 'closed' AND status != 'aborted' "+
+			"AND author_id = $%d OR status='offer' AND hidden = false ) ",
 			len(strArr)+1)
+		if allow {
+			showClose = ""
+		}
 		if len(strArr)-sortArgsLen == 0 {
 			whereClause += Where + showClose
 		} else {

@@ -2,14 +2,15 @@ package database
 
 import (
 	"fmt"
+
 	"github.com/sergeychur/give_it_away/internal/models"
 	"gopkg.in/jackc/pgx.v2"
 )
 
 const (
 	// create ad query
-	CreateAd = "INSERT INTO ad (author_id, header, text, region, district, ad_type, ls_enabled, comments_enabled, extra_enabled, category, subcat_list, subcat, metro, full_adress%s)" +
-		" VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14%s) RETURNING ad_id"
+	CreateAd = "INSERT INTO ad (author_id, hidden, header, text, region, district, ad_type, ls_enabled, comments_enabled, extra_enabled, category, subcat_list, subcat, metro, full_adress%s)" +
+		" VALUES($1, true,  $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14%s) RETURNING ad_id"
 	ExtraField                = ", extra_field"
 	GeoPosition               = ", geo_position, lat, long"
 	Blank                     = ""
@@ -159,9 +160,16 @@ func (db *DB) DeleteAd(adId int, userId int) int {
 		return DB_ERROR
 	}
 
-	if authorId != userId {
+	var allow = false
+	for id := range WHITE_LIST {
+		if userId == id {
+			allow = true
+		}
+	}
+	if !allow && authorId != userId {
 		return FORBIDDEN
 	}
+
 	err = db.GiveCarmaBackDelete(tx, adId, userId)
 	if err != nil {
 		return DB_ERROR
@@ -327,7 +335,13 @@ func (db *DB) SetAdHidden(adId int, userId int) int {
 		return DB_ERROR
 	}
 
-	if authorId != userId {
+	var allow = false
+	for id := range WHITE_LIST {
+		if userId == id {
+			allow = true
+		}
+	}
+	if !allow {
 		return FORBIDDEN
 	}
 
@@ -357,7 +371,13 @@ func (db *DB) SetAdVisible(adId int, userId int) int {
 		return DB_ERROR
 	}
 
-	if authorId != userId {
+	var allow = false
+	for id := range WHITE_LIST {
+		if userId == id {
+			allow = true
+		}
+	}
+	if !allow {
 		return FORBIDDEN
 	}
 

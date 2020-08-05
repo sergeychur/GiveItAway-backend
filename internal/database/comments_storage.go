@@ -1,9 +1,10 @@
 package database
 
 import (
+	"time"
+
 	"github.com/sergeychur/give_it_away/internal/models"
 	"gopkg.in/jackc/pgx.v2"
-	"time"
 )
 
 const (
@@ -120,7 +121,13 @@ func (db *DB) DeleteComment(commentId int, userId int) int {
 		return EMPTY_RESULT
 	}
 
-	if authorId != userId {
+	var allow = false
+	for id := range WHITE_LIST {
+		if userId == id {
+			allow = true
+		}
+	}
+	if !allow && authorId != userId {
 		return FORBIDDEN
 	}
 
