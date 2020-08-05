@@ -277,6 +277,15 @@ func (db *DB) GetAds(page int, rowsPerPage int, params map[string][]string, user
 		// it's a minimal disjunctive normal form for the "if show" function
 		showClose := fmt.Sprintf("(status != 'closed' AND status != 'aborted' AND author_id = $%d OR status='offer' AND hidden = false) ",
 			len(strArr)+1)
+		var allow = false
+		for _, id := range WHITE_LIST {
+			if userId == id {
+				allow = true
+			}
+		}
+		if allow {
+			showClose = "(true)"
+		}
 		if len(strArr)-sortArgsLen == 0 {
 			whereClause += Where + showClose
 		} else {
