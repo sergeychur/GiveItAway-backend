@@ -274,23 +274,9 @@ func (db *DB) GetAds(page int, rowsPerPage int, params map[string][]string, user
 		innerSortByClause += fmt.Sprintf(", ts_rank(fts, to_tsquery('ru', $%d)) ", queryPos)
 	}
 	if !authorInQuery {
-
 		// it's a minimal disjunctive normal form for the "if show" function
-		showClose := fmt.Sprintf("(status != 'closed' AND status != 'aborted' "+
-			"AND author_id = $%d OR status='offer' AND hidden = false ) ",
+		showClose := fmt.Sprintf("(status != 'closed' AND status != 'aborted' AND author_id = $%d OR status='offer' AND hidden = false) ",
 			len(strArr)+1)
-
-		// var allow = false
-		// for _, id := range WHITE_LIST {
-		// 	if userId == id {
-		// 		allow = true
-		// 	}
-		// }
-		// log.Println("canAllow", allow, userId, WHITE_LIST)
-		// if allow {
-		// 	showClose = "(true)"
-		// }
-
 		if len(strArr)-sortArgsLen == 0 {
 			whereClause += Where + showClose
 		} else {
@@ -302,16 +288,10 @@ func (db *DB) GetAds(page int, rowsPerPage int, params map[string][]string, user
 		whereClause += And + fmt.Sprintf(" (hidden = false OR author_id = $%d)", len(strArr)+1)
 	}
 
-	// check this user is Admin
-
 	query = fmt.Sprintf(GetAds, whereClause, innerSortByClause, len(strArr)+1, len(strArr)+2, outerSortByClause)
-	log.Println("query is", query)
 	strArr = append(strArr, rowsPerPage, offset)
 	ads := make([]models.AdForUsers, 0)
 	rows, err := db.db.Query(query, strArr...)
-	if err != nil {
-		log.Println("log err", err)
-	}
 	if err == pgx.ErrNoRows {
 		return nil, EMPTY_RESULT
 	}
