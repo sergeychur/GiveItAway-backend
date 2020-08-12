@@ -5,15 +5,16 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
-	"github.com/dgrijalva/jwt-go"
-	"github.com/sergeychur/give_it_away/internal/auth"
-	"github.com/sergeychur/give_it_away/internal/models"
 	"log"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/dgrijalva/jwt-go"
+	"github.com/sergeychur/give_it_away/internal/auth"
+	"github.com/sergeychur/give_it_away/internal/models"
 )
 
 func CheckUserAuth(info models.AuthInfo, secret string) (int, bool) {
@@ -77,6 +78,7 @@ func SetJWTToCookie(secret []byte, userId int, w http.ResponseWriter, minutes in
 		Expires:  expirationTime,
 		HttpOnly: true,
 		Path:     "/",
+		SameSite: http.SameSiteNoneMode, // https://web.dev/samesite-cookies-explained/
 	})
 	return nil
 }
