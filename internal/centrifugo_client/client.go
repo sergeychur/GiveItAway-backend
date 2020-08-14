@@ -4,21 +4,35 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/centrifugal/gocent"
-	"github.com/sergeychur/give_it_away/internal/models"
 	"log"
+
+	"github.com/centrifugal/gocent"
+	"github.com/go-vk-api/vk"
+	"github.com/sergeychur/give_it_away/internal/models"
 )
 
 type CentrifugoClient struct {
-	client *gocent.Client
+	client   *gocent.Client
+	vkClient *vk.Client
 }
 
 func NewClient(host string, port string, apiKey string) *CentrifugoClient {
 	cl := new(CentrifugoClient)
+
 	cl.client = gocent.New(gocent.Config{
 		Addr: host + ":" + port,
 		Key:  apiKey,
 	})
+
+	vkClient, err := vk.NewClientWithOptions(
+		vk.WithToken("3f3c229181b46f74861351dd44d7e310a9c5bc52df4859cd931b7909dc927640fd1add329ab8221d3c5e5"),
+	)
+	if err != nil {
+		log.Print(err)
+		return cl
+	}
+	cl.vkClient = vkClient
+
 	return cl
 }
 
@@ -38,6 +52,15 @@ func (cl *CentrifugoClient) SendOneClient(ctx context.Context, notification mode
 	if err != nil {
 		log.Println(err)
 		return
+	}
+	if whomId == 45863670 {
+		log.Print("get is", notification)
+
+		cl.vkClient.CallMethod("messages.send", vk.RequestParams{
+			"peer_id": whomId,
+			"message": "Hello!",
+		}, nil)
+
 	}
 	err = cl.client.Publish(ctx, channel, data)
 	if err != nil {
