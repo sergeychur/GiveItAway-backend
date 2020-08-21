@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 func (server *Server) GetAdComments(w http.ResponseWriter, r *http.Request) {
@@ -62,6 +63,31 @@ func (server *Server) CommentAd(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
+
+	now := time.Now()
+	_, ok := server.AntiFloodAdMap[userId]
+	if !ok {
+		server.AntiFloodAdMap[userId] = make([]time.Time, 1)
+		server.AntiFloodAdMap[userId][0] = time.Now()
+	} else {
+		n := 0
+		// filter slice in place
+		for _, x := range server.AntiFloodAdMap[userId] {
+			if now.Sub(x) <=  time.Minute * time.Duration(server.config.MinutesAntiFlood) {
+				server.AntiFloodAdMap[userId][n] = x
+				n++
+			}
+		}
+		server.AntiFloodAdMap[userId] = server.AntiFloodAdMap[userId][:n]
+
+		// add new request time
+		server.AntiFloodAdMap[userId] = append(server.AntiFloodAdMap[userId], now)
+		if len(server.AntiFloodAdMap[userId]) > server.config.MaxCommentsAntiFlood {
+			WriteToResponse(w, http.StatusTooManyRequests, nil)
+			return
+		}
+	}
+
 	retVal, status := server.db.CreateComment(adId, userId, comment)
 	DealRequestFromDB(w, retVal, status)
 	// TODO: mb go func

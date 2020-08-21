@@ -22,6 +22,9 @@ type Config struct {
 	ApiKey         string   `json:"api_key"`
 	CentrifugoPort string   `json:"centrifugo_port"`
 	CentrifugoHost string   `json:"centrifugo_host"`
+	MinutesAntiFlood int64 	`json:"minutes_anti_flood"`
+	MaxCommentsAntiFlood int `json:"max_comments_anti_flood"`
+	MaxAdsAntiFlood int 	 `json:"max_ads_anti_flood"`
 }
 
 func NewConfig(pathToConfig string) (*Config, error) {

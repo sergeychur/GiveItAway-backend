@@ -26,6 +26,8 @@ type Server struct {
 	config             *config.Config
 	AuthClient         auth.AuthClient
 	CookieField        string
+	AntiFloodCommentMap map[int][]time.Time
+	AntiFloodAdMap map[int][]time.Time
 }
 
 func NewServer(pathToConfig string) (*Server, error) {
@@ -39,6 +41,9 @@ func NewServer(pathToConfig string) (*Server, error) {
 	}
 	server.config = newConfig
 	server.CookieField = "token"
+
+	server.AntiFloodAdMap = make(map[int][]time.Time)
+	server.AntiFloodCommentMap = make(map[int][]time.Time)
 
 	r.Use(middleware.Logger,
 		middleware.Recoverer,
