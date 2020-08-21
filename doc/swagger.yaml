@@ -66,6 +66,8 @@ paths:
           description: "Invalid input"
         404:
           description: "user doesn't exist"
+        429:
+          description: "floooooooooooooood"
   /post/{ad_id}/edit:
     put:
       tags:
@@ -303,7 +305,7 @@ paths:
         404:
           description: "ad not found"
         403:
-          description: "user id is the same as author's"
+          description: "user id is the same as author's or ad is under moderation"
         401:
           description: "no auth"
         409:
@@ -624,6 +626,10 @@ paths:
           description: "Invalid input"
         401:
           description: "no auth"
+        403:
+          description: "ad under moderation"
+        429:
+          description: "floooooooooooooood"
   /comment/{comment_id}:
     put:
       tags: ["comment"]
