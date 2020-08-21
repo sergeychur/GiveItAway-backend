@@ -41,6 +41,8 @@ const (
 		"ORDER BY a_s.ad_subscribers_id"
 
 	GetAdSubscribersIds = "SELECT a_s.subscriber_id FROM ad_subscribers a_s WHERE a_s.ad_id = $1"
+
+	CheckAdHidden = "SELECT hidden FROM ad WHERE ad_id = $1"
 )
 
 func (db *DB) SubscribeToAd(adId int, userId int, priceCoeff int) (int, *models.Notification) {
@@ -59,6 +61,12 @@ func (db *DB) SubscribeToAd(adId int, userId int, priceCoeff int) (int, *models.
 	}
 	if err != nil {
 		return DB_ERROR, nil
+	}
+
+	hidden := false
+	err = tx.QueryRow(CheckAdHidden, adId).Scan(&hidden)
+	if hidden {
+		return FORBIDDEN, nil
 	}
 
 	if authorId == userId {

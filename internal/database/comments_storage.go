@@ -66,6 +66,11 @@ func (db *DB) CreateComment(adId int, userId int, comment models.Comment) (model
 	if err == pgx.ErrNoRows {
 		return models.CommentForUser{}, EMPTY_RESULT
 	}
+	hidden := false
+	err = db.db.QueryRow(CheckAdHidden, adId).Scan(&hidden)
+	if hidden {
+		return models.CommentForUser{}, FORBIDDEN
+	}
 	commentId := 0
 	err = db.db.QueryRow(CreateComment, adId, comment.Text, userId).Scan(&commentId)
 	if err != nil {
