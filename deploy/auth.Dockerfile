@@ -2,9 +2,13 @@ FROM golang:alpine AS builder
 
 WORKDIR /home/app/
 
+COPY go.mod .
+
+RUN  go mod download && go mod verify
+
 COPY . .
 
-RUN go build --mod=vendor -o ./auth.out /home/app/cmd/auth/main.go
+RUN go build -o ./auth.out /home/app/cmd/auth/main.go
 
 FROM bashell/alpine-bash AS release
 
