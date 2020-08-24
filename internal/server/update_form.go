@@ -1,6 +1,8 @@
 package server
 
-import "github.com/sergeychur/give_it_away/internal/models"
+import (
+	"github.com/sergeychur/give_it_away/internal/models"
+)
 
 const (
 	NEW_COMMENT    = "new_comment"
