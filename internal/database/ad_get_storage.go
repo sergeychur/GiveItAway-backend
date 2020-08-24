@@ -270,6 +270,13 @@ func (db *DB) GetAds(page int, rowsPerPage int, params map[string][]string, user
 		//	query := queryArr[0]
 		//	query = strings.Replace(query, " ", "&", -1)
 	}
+	var admin = false
+	for _, id := range WHITE_LIST {
+		if userId == id {
+			admin = true
+		}
+	}
+
 	if isQueryInReq {
 		innerSortByClause += fmt.Sprintf(", ts_rank(fts, to_tsquery('ru', $%d)) ", queryPos)
 	}
@@ -277,25 +284,22 @@ func (db *DB) GetAds(page int, rowsPerPage int, params map[string][]string, user
 		// it's a minimal disjunctive normal form for the "if show" function
 		showClose := fmt.Sprintf("(status != 'closed' AND status != 'aborted' AND author_id = $%d OR status='offer' AND hidden = false) ",
 			len(strArr)+1)
-		var allow = false
-		for _, id := range WHITE_LIST {
-			if userId == id {
-				allow = true
-			}
-		}
-		if allow {
-			showClose = fmt.Sprintf("(status != 'closed' AND status != 'aborted' AND $%d != 0 OR status='offer') ",
-				len(strArr)+1)
-		}
+
 		if len(strArr)-sortArgsLen == 0 {
 			whereClause += Where + showClose
 		} else {
 			whereClause += And + showClose
 		}
-		//whereClause += And + fmt.Sprintf(" (hidden = false OR author_id = $%d)", len(strArr)+1)
-		strArr = append(strArr, userId)
+		if admin {
+			whereClause = ""
+		} else {
+			//whereClause += And + fmt.Sprintf(" (hidden = false OR author_id = $%d)", len(strArr)+1)
+			strArr = append(strArr, userId)
+		}
 	} else {
-		whereClause += And + fmt.Sprintf(" (hidden = false OR author_id = $%d)", len(strArr)+1)
+		if !admin {
+			whereClause += And + fmt.Sprintf(" (hidden = false OR author_id = $%d)", len(strArr)+1)
+		}
 	}
 
 	query = fmt.Sprintf(GetAds, whereClause, innerSortByClause, len(strArr)+1, len(strArr)+2, outerSortByClause)

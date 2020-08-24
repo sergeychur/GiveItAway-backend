@@ -2,6 +2,13 @@ package server
 
 import (
 	"fmt"
+	"log"
+	"net"
+	"net/http"
+	"os"
+	"strconv"
+	"time"
+
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/sergeychur/give_it_away/internal/auth"
@@ -11,12 +18,6 @@ import (
 	"github.com/sergeychur/give_it_away/internal/middlewares"
 	"golang.org/x/net/netutil"
 	"google.golang.org/grpc"
-	"log"
-	"net"
-	"net/http"
-	"os"
-	"strconv"
-	"time"
 )
 
 type Server struct {
@@ -91,6 +92,9 @@ func NewServer(pathToConfig string) (*Server, error) {
 	subRouter.Get(fmt.Sprintf("/user/{user_id:%s}/profile", idPattern), server.GetUserInfo)
 	subRouter.Get(fmt.Sprintf("/user/{user_id:%s}/given", idPattern), server.GetGiven)
 	subRouter.Get(fmt.Sprintf("/user/{user_id:%s}/received", idPattern), server.GetReceived)
+	subRouter.Get(fmt.Sprintf("/user/{user_id:%s}/nots_pm", idPattern), server.GetUserPermissionToPM)
+	subRouter.Post(fmt.Sprintf("/user/{user_id:%s}/nots_pm", idPattern), server.PostUserPermissionToPM)
+
 	needLogin.Get("/post/wanted", server.GetWanted)
 
 	// comments
@@ -115,7 +119,13 @@ func NewServer(pathToConfig string) (*Server, error) {
 	db := database.NewDB(server.config.DBUser, server.config.DBPass,
 		server.config.DBName, server.config.DBHost, uint16(dbPort))
 	server.db = db
-	server.NotificationSender = centrifugo_client.NewClient(server.config.CentrifugoHost, server.config.CentrifugoPort, server.config.ApiKey)
+	server.NotificationSender = centrifugo_client.NewClient(
+		server.config.CentrifugoHost,
+		server.config.CentrifugoPort,
+		server.config.ApiKey,
+		server.config.VKApiKey,
+		db,
+	)
 	return server, nil
 }
 

@@ -29,3 +29,6 @@ alter table ad add column if not exists metro citext,
 
 alter table ad add column if not exists subcat_list citext default 'другое',
                add column if not exists subcat citext default 'другое';
+
+alter table users add column if not exists send_notifications_to_pm boolean default false;
+

@@ -37,3 +37,7 @@ type UserForProfile struct {
 
 	TotalAbortedAds int `json:"total_aborted_ads"`
 }
+
+type CanSend struct {
+	CanSend bool `json:"can_send"`
+}

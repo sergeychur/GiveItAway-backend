@@ -1,10 +1,11 @@
 package database
 
 import (
-	"github.com/sergeychur/give_it_away/internal/models"
-	"gopkg.in/jackc/pgx.v2"
 	"log"
 	"time"
+
+	"github.com/sergeychur/give_it_away/internal/models"
+	"gopkg.in/jackc/pgx.v2"
 )
 
 const (
@@ -36,6 +37,9 @@ const (
 		" a.category, a.subcat_list, a.subcat, a.comments_count, a.hidden, a.metro FROM ad_subscribers a_s JOIN (SELECT ad_subscribers_id FROM ad_subscribers WHERE subscriber_id = $1" +
 		" ORDER BY ad_subscribers_id LIMIT $2 OFFSET $3) l ON (l.ad_subscribers_id = a_s.ad_subscribers_id) JOIN ad a ON (a_s.ad_id = a.ad_id)" +
 		" JOIN users u ON (a.author_id = u.vk_id) ORDER BY a_s.ad_subscribers_id"
+
+	GetSendNotificationsToPM = "SELECT send_notifications_to_pm From users where vk_id=$1"
+	SetSendNotificationsToPM = "UPDATE users SET send_notifications_to_pm = $1 where vk_id=$2"
 )
 
 func (db *DB) GetUserProfile(userId int) (models.UserForProfile, int) {
@@ -162,4 +166,27 @@ func (db *DB) GetWanted(userId, page, rowsPerPage int) ([]models.AdForUsers, int
 		return ads, EMPTY_RESULT
 	}
 	return ads, FOUND
+}
+
+func (db *DB) GetPermissoinToPM(userId int) (bool, int) {
+	row := db.db.QueryRow(GetSendNotificationsToPM, userId)
+	var canSend bool
+	err := row.Scan(&canSend)
+	if err == pgx.ErrNoRows {
+		return canSend, EMPTY_RESULT
+	}
+	if err != nil {
+		log.Println(err.Error())
+		return canSend, DB_ERROR
+	}
+	return canSend, FOUND
+}
+
+func (db *DB) ChangePermissoinToPM(userId int, canSend bool) int {
+	_, err := db.db.Exec(SetSendNotificationsToPM, canSend, userId)
+	if err != nil {
+		return DB_ERROR
+	}
+	return CREATED
+
 }
