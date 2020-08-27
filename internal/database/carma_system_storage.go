@@ -266,10 +266,8 @@ func (db *DB) IncreaseBid(adId, userId int) (models.Notification, int) {
 	}
 
 	enoughCarma := false
-	bidToCheck := maxBid
-	if userId == prevMaxId {
-		bidToCheck -= prevUserBid
-	}
+	bidToCheck := maxBid - prevUserBid
+
 	err = tx.QueryRow(checkIfEnoughCarmaAuction, bidToCheck, userId).Scan(&enoughCarma)
 	if !enoughCarma {
 		return models.Notification{}, CONFLICT

@@ -65,6 +65,7 @@ type CommentId struct {
 }
 
 type MaxBidUpdated struct {
+	Ad      AdForNotification `json:"ad"`
 	NewBid int  `json:"new_bid"`
 	User   User `json:"user"`
 }
