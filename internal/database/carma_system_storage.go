@@ -5,6 +5,7 @@ import (
 	"github.com/sergeychur/give_it_away/internal/global_constants"
 	"github.com/sergeychur/give_it_away/internal/models"
 	"gopkg.in/jackc/pgx.v2"
+	"log"
 )
 
 const (
@@ -256,10 +257,29 @@ func (db *DB) IncreaseBid(adId, userId int) (models.Notification, int) {
 	if err == pgx.ErrNoRows {
 		maxBid = 0
 	}
+
+	prevUserBid := 0
+	err = tx.QueryRow(getUserBid, adId, userId).Scan(&prevUserBid)
+	if err != nil {
+		log.Println(err)
+		return models.Notification{}, DB_ERROR
+	}
+
 	enoughCarma := false
-	err = tx.QueryRow(checkIfEnoughCarmaAuction, maxBid, userId).Scan(&enoughCarma)
+	bidToCheck := maxBid
+	if userId == prevMaxId {
+		bidToCheck -= prevUserBid
+	}
+	err = tx.QueryRow(checkIfEnoughCarmaAuction, bidToCheck, userId).Scan(&enoughCarma)
 	if !enoughCarma {
 		return models.Notification{}, CONFLICT
+	}
+
+	// we have to update frozen carma, because bid increased
+	_, err = tx.Exec(updateFrozenSubscribeAuct, maxBid + 1 - prevUserBid, userId)
+	if err != nil {
+		log.Println(err)
+		return models.Notification{}, DB_ERROR
 	}
 	_, err = tx.Exec(updateBid, maxBid+1, adId, userId)
 	err = tx.Commit()

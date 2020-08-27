@@ -79,7 +79,7 @@ func SetJWTToCookie(secret []byte, userId int, w http.ResponseWriter, minutes in
 		HttpOnly: true,
 		Path:     "/",
 		// TODO (sergeychur): place "Secure" back
-		Secure:   true,                  // https://developer.mozilla.org/ru/docs/Web/HTTP/Куки
+		//Secure:   true,                  // https://developer.mozilla.org/ru/docs/Web/HTTP/Куки
 		SameSite: http.SameSiteNoneMode, // https://web.dev/samesite-cookies-explained/
 	})
 	return nil
