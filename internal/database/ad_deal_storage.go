@@ -21,7 +21,7 @@ const (
 	CheckIfDealExists = "SELECT EXISTS(SELECT 1 FROM deal WHERE ad_id = $1)"
 	CreateDeal        = "SELECT make_deal($1, $2)"
 	GetDeal           = "SELECT * FROM deal WHERE deal_id = $1"
-	GetRichest = "select subscriber_id from ad_subscribers where ad_id = $1 order by bid desc limit 1"
+	GetRichest        = "select subscriber_id from ad_subscribers where ad_id = $1 order by bid desc limit 1"
 
 	// Fulfill deal
 	GetDealWithAuthor = "SELECT d.*, a.author_id FROM deal d JOIN ad a ON (a.ad_id = d.Ad_id) WHERE d.deal_id = $1"
@@ -42,6 +42,7 @@ const (
 
 	GetAdSubscribersIds = "SELECT a_s.subscriber_id FROM ad_subscribers a_s WHERE a_s.ad_id = $1"
 
+	CheckAdHidden = "SELECT hidden FROM ad WHERE ad_id = $1"
 )
 
 func (db *DB) SubscribeToAd(adId int, userId int, priceCoeff int) (int, *models.Notification) {
@@ -60,6 +61,12 @@ func (db *DB) SubscribeToAd(adId int, userId int, priceCoeff int) (int, *models.
 	}
 	if err != nil {
 		return DB_ERROR, nil
+	}
+
+	hidden := false
+	err = tx.QueryRow(CheckAdHidden, adId).Scan(&hidden)
+	if hidden {
+		return FORBIDDEN, nil
 	}
 
 	if authorId == userId {
@@ -267,8 +274,6 @@ func (db *DB) GetDealById(dealId int) (models.DealDetails, int) {
 	return deal, FOUND
 }
 
-
-
 func (db *DB) GetAdSubscribers(adId int, page int, rowsPerPage int) ([]models.User, int) {
 	offset := rowsPerPage * (page - 1)
 	rows, err := db.db.Query(GetAdSubscribers, adId, rowsPerPage, offset)
@@ -313,7 +318,7 @@ func (db *DB) GetAllAdSubscribersIDs(adId int) ([]int, error) {
 }
 
 func (db *DB) GetSubscriberIdForDeal(adId int, dealType string, params url.Values) (int, int) {
-	choicer := map[string]func(values url.Values) (int, int) {
+	choicer := map[string]func(values url.Values) (int, int){
 		"auction": func(values url.Values) (int, int) {
 			subscriberId := 0
 			err := db.db.QueryRow(GetRichest, adId).Scan(&subscriberId)

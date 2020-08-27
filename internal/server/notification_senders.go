@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 	"github.com/sergeychur/give_it_away/internal/database"
+	"github.com/sergeychur/give_it_away/internal/global_constants"
 	"github.com/sergeychur/give_it_away/internal/models"
 	"log"
 	"net/http"
@@ -108,6 +109,10 @@ func (server *Server) SubscribeToAdSendUpd(userId, adId int, r *http.Request) {
 }
 
 func (server *Server) NewMaxBidUpd(note models.Notification, r *http.Request) {
+	if note.WhomId == global_constants.NoNote {
+		log.Println("No notification needed, increase own bid")
+		return
+	}
 	err := server.db.InsertNotification(note.WhomId, note)
 	if err != nil {
 		log.Println(err)
@@ -115,7 +120,6 @@ func (server *Server) NewMaxBidUpd(note models.Notification, r *http.Request) {
 	}
 	server.NotificationSender.SendOneClient(r.Context(), note, note.WhomId)
 }
-
 
 func (server *Server) UnsubscribeToAdSendUpd(userId, adId int, r *http.Request) {
 	newSubUpd := FormUnsubscribeUpdate(userId)

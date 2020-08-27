@@ -66,6 +66,8 @@ paths:
           description: "Invalid input"
         404:
           description: "user doesn't exist"
+        429:
+          description: "floooooooooooooood"
   /post/{ad_id}/edit:
     put:
       tags:
@@ -195,6 +197,14 @@ paths:
           in: "query"
           type: "string"
           description: "District where to search"
+        - name: "subcat_list"
+          in: "query"
+          type: "string"
+          description: "Subcategory list where to search"
+        - name: "subcat"
+          in: "query"
+          type: "string"
+          description: "Subcategory where to search"
         - name: "query"
           in: "query"
           type: "string"
@@ -295,7 +305,7 @@ paths:
         404:
           description: "ad not found"
         403:
-          description: "user id is the same as author's"
+          description: "user id is the same as author's or ad is under moderation"
         401:
           description: "no auth"
         409:
@@ -616,6 +626,10 @@ paths:
           description: "Invalid input"
         401:
           description: "no auth"
+        403:
+          description: "ad under moderation"
+        429:
+          description: "floooooooooooooood"
   /comment/{comment_id}:
     put:
       tags: ["comment"]
@@ -836,9 +850,10 @@ paths:
           description: "rows per page for pagination"
           required: true
         - name: "user_id"
-          in: "path"
+          in: "body"
           required: true
-          type: integer
+          schema:
+            type: integer
       responses:
         200:
           description: "found smth"
@@ -1013,6 +1028,10 @@ definitions:
           $ref: "#/definitions/AdPhoto"
       category:
         type: "string"
+      subcat_list:
+        type: "string"
+      subcat:
+        type: "string"
       comments_count:
         type: integer
   AdForUsersDetailed:
@@ -1059,6 +1078,10 @@ definitions:
         items:
           $ref: "#/definitions/AdPhoto"
       category:
+        type: "string"
+      subcat_list:
+        type: "string"
+      subcat:
         type: "string"
       comments_count:
         type: integer
@@ -1110,6 +1133,10 @@ definitions:
         items:
           $ref: "#/definitions/AdPhoto"
       category:
+        type: "string"
+      subcat_list:
+        type: "string"
+      subcat:
         type: "string"
       comments_count:
         type: integer

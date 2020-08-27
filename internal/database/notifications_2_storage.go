@@ -29,7 +29,7 @@ func (db *DB) FormNewCommentNotif(comment models.CommentForUser, adId int) (mode
 		return models.Notification{}, err
 	}
 	note.Payload = models.NewComment{
-		Ad: ad,
+		Ad:      ad,
 		Comment: comment,
 	}
 	note.WhomId = authorId
@@ -37,7 +37,7 @@ func (db *DB) FormNewCommentNotif(comment models.CommentForUser, adId int) (mode
 	return note, nil
 }
 
-func (db *DB) GetUnreadNotesCount(userId int) (models.NotesNumber, int){
+func (db *DB) GetUnreadNotesCount(userId int) (models.NotesNumber, int) {
 	num := models.NotesNumber{}
 	err := db.db.QueryRow(GetUnreadNotesNumber, userId).Scan(&num.Number)
 	if err != nil {

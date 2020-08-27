@@ -1,9 +1,10 @@
 package database
 
 import (
+	"time"
+
 	"github.com/sergeychur/give_it_away/internal/models"
 	"gopkg.in/jackc/pgx.v2"
-	"time"
 )
 
 const (
@@ -18,9 +19,9 @@ const (
 
 	CheckCommentExists = "SELECT author_id FROM comment WHERE comment_id = $1"
 
-	UpdateComment          = "UPDATE comment SET text = $2 WHERE comment_id = $1"
-	DeleteComment          = "DELETE FROM comment WHERE comment_id = $1"
-	GetCommentAdId         = "SELECT ad_id FROM comment WHERE comment_id = $1"
+	UpdateComment  = "UPDATE comment SET text = $2 WHERE comment_id = $1"
+	DeleteComment  = "DELETE FROM comment WHERE comment_id = $1"
+	GetCommentAdId = "SELECT ad_id FROM comment WHERE comment_id = $1"
 )
 
 func (db *DB) GetComments(adId int, page int, rowsPerPage int) ([]models.CommentForUser, int) {
@@ -64,6 +65,11 @@ func (db *DB) CreateComment(adId int, userId int, comment models.Comment) (model
 	err = db.db.QueryRow(checkAdExist, adId).Scan(&authorId)
 	if err == pgx.ErrNoRows {
 		return models.CommentForUser{}, EMPTY_RESULT
+	}
+	hidden := false
+	err = db.db.QueryRow(CheckAdHidden, adId).Scan(&hidden)
+	if hidden {
+		return models.CommentForUser{}, FORBIDDEN
 	}
 	commentId := 0
 	err = db.db.QueryRow(CreateComment, adId, comment.Text, userId).Scan(&commentId)
@@ -120,7 +126,13 @@ func (db *DB) DeleteComment(commentId int, userId int) int {
 		return EMPTY_RESULT
 	}
 
-	if authorId != userId {
+	var allow = false
+	for _, id := range WHITE_LIST {
+		if userId == id {
+			allow = true
+		}
+	}
+	if !allow && authorId != userId {
 		return FORBIDDEN
 	}
 

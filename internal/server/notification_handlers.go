@@ -52,7 +52,7 @@ func (server *Server) GetCentrifugoToken(w http.ResponseWriter, r *http.Request)
 		WriteToResponse(w, http.StatusInternalServerError, fmt.Errorf("server cannot get userId from cookie"))
 		return
 	}
-	token, err := GenerateCentrifugoToken(userId, 60 * 24, []byte(server.config.Secret))
+	token, err := GenerateCentrifugoToken(userId, 60*24, []byte(server.config.Secret))
 	if err != nil {
 		WriteToResponse(w, http.StatusInternalServerError, err)
 		return
@@ -63,4 +63,3 @@ func (server *Server) GetCentrifugoToken(w http.ResponseWriter, r *http.Request)
 func (server *Server) TestCentrifugo(w http.ResponseWriter, r *http.Request) {
 	server.NotificationSender.PublishTest(r.Context())
 }
-

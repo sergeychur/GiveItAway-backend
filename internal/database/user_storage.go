@@ -1,10 +1,11 @@
 package database
 
 import (
-	"github.com/sergeychur/give_it_away/internal/models"
-	"gopkg.in/jackc/pgx.v2"
 	"log"
 	"time"
+
+	"github.com/sergeychur/give_it_away/internal/models"
+	"gopkg.in/jackc/pgx.v2"
 )
 
 const (
@@ -16,26 +17,29 @@ const (
 	GetUserById = "SELECT u.vk_id, u.name, u.surname, u.photo_url" +
 		" FROM users u WHERE vk_id = $1"
 
-	CreateUser  = "INSERT INTO users (vk_id, name, surname, photo_url) VALUES ($1, $2, $3, $4)"
+	CreateUser = "INSERT INTO users (vk_id, name, surname, photo_url) VALUES ($1, $2, $3, $4)"
 
 	GrantInitialCarma = "UPDATE users_carma SET current_carma = $1"
 
 	GetReceived = "SELECT a.ad_id, u.vk_id, u.name, u.surname, u.photo_url, a.header, a.region," +
 		" a.district, a.ad_type, a.ls_enabled, a.comments_enabled, a.extra_enabled, a.extra_field, a.creation_datetime, a.status," +
-		" a.category, a.comments_count, a.hidden, a.metro FROM deal d JOIN (SELECT deal_id FROM deal WHERE subscriber_id = $1" +
+		" a.category, a.subcat_list, a.subcat, a.comments_count, a.hidden, a.metro FROM deal d JOIN (SELECT deal_id FROM deal WHERE subscriber_id = $1" +
 		" AND status = 'success' ORDER BY deal_id LIMIT $2 OFFSET $3) l ON (l.deal_id = d.deal_id) JOIN ad a ON (d.ad_id = a.ad_id)" +
 		" JOIN users u ON (a.author_id = u.vk_id) ORDER BY d.deal_id"
 
 	GetGiven = "SELECT a.ad_id, u.vk_id, u.name, u.surname, u.photo_url, a.header, a.region," +
 		" a.district, a.ad_type, a.ls_enabled, a.comments_enabled, a.extra_enabled, a.extra_field, a.creation_datetime, a.status," +
-		" a.category, a.comments_count, a.hidden, a.metro FROM ad a JOIN (SELECT ad_id FROM ad WHERE status = 'closed'" +
+		" a.category, a.subcat_list, a.subcat, a.comments_count, a.hidden, a.metro FROM ad a JOIN (SELECT ad_id FROM ad WHERE status = 'closed'" +
 		" AND author_id = $1 ORDER BY ad_id LIMIT $2 OFFSET $3) l ON (l.ad_id = a.ad_id) JOIN users u ON (a.author_id = u.vk_id) ORDER BY ad_id"
 
 	GetWanted = "SELECT a.ad_id, u.vk_id, u.name, u.surname, u.photo_url, a.header, a.region," +
 		" a.district, a.ad_type, a.ls_enabled, a.comments_enabled, a.extra_enabled, a.extra_field, a.creation_datetime, a.status," +
-		" a.category, a.comments_count, a.hidden, a.metro FROM ad_subscribers a_s JOIN (SELECT ad_subscribers_id FROM ad_subscribers WHERE subscriber_id = $1" +
+		" a.category, a.subcat_list, a.subcat, a.comments_count, a.hidden, a.metro FROM ad_subscribers a_s JOIN (SELECT ad_subscribers_id FROM ad_subscribers WHERE subscriber_id = $1" +
 		" ORDER BY ad_subscribers_id LIMIT $2 OFFSET $3) l ON (l.ad_subscribers_id = a_s.ad_subscribers_id) JOIN ad a ON (a_s.ad_id = a.ad_id)" +
 		" JOIN users u ON (a.author_id = u.vk_id) ORDER BY a_s.ad_subscribers_id"
+
+	GetSendNotificationsToPM = "SELECT send_notifications_to_pm From users where vk_id=$1"
+	SetSendNotificationsToPM = "UPDATE users SET send_notifications_to_pm = $1 where vk_id=$2"
 )
 
 func (db *DB) GetUserProfile(userId int) (models.UserForProfile, int) {
@@ -90,6 +94,8 @@ func (db *DB) GetGiven(userId, page, rowsPerPage int) ([]models.AdForUsers, int)
 		return nil, EMPTY_RESULT
 	}
 	if err != nil {
+		log.Println("Error in GIVEN")
+		log.Println(err)
 		return nil, DB_ERROR
 	}
 	ads := make([]models.AdForUsers, 0)
@@ -97,6 +103,8 @@ func (db *DB) GetGiven(userId, page, rowsPerPage int) ([]models.AdForUsers, int)
 	for rows.Next() {
 		ads, err = db.WorkWithOneAd(rows, ads)
 		if err != nil {
+			log.Println("Error in GIVEN")
+			log.Println(err)
 			return nil, DB_ERROR
 		}
 	}
@@ -113,6 +121,8 @@ func (db *DB) GetReceived(userId, page, rowsPerPage int) ([]models.AdForUsers, i
 		return nil, EMPTY_RESULT
 	}
 	if err != nil {
+		log.Println("Error in received")
+		log.Println(err)
 		return nil, DB_ERROR
 	}
 	ads := make([]models.AdForUsers, 0)
@@ -120,6 +130,8 @@ func (db *DB) GetReceived(userId, page, rowsPerPage int) ([]models.AdForUsers, i
 	for rows.Next() {
 		ads, err = db.WorkWithOneAd(rows, ads)
 		if err != nil {
+			log.Println("Error in received")
+			log.Println(err)
 			return nil, DB_ERROR
 		}
 	}
@@ -136,6 +148,8 @@ func (db *DB) GetWanted(userId, page, rowsPerPage int) ([]models.AdForUsers, int
 		return nil, EMPTY_RESULT
 	}
 	if err != nil {
+		log.Println("Error in wanted")
+		log.Println(err)
 		return nil, DB_ERROR
 	}
 	ads := make([]models.AdForUsers, 0)
@@ -143,6 +157,8 @@ func (db *DB) GetWanted(userId, page, rowsPerPage int) ([]models.AdForUsers, int
 	for rows.Next() {
 		ads, err = db.WorkWithOneAd(rows, ads)
 		if err != nil {
+			log.Println("Error in wanted")
+			log.Println(err)
 			return nil, DB_ERROR
 		}
 	}
@@ -150,4 +166,27 @@ func (db *DB) GetWanted(userId, page, rowsPerPage int) ([]models.AdForUsers, int
 		return ads, EMPTY_RESULT
 	}
 	return ads, FOUND
+}
+
+func (db *DB) GetPermissoinToPM(userId int) (bool, int) {
+	row := db.db.QueryRow(GetSendNotificationsToPM, userId)
+	var canSend bool
+	err := row.Scan(&canSend)
+	if err == pgx.ErrNoRows {
+		return canSend, EMPTY_RESULT
+	}
+	if err != nil {
+		log.Println(err.Error())
+		return canSend, DB_ERROR
+	}
+	return canSend, FOUND
+}
+
+func (db *DB) ChangePermissoinToPM(userId int, canSend bool) int {
+	_, err := db.db.Exec(SetSendNotificationsToPM, canSend, userId)
+	if err != nil {
+		return DB_ERROR
+	}
+	return CREATED
+
 }

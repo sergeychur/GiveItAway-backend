@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
+	"time"
 )
 
 func (server *Server) CreateAd(w http.ResponseWriter, r *http.Request) {
@@ -29,6 +30,29 @@ func (server *Server) CreateAd(w http.ResponseWriter, r *http.Request) {
 	//	WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("wrong feedback type"))
 	//	return
 	//}
+	now := time.Now()
+	_, ok := server.AntiFloodAdMap[ad.AuthorId]
+	if !ok {
+		server.AntiFloodAdMap[ad.AuthorId] = make([]time.Time, 1)
+		server.AntiFloodAdMap[ad.AuthorId][0] = time.Now()
+	} else {
+		n := 0
+		// filter slice in place
+		for _, x := range server.AntiFloodAdMap[ad.AuthorId] {
+			if now.Sub(x) <= time.Duration(server.config.MinutesAntiFlood) * time.Minute {
+				server.AntiFloodAdMap[ad.AuthorId][n] = x
+				n++
+			}
+		}
+		server.AntiFloodAdMap[ad.AuthorId] = server.AntiFloodAdMap[ad.AuthorId][:n]
+
+		// add new request time
+		server.AntiFloodAdMap[ad.AuthorId] = append(server.AntiFloodAdMap[ad.AuthorId], now)
+		if len(server.AntiFloodAdMap[ad.AuthorId]) > server.config.MaxAdsAntiFlood {
+			WriteToResponse(w, http.StatusTooManyRequests, nil)
+			return
+		}
+	}
 	status, adId := server.db.CreateAd(ad)
 	DealRequestFromDB(w, &adId, status)
 }

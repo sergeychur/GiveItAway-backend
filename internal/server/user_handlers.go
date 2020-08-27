@@ -2,12 +2,13 @@ package server
 
 import (
 	"fmt"
+	"net/http"
+	"strconv"
+
 	"github.com/go-chi/chi"
 	"github.com/sergeychur/give_it_away/internal/database"
 	"github.com/sergeychur/give_it_away/internal/global_constants"
 	"github.com/sergeychur/give_it_away/internal/models"
-	"net/http"
-	"strconv"
 )
 
 func (server *Server) AuthUser(w http.ResponseWriter, r *http.Request) {
@@ -33,7 +34,7 @@ func (server *Server) AuthUser(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	err = SetJWTToCookie([]byte(server.config.Secret), userId, w, 60 * 24, server.CookieField)
+	err = SetJWTToCookie([]byte(server.config.Secret), userId, w, 60*24, server.CookieField)
 	if err != nil {
 		WriteToResponse(w, http.StatusInternalServerError, fmt.Errorf("auth failed"))
 		return
@@ -152,4 +153,35 @@ func (server *Server) GetWanted(w http.ResponseWriter, r *http.Request) {
 	DealRequestFromDB(w, ads, status)
 }
 
+func (server *Server) GetUserPermissionToPM(w http.ResponseWriter, r *http.Request) {
+	userIDStr := chi.URLParam(r, "user_id")
+	userID, err := strconv.Atoi(userIDStr)
+	if err != nil {
+		WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("id should be int"))
+		return
+	}
+	canSend, status := server.db.GetPermissoinToPM(userID)
+	var canSendModel = models.CanSend{
+		canSend,
+	}
+	DealRequestFromDB(w, canSendModel, status)
+}
 
+func (server *Server) PostUserPermissionToPM(w http.ResponseWriter, r *http.Request) {
+	userIDStr := chi.URLParam(r, "user_id")
+	userID, err := strconv.Atoi(userIDStr)
+	if err != nil {
+		WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("id should be int"))
+		return
+	}
+
+	var model models.CanSend
+	err = ReadFromBody(r, w, &model)
+	if err != nil {
+		return
+	}
+
+	status := server.db.ChangePermissoinToPM(userID, model.CanSend)
+
+	DealRequestFromDB(w, nil, status)
+}

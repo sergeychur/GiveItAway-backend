@@ -11,17 +11,17 @@ const (
 	ZerofyIfExceeded = "UPDATE users_carma SET cost_frozen = 1, casback_frozen = 1," +
 		" last_updated = (now() at time zone 'utc') WHERE user_id = $1" +
 		" AND last_updated - (now() at time zone 'utc') >= '%s'::interval AND frozen_carma = 0"
-	checkIfAuction        = "SELECT ad_type = 'auction' FROM ad where ad_id = $1"
-	checkIfEnoughCarma    = "SELECT current_carma - frozen_carma >= $1 * cost_frozen FROM users_carma WHERE user_id = $2"
+	checkIfAuction     = "SELECT ad_type = 'auction' FROM ad where ad_id = $1"
+	checkIfEnoughCarma = "SELECT current_carma - frozen_carma >= $1 * cost_frozen FROM users_carma WHERE user_id = $2"
 
-	getMaxBidInAuction = "select bid from ad_subscribers where ad_id = $1 order by bid desc limit 1" // todo: повесить индекс
+	getMaxBidInAuction           = "select bid from ad_subscribers where ad_id = $1 order by bid desc limit 1" // todo: повесить индекс
 	getMaxBidInAuctionWithUserId = "select bid, subscriber_id from ad_subscribers where ad_id = $1 order by bid desc limit 1"
-	getMaxBidUserInAuction = "select a_s.bid, u.vk_id, u.name, u.surname, u.photo_url from ad_subscribers a_s" +
+	getMaxBidUserInAuction       = "select a_s.bid, u.vk_id, u.name, u.surname, u.photo_url from ad_subscribers a_s" +
 		" join users u on (u.vk_id = a_s.subscriber_id) where a_s.ad_id = $1 order by a_s.bid desc limit 1"
 	getUserBid = "select bid from ad_subscribers where ad_id = $1 and subscriber_id = $2"
 
 	checkIfEnoughCarmaAuction = "SELECT current_carma - frozen_carma > $1 FROM users_carma WHERE user_id = $2"
-	updateFrozenSubscribe = "UPDATE users_carma SET frozen_carma = frozen_carma + $1 * cost_frozen WHERE user_id = $2 " +
+	updateFrozenSubscribe     = "UPDATE users_carma SET frozen_carma = frozen_carma + $1 * cost_frozen WHERE user_id = $2 " +
 		"RETURNING $1 * cost_frozen"
 	updateFrozenSubscribeAuct = "UPDATE users_carma SET frozen_carma = frozen_carma + $1 WHERE user_id = $2"
 	updateCostFrozenSubscribe = "UPDATE users_carma SET cost_frozen = cost_frozen + 1 WHERE user_id = $1"
@@ -30,7 +30,7 @@ const (
 		"WHERE user_id = $2"
 
 	GetCarmaToReturnUnsubscribe = "SELECT bid FROM ad_subscribers WHERE ad_id = $1 AND subscriber_id = $2"
-	updateCarmaUnsubscribeAuct = "UPDATE users_carma SET frozen_carma = frozen_carma - $1 WHERE user_id = $2"
+	updateCarmaUnsubscribeAuct  = "UPDATE users_carma SET frozen_carma = frozen_carma - $1 WHERE user_id = $2"
 
 	updateCarmaDeleteNonAuct = "UPDATE users_carma SET cost_frozen = cost_frozen -1, frozen_carma = frozen_carma - (cost_frozen - 1) * $1 " +
 		"WHERE user_id IN (SELECT subscriber_id FROM ad_subscribers WHERE ad_id = $2);"
@@ -40,10 +40,9 @@ const (
 	GetUserCostFreeze = "SELECT cost_frozen FROM users_carma WHERE user_id = $1"
 
 	updateBid = "update ad_subscribers set bid=$1 where ad_id=$2 and subscriber_id=$3"
-
 )
 
-func (db *DB) DealWithCarmaSubscribe(tx *pgx.Tx, adId, userId int) (bool, int, error, *models.Notification){
+func (db *DB) DealWithCarmaSubscribe(tx *pgx.Tx, adId, userId int) (bool, int, error, *models.Notification) {
 	_, err := tx.Exec(fmt.Sprintf(ZerofyIfExceeded, global_constants.ZeroingTime), userId)
 	if err != nil {
 		return false, 0, err, nil
@@ -154,7 +153,7 @@ func (db *DB) GiveCarmaBackDelete(tx *pgx.Tx, adId, userId int) error {
 	return err
 }
 
-func (db *DB) GetMaxBidForAd (adId int) (models.Bid, int) {
+func (db *DB) GetMaxBidForAd(adId int) (models.Bid, int) {
 	bid := models.Bid{}
 	err := db.db.QueryRow(getMaxBidInAuction, adId).Scan(&bid.Bid)
 	if err == pgx.ErrNoRows {
@@ -166,7 +165,7 @@ func (db *DB) GetMaxBidForAd (adId int) (models.Bid, int) {
 	return bid, FOUND
 }
 
-func (db *DB) GetMaxBidUserForAd (adId int) (models.BidUser, int) {
+func (db *DB) GetMaxBidUserForAd(adId int) (models.BidUser, int) {
 	bid := models.BidUser{}
 	isAuction := false
 	err := db.db.QueryRow(checkIfAuction, adId).Scan(&isAuction)
@@ -267,7 +266,10 @@ func (db *DB) IncreaseBid(adId, userId int) (models.Notification, int) {
 	if err != nil {
 		return models.Notification{}, DB_ERROR
 	}
-	note, err := db.FormMaxBidUpdatedNote(adId, prevMaxId, maxBid + 1, userId)
+	if prevMaxId == userId {
+		return models.Notification{WhomId: global_constants.NoNote}, OK
+	}
+	note, err := db.FormMaxBidUpdatedNote(adId, prevMaxId, maxBid+1, userId)
 	if err != nil {
 		return models.Notification{}, DB_ERROR
 	}

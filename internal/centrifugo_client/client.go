@@ -4,21 +4,39 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/centrifugal/gocent"
-	"github.com/sergeychur/give_it_away/internal/models"
 	"log"
+
+	"github.com/centrifugal/gocent"
+	"github.com/go-vk-api/vk"
+	"github.com/sergeychur/give_it_away/internal/database"
+	"github.com/sergeychur/give_it_away/internal/models"
+	"github.com/sergeychur/give_it_away/internal/notifications"
 )
 
 type CentrifugoClient struct {
-	client *gocent.Client
+	client   *gocent.Client
+	vkClient *vk.Client
+	db       *database.DB
 }
 
-func NewClient(host string, port string, apiKey string) *CentrifugoClient {
+func NewClient(host, port, apiKey, vkApiKey string, db *database.DB) *CentrifugoClient {
 	cl := new(CentrifugoClient)
+
 	cl.client = gocent.New(gocent.Config{
 		Addr: host + ":" + port,
 		Key:  apiKey,
 	})
+
+	vkClient, err := vk.NewClientWithOptions(
+		vk.WithToken(vkApiKey),
+	)
+	if err != nil {
+		log.Print("init error", err)
+		return cl
+	}
+	cl.vkClient = vkClient
+	cl.db = db
+
 	return cl
 }
 
@@ -38,6 +56,30 @@ func (cl *CentrifugoClient) SendOneClient(ctx context.Context, notification mode
 	if err != nil {
 		log.Println(err)
 		return
+	}
+	log.Print("prepare", cl.vkClient, cl.db)
+	if cl.vkClient != nil && cl.db != nil {
+		log.Print("get is", notification)
+		var b, status = cl.db.GetPermissoinToPM(whomId)
+		if status == database.FOUND && b {
+			var text, err = notifications.NotificationToText(notification)
+			if err != nil {
+				log.Print("notification payload error is", err)
+			} else {
+				err = cl.vkClient.CallMethod("messages.send", vk.RequestParams{
+					"peer_id":   whomId,
+					"message":   text,
+					"random_id": 0,
+				}, nil)
+				if err != nil {
+					log.Print("vkClient error is", err)
+				}
+			}
+
+		} else {
+			log.Print("database status", status)
+		}
+
 	}
 	err = cl.client.Publish(ctx, channel, data)
 	if err != nil {
