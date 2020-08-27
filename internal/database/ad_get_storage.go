@@ -299,6 +299,7 @@ func (db *DB) GetAds(page int, rowsPerPage int, params map[string][]string, user
 	} else {
 		if !admin {
 			whereClause += And + fmt.Sprintf(" (hidden = false OR author_id = $%d)", len(strArr)+1)
+			strArr = append(strArr, authorArr[0])
 		}
 	}
 
