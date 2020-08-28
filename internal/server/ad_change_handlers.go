@@ -187,7 +187,7 @@ func (server *Server) EditAd(w http.ResponseWriter, r *http.Request) {
 
 	status := server.db.EditAd(adId, userId, ad)
 	if status == database.OK {
-		retVal, getStatus := server.db.GetAd(adId, userId)
+		retVal, getStatus := server.db.GetAd(adId, userId, server.config.MinutesAntiFlood, server.config.MaxViewsAd)
 		if getStatus != database.OK {
 			log.Println("cannot get ad, strange")
 		} else {
