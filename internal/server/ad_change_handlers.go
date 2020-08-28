@@ -70,6 +70,16 @@ func (server *Server) AddPhotoToAd(w http.ResponseWriter, r *http.Request) {
 	adId, err := strconv.Atoi(adIdStr)
 	if err != nil {
 		WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("id should be int"))
+		return
+	}
+	canUpload, stat := server.db.CanUploadPhoto(adId, server.config.MaxPhotosAd)
+	if stat != database.OK {
+		WriteToResponse(w, http.StatusInternalServerError, fmt.Errorf("database error"))
+		return
+	}
+	if !canUpload {
+		WriteToResponse(w, http.StatusForbidden, fmt.Errorf("too musch photos"))
+		return
 	}
 	pathToPhoto, err := filesystem.UploadFile(w, r, function,
 		server.config.UploadPath, fmt.Sprintf("post_%d", adId))

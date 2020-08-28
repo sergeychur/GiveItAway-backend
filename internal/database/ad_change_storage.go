@@ -29,6 +29,7 @@ const (
 	ExtraFieldGeoPositionEdit     = ", extra_field=$14, geo_position=ST_SetSRID(ST_POINT($15, $16), 4326), lat=$15, long=$16"
 
 	// add photo to ad query
+	CountAdPhotos = "SELECT COUNT(*) from ad_photos WHERE ad_id = $1"
 	checkAdExist = "SELECT author_id FROM ad WHERE ad_id = $1"
 	AddPhotoToAd = "INSERT INTO ad_photos (ad_id, photo_url) VALUES ($1, $2)"
 
@@ -390,4 +391,22 @@ func (db *DB) SetAdVisible(adId int, userId int) int {
 		return DB_ERROR
 	}
 	return OK
+}
+
+func (db *DB) CanUploadPhoto(adId int, maxPhotoNum int) (bool, int) {
+	photoNum := 0
+	err := db.db.QueryRow(CountAdPhotos, adId).Scan(&photoNum)
+
+	if err == pgx.ErrNoRows {
+		log.Println(err)
+		return true, OK
+	}
+	log.Println("has ", photoNum, " photos")
+	if err != nil {
+		return false, DB_ERROR
+	}
+	if photoNum < maxPhotoNum {
+		return true, OK
+	}
+	return false, OK
 }
