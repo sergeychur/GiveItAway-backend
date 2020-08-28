@@ -28,6 +28,7 @@ type Config struct {
 	MaxAdsAntiFlood int 	 `json:"max_ads_anti_flood"`
 	MaxPhotosAd int `json:"max_photos_ad"`
 	MaxViewsAd int `json:"max_views_ad"`
+	MaxCommentLen int `json:"max_comment_len"`
 }
 
 func NewConfig(pathToConfig string) (*Config, error) {
