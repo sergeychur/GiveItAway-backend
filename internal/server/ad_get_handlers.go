@@ -57,6 +57,6 @@ func (server *Server) GetAdInfo(w http.ResponseWriter, r *http.Request) {
 		WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("id should be int"))
 		return
 	}
-	ad, status := server.db.GetAd(adId, userId)
+	ad, status := server.db.GetAd(adId, userId, server.config.MinutesAntiFlood, server.config.MaxViewsAd)
 	DealRequestFromDB(w, &ad, status)
 }

@@ -247,11 +247,22 @@ func (db *DB) FormMaxBidUpdatedNote(adId, whomId, newBid, newUserId int) (models
 	if err != nil {
 		return models.Notification{}, err
 	}
+	ad := models.AdForNotification{}
+
+	spare := 0
+	err = db.db.QueryRow(GetAdForNotif, adId).Scan(&ad.AdId, &ad.Header, &ad.Status, &spare)
+	if err == pgx.ErrNoRows {
+		return models.Notification{}, fmt.Errorf("no ad")
+	}
+	if err != nil {
+		return models.Notification{}, err
+	}
 	note := models.Notification{
 		AdId:             int64(adId),
 		WhomId:           whomId,
 		NotificationType: notifications.MAX_BID_UPDATED,
 		Payload: models.MaxBidUpdated{
+			Ad: ad,
 			NewBid: newBid,
 			User:   user,
 		},

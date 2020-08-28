@@ -25,6 +25,8 @@ type DB struct {
 	databaseName string
 	host         string
 	port         uint16
+
+	AntiFloodAdMap map[int]map[int][]time.Time
 }
 
 func NewDB(user string, password string, dataBaseName string,
@@ -35,6 +37,8 @@ func NewDB(user string, password string, dataBaseName string,
 	db.password = password
 	db.host = host
 	db.port = port
+
+	db.AntiFloodAdMap = make(map[int]map[int][]time.Time)
 	return db
 }
 

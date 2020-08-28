@@ -47,7 +47,7 @@ const (
 		" ON CONFLICT (ad_id) DO UPDATE SET views_count = ad_view.views_count + 1"
 )
 
-func (db *DB) GetAd(adId int, userId int) (models.AdForUsersDetailed, int) {
+func (db *DB) GetAd(adId int, userId int, MinutesAntiFlood int64, maxViews int) (models.AdForUsersDetailed, int) {
 	row := db.db.QueryRow(GetAdById, adId)
 	ad := models.AdForUsersDetailed{}
 	ad.GeoPosition = new(models.GeoPosition)
@@ -72,10 +72,8 @@ func (db *DB) GetAd(adId int, userId int) (models.AdForUsersDetailed, int) {
 		log.Println(err.Error())
 		return ad, DB_ERROR
 	}
-	_, err = db.db.Exec(ViewAd, adId)
-	if err != nil {
-		return models.AdForUsersDetailed{}, DB_ERROR
-	}
+	db.ViewAd(userId, adId, int(MinutesAntiFlood), maxViews)
+
 	ad.GeoPosition.Available = true
 	loc, _ := time.LoadLocation("UTC")
 	timeStamp.In(loc)
@@ -299,6 +297,7 @@ func (db *DB) GetAds(page int, rowsPerPage int, params map[string][]string, user
 	} else {
 		if !admin {
 			whereClause += And + fmt.Sprintf(" (hidden = false OR author_id = $%d)", len(strArr)+1)
+			strArr = append(strArr, authorArr[0])
 		}
 	}
 
@@ -392,4 +391,37 @@ func (db *DB) GetAdPhotos(adId int64) ([]models.AdPhoto, error) {
 		photoArr = append(photoArr, adPhoto)
 	}
 	return photoArr, nil
+}
+
+func (db *DB) ViewAd(AuthorId, AdId, MinutesAntiFlood, maxViews int) {
+	now := time.Now()
+	_, ok := db.AntiFloodAdMap[AdId]
+	if !ok {
+		db.AntiFloodAdMap[AdId] = make(map[int][]time.Time, 1)
+	}
+	_, ok = db.AntiFloodAdMap[AdId][AuthorId]
+	if !ok {
+		db.AntiFloodAdMap[AdId][AuthorId] = make([]time.Time, 1)
+		db.AntiFloodAdMap[AdId][AuthorId][0] = time.Now()
+	} else {
+		n := 0
+		// filter slice in place
+		for _, x := range db.AntiFloodAdMap[AdId][AuthorId] {
+			if now.Sub(x) <= time.Duration(MinutesAntiFlood) * time.Minute {
+				db.AntiFloodAdMap[AdId][AuthorId][n] = x
+				n++
+			}
+		}
+		db.AntiFloodAdMap[AdId][AuthorId] = db.AntiFloodAdMap[AdId][AuthorId][:n]
+
+		// add new request time
+		db.AntiFloodAdMap[AdId][AuthorId] = append(db.AntiFloodAdMap[AdId][AuthorId], now)
+		if len(db.AntiFloodAdMap[AdId][AuthorId]) > maxViews {
+			return
+		}
+	}
+	_, err := db.db.Exec(ViewAd, AdId)
+	if err != nil {
+		log.Println(err)
+	}
 }
