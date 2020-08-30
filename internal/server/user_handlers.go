@@ -168,11 +168,9 @@ func (server *Server) GetUserPermissionToPM(w http.ResponseWriter, r *http.Reque
 }
 
 func (server *Server) PostUserPermissionToPM(w http.ResponseWriter, r *http.Request) {
-	userIDStr := chi.URLParam(r, "user_id")
-	userID, err := strconv.Atoi(userIDStr)
+	userID, err := server.GetUserIdFromCookie(r)
 	if err != nil {
-		WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("id should be int"))
-		return
+		WriteToResponse(w, http.StatusInternalServerError, fmt.Errorf("server cannot get userId from cookie"))
 	}
 
 	var model models.CanSend

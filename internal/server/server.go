@@ -92,8 +92,8 @@ func NewServer(pathToConfig string) (*Server, error) {
 	subRouter.Get(fmt.Sprintf("/user/{user_id:%s}/profile", idPattern), server.GetUserInfo)
 	subRouter.Get(fmt.Sprintf("/user/{user_id:%s}/given", idPattern), server.GetGiven)
 	subRouter.Get(fmt.Sprintf("/user/{user_id:%s}/received", idPattern), server.GetReceived)
-	subRouter.Get(fmt.Sprintf("/user/{user_id:%s}/nots_pm", idPattern), server.GetUserPermissionToPM)
-	subRouter.Post(fmt.Sprintf("/user/{user_id:%s}/nots_pm", idPattern), server.PostUserPermissionToPM)
+	needLogin.Get(fmt.Sprintf("/user/{user_id:%s}/nots_pm", idPattern), server.GetUserPermissionToPM)
+	needLogin.Post(fmt.Sprintf("/user/{user_id:%s}/nots_pm", idPattern), server.PostUserPermissionToPM)
 
 	needLogin.Get("/post/wanted", server.GetWanted)
 
