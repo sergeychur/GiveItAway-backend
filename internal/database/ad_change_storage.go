@@ -21,12 +21,12 @@ const (
 	ExtraFieldGeoPosition     = ", $15, ST_SetSRID(ST_POINT($16, $17), 4326), $16, $17"
 
 	// edit ad query
-	EditAd = "UPDATE ad SET header=$1, text=$2, region=$3, district=$4, ad_type=$5, ls_enabled=$6, comments_enabled=$7, " +
-		"extra_enabled=$8, category=$9, subcat_list=$10, subcat=$11, metro=$12, full_adress=$13%s where ad_id=$%d"
+	EditAd = "UPDATE ad SET header=$1, text=$2, region=$3, district=$4, ls_enabled=$5, comments_enabled=$6, " +
+		"extra_enabled=$7, category=$8, subcat_list=$9, subcat=$10, metro=$11, full_adress=$12%s where ad_id=$%d"
 	NoExtraFieldNoGeoPositionEdit = ", extra_field=NULL"
-	NoExtraFieldGeoPositionEdit   = ", geo_position=ST_SetSRID(ST_POINT($14, $15), 4326), lat=$14, long=$15"
-	ExtraFieldNoGeoPositionEdit   = ", extra_field=$14"
-	ExtraFieldGeoPositionEdit     = ", extra_field=$14, geo_position=ST_SetSRID(ST_POINT($15, $16), 4326), lat=$15, long=$16"
+	NoExtraFieldGeoPositionEdit   = ", geo_position=ST_SetSRID(ST_POINT($13, $14), 4326), lat=$13, long=$14"
+	ExtraFieldNoGeoPositionEdit   = ", extra_field=$13"
+	ExtraFieldGeoPositionEdit     = ", extra_field=$13, geo_position=ST_SetSRID(ST_POINT($14, $15), 4326), lat=$14, long=$15"
 
 	// add photo to ad query
 	CountAdPhotos = "SELECT COUNT(*) from ad_photos WHERE ad_id = $1"
@@ -66,6 +66,10 @@ func (db *DB) CreateAd(ad models.Ad) (int, models.AdCreationResult) {
 		sign = 10
 	}
 	if ad.GeoPosition != nil {
+		if ad.GeoPosition.Latitude < -90 || ad.GeoPosition.Latitude > 90 ||
+			ad.GeoPosition.Longitude < -180 || ad.GeoPosition.Longitude > 180 {
+			return WRONG_INPUT, models.AdCreationResult{}
+		}
 		sign += 1
 	}
 	metro := pgx.NullString{String: ad.Metro}
@@ -267,6 +271,10 @@ func (db *DB) EditAd(adId int, userId int, ad models.Ad) int {
 		sign = 10
 	}
 	if ad.GeoPosition != nil {
+		if ad.GeoPosition.Latitude < -90 || ad.GeoPosition.Latitude > 90 ||
+			ad.GeoPosition.Longitude < -180 || ad.GeoPosition.Longitude > 180 {
+			return WRONG_INPUT
+		}
 		sign += 1
 	}
 	metro := pgx.NullString{String: ad.Metro}
@@ -290,22 +298,22 @@ func (db *DB) EditAd(adId int, userId int, ad models.Ad) int {
 
 	switch sign {
 	case 0:
-		query = fmt.Sprintf(EditAd, NoExtraFieldNoGeoPositionEdit, 14)
-		_, err = tx.Exec(query, ad.Header, ad.Text, ad.Region, ad.District, ad.AdType,
+		query = fmt.Sprintf(EditAd, NoExtraFieldNoGeoPositionEdit, 13)
+		_, err = tx.Exec(query, ad.Header, ad.Text, ad.Region, ad.District,
 			ad.LSEnabled, ad.CommentsEnabled, ad.ExtraEnabled, ad.Category, subcatList, subcat, adId, metro, fullAdress)
 	case 1:
-		query = fmt.Sprintf(EditAd, NoExtraFieldGeoPositionEdit, 16)
-		_, err = tx.Exec(query, ad.Header, ad.Text, ad.Region, ad.District, ad.AdType,
+		query = fmt.Sprintf(EditAd, NoExtraFieldGeoPositionEdit, 15)
+		_, err = tx.Exec(query, ad.Header, ad.Text, ad.Region, ad.District,
 			ad.LSEnabled, ad.CommentsEnabled, ad.ExtraEnabled,
 			ad.Category, subcatList, subcat, metro, fullAdress, ad.GeoPosition.Latitude, ad.GeoPosition.Longitude, adId)
 	case 10:
-		query = fmt.Sprintf(EditAd, ExtraFieldNoGeoPositionEdit, 15)
-		_, err = tx.Exec(query, ad.Header, ad.Text, ad.Region, ad.District, ad.AdType,
+		query = fmt.Sprintf(EditAd, ExtraFieldNoGeoPositionEdit, 14)
+		_, err = tx.Exec(query, ad.Header, ad.Text, ad.Region, ad.District,
 			ad.LSEnabled, ad.CommentsEnabled, ad.ExtraEnabled,
 			ad.Category, subcatList, subcat, metro, fullAdress, ad.ExtraField, adId)
 	case 11:
-		query = fmt.Sprintf(EditAd, ExtraFieldGeoPositionEdit, 17)
-		_, err = tx.Exec(query, ad.Header, ad.Text, ad.Region, ad.District, ad.AdType,
+		query = fmt.Sprintf(EditAd, ExtraFieldGeoPositionEdit, 16)
+		_, err = tx.Exec(query, ad.Header, ad.Text, ad.Region, ad.District,
 			ad.LSEnabled, ad.CommentsEnabled, ad.ExtraEnabled,
 			ad.Category, subcatList, subcat, metro, fullAdress,
 			ad.ExtraField, ad.GeoPosition.Latitude, ad.GeoPosition.Longitude, adId)
