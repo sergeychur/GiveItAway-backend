@@ -43,6 +43,7 @@ const (
 	GetAdSubscribersIds = "SELECT a_s.subscriber_id FROM ad_subscribers a_s WHERE a_s.ad_id = $1"
 
 	CheckAdHidden = "SELECT hidden FROM ad WHERE ad_id = $1"
+	CheckAdOffer = "SELECT status = offer FROM ad WHERE ad_id = $1"
 )
 
 func (db *DB) SubscribeToAd(adId int, userId int, priceCoeff int) (int, *models.Notification) {
@@ -66,6 +67,12 @@ func (db *DB) SubscribeToAd(adId int, userId int, priceCoeff int) (int, *models.
 	hidden := false
 	err = tx.QueryRow(CheckAdHidden, adId).Scan(&hidden)
 	if hidden {
+		return FORBIDDEN, nil
+	}
+
+	isOffer := false
+	err = tx.QueryRow(CheckAdOffer, adId).Scan(&isOffer)
+	if !isOffer {
 		return FORBIDDEN, nil
 	}
 
@@ -104,6 +111,12 @@ func (db *DB) UnsubscribeFromAd(adId int, userId int) int {
 	defer func() {
 		_ = tx.Rollback()
 	}()
+
+	isSubscriber := false
+	err = db.db.QueryRow(CheckIfSubscriber, adId, userId).Scan(&isSubscriber)
+	if !isSubscriber {
+		return FORBIDDEN
+	}
 	err = db.DealWithCarmaUnsubscribe(tx, adId, userId)
 	if err != nil {
 		return DB_ERROR

@@ -628,6 +628,8 @@ paths:
           description: "no auth"
         403:
           description: "ad under moderation"
+        413:
+          description: "length > 500"
         429:
           description: "floooooooooooooood"
   /comment/{comment_id}:

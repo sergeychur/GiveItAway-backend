@@ -63,6 +63,14 @@ func (server *Server) CommentAd(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
+	if len(comment.Text) > server.config.MaxCommentLen {
+		WriteToResponse(w, http.StatusRequestEntityTooLarge, nil)
+		return
+	}
+
+	if len(comment.Text) == 0 {
+		WriteToResponse(w, http.StatusBadRequest, nil)
+	}
 
 	now := time.Now()
 	_, ok := server.AntiFloodAdMap[userId]
@@ -129,6 +137,14 @@ func (server *Server) EditComment(w http.ResponseWriter, r *http.Request) {
 	err = ReadFromBody(r, w, &comment)
 	if err != nil {
 		return
+	}
+	if len(comment.Text) > server.config.MaxCommentLen {
+		WriteToResponse(w, http.StatusRequestEntityTooLarge, nil)
+		return
+	}
+
+	if len(comment.Text) == 0 {
+		WriteToResponse(w, http.StatusBadRequest, nil)
 	}
 	// todo: check
 	retVal, status := server.db.EditComment(commentId, userId, comment)
