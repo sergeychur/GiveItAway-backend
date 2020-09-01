@@ -48,6 +48,8 @@ const (
 
 	// set ad visible
 	SetVisible = "UPDATE ad SET hidden = false WHERE ad_id = $1"
+
+	CheckIfCanDeleteOrUpdate = "SELECT status != 'closed' AND status != 'aborted' FROM ad WHERE ad_id = $1"
 )
 
 func (db *DB) CreateAd(ad models.Ad) (int, models.AdCreationResult) {
@@ -175,7 +177,14 @@ func (db *DB) DeleteAd(adId int, userId int) int {
 	if !allow && authorId != userId {
 		return FORBIDDEN
 	}
-
+	canDelete := false
+	err = db.db.QueryRow(CheckIfCanDeleteOrUpdate, adId).Scan(&canDelete)
+	if err != nil {
+		return DB_ERROR
+	}
+	if !canDelete {
+		return FORBIDDEN
+	}
 	err = db.GiveCarmaBackDelete(tx, adId, userId)
 	if err != nil {
 		return DB_ERROR
@@ -294,6 +303,15 @@ func (db *DB) EditAd(adId int, userId int, ad models.Ad) int {
 	subcat := pgx.NullString{String: ad.SubCat}
 	if ad.SubCat != "" {
 		subcat.Valid = true
+	}
+
+	canUpdate := false
+	err = db.db.QueryRow(CheckIfCanDeleteOrUpdate, adId).Scan(&canUpdate)
+	if err != nil {
+		return DB_ERROR
+	}
+	if !canUpdate {
+		return FORBIDDEN
 	}
 
 	switch sign {

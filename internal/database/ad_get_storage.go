@@ -340,6 +340,7 @@ func (db *DB) WorkWithOneAd(rows *pgx.Rows, ads Ads) (Ads, error) {
 	subcatList := pgx.NullString{}
 	subcat := pgx.NullString{}
 	timeStamp := time.Time{}
+
 	err := rows.Scan(&ad.AdId, &ad.Author.VkId, &ad.Author.Name, &ad.Author.Surname,
 		&ad.Author.PhotoUrl, &ad.Header /*&ad.Text,*/, &ad.Region, &ad.District, &ad.AdType,
 		&ad.LSEnabled, &ad.CommentsEnabled, &ad.ExtraEnabled,
@@ -419,6 +420,21 @@ func (db *DB) ViewAd(AuthorId, AdId, MinutesAntiFlood, maxViews int) {
 		if len(db.AntiFloodAdMap[AdId][AuthorId]) > maxViews {
 			return
 		}
+	}
+
+	userId := 0
+	err1 := db.db.QueryRow(checkAdExist, &userId)
+	if err1 != nil {
+		log.Println("view ad error: ", err1)
+		return
+	}
+	for _, id := range WHITE_LIST {
+		if AuthorId == id {
+			return
+		}
+	}
+	if userId == AuthorId {
+		return
 	}
 	_, err := db.db.Exec(ViewAd, AdId)
 	if err != nil {
