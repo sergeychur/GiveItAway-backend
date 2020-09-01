@@ -290,6 +290,9 @@ func (db *DB) GetAds(page int, rowsPerPage int, params map[string][]string, user
 		}
 		if admin {
 			whereClause = ""
+			strArr = nil
+			innerSortByClause = "hidden DESC, " + innerSortByClause
+			outerSortByClause = innerSortByClause
 		} else {
 			//whereClause += And + fmt.Sprintf(" (hidden = false OR author_id = $%d)", len(strArr)+1)
 			strArr = append(strArr, userId)

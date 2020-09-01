@@ -5,6 +5,7 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/sergeychur/give_it_away/internal/database"
 	"github.com/sergeychur/give_it_away/internal/filesystem"
+	"github.com/sergeychur/give_it_away/internal/global_constants"
 	"github.com/sergeychur/give_it_away/internal/models"
 	"github.com/sergeychur/give_it_away/internal/notifications"
 	"log"
@@ -52,6 +53,11 @@ func (server *Server) CreateAd(w http.ResponseWriter, r *http.Request) {
 			WriteToResponse(w, http.StatusTooManyRequests, nil)
 			return
 		}
+	}
+	err, httpStatus := validateFields(ad)
+	if err != nil {
+		WriteToResponse(w, httpStatus, nil)
+		return
 	}
 	status, adId := server.db.CreateAd(ad)
 	DealRequestFromDB(w, &adId, status)
@@ -183,6 +189,11 @@ func (server *Server) EditAd(w http.ResponseWriter, r *http.Request) {
 	//	WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("wrong feedback type"))
 	//	return
 	//}
+	err, httpStatus := validateFields(ad)
+	if err != nil {
+		WriteToResponse(w, httpStatus, nil)
+		return
+	}
 	// TODO(EDIT): check this
 
 	status := server.db.EditAd(adId, userId, ad)
@@ -226,4 +237,26 @@ func (server *Server) SetVisible(w http.ResponseWriter, r *http.Request) {
 	}
 	status := server.db.SetAdVisible(adId, userId)
 	DealRequestFromDB(w, "OK", status)
+}
+
+func validateFields(ad models.Ad) (error, int) {
+	validationMap := map[string]int{
+		ad.Header: global_constants.MaxHeaderLen,
+		ad.Text: global_constants.MaxTextLen,
+		ad.SubCat: global_constants.MaxCategoryLen,
+		ad.SubCatList: global_constants.MaxCategoryLen,
+		ad.FullAdress: global_constants.MaxFullAdressLen,
+		ad.Metro: global_constants.MaxMetroLen,
+		ad.AdType: global_constants.MaxAdType,
+		ad.Category: global_constants.MaxCategoryLen,
+		ad.CreationDate: global_constants.MaxCreationDate,
+		ad.District: global_constants.MaxDistrict,
+	}
+	for field, length := range validationMap {
+		if len(field) > length {
+			log.Println(field, " is too large for ad")
+			return fmt.Errorf("too large"), http.StatusRequestEntityTooLarge
+		}
+	}
+	return nil, http.StatusOK
 }
