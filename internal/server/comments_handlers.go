@@ -65,13 +65,14 @@ func (server *Server) CommentAd(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	comment.Text = strings.Trim(comment.Text, " ")
-	if len(comment.Text) > server.config.MaxCommentLen {
+	if len([]rune(comment.Text)) > server.config.MaxCommentLen {
 		WriteToResponse(w, http.StatusRequestEntityTooLarge, nil)
 		return
 	}
 
-	if len(comment.Text) == 0 {
+	if len([]rune(comment.Text)) == 0 {
 		WriteToResponse(w, http.StatusBadRequest, nil)
+		return
 	}
 
 	now := time.Now()
@@ -141,13 +142,14 @@ func (server *Server) EditComment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	comment.Text = strings.Trim(comment.Text, " ")
-	if len(comment.Text) > server.config.MaxCommentLen {
+	if len([]rune(comment.Text)) > server.config.MaxCommentLen {
 		WriteToResponse(w, http.StatusRequestEntityTooLarge, nil)
 		return
 	}
 
-	if len(comment.Text) == 0 {
+	if len([]rune(comment.Text)) == 0 {
 		WriteToResponse(w, http.StatusBadRequest, nil)
+		return
 	}
 	// todo: check
 	retVal, status := server.db.EditComment(commentId, userId, comment)

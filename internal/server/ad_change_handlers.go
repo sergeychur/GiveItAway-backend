@@ -253,7 +253,7 @@ func validateFields(ad models.Ad) (error, int) {
 		ad.District: global_constants.MaxDistrict,
 	}
 	for field, length := range validationMap {
-		if len(field) > length {
+		if len([]rune(field)) > length {
 			log.Println(field, " is too large for ad")
 			return fmt.Errorf("too large"), http.StatusRequestEntityTooLarge
 		}
