@@ -290,6 +290,9 @@ func (db *DB) GetAds(page int, rowsPerPage int, params map[string][]string, user
 		}
 		if admin {
 			whereClause = ""
+			strArr = nil
+			innerSortByClause = "hidden DESC, " + innerSortByClause
+			outerSortByClause = innerSortByClause
 		} else {
 			//whereClause += And + fmt.Sprintf(" (hidden = false OR author_id = $%d)", len(strArr)+1)
 			strArr = append(strArr, userId)
@@ -423,9 +426,9 @@ func (db *DB) ViewAd(AuthorId, AdId, MinutesAntiFlood, maxViews int) {
 	}
 
 	userId := 0
-	err1 := db.db.QueryRow(checkAdExist, &userId)
-	if err1 != nil {
-		log.Println("view ad error: ", err1)
+	err := db.db.QueryRow(checkAdExist).Scan(&userId)
+	if err != nil {
+		log.Println("view ad error: ", err)
 		return
 	}
 	for _, id := range WHITE_LIST {
@@ -436,7 +439,7 @@ func (db *DB) ViewAd(AuthorId, AdId, MinutesAntiFlood, maxViews int) {
 	if userId == AuthorId {
 		return
 	}
-	_, err := db.db.Exec(ViewAd, AdId)
+	_, err = db.db.Exec(ViewAd, AdId)
 	if err != nil {
 		log.Println(err)
 	}

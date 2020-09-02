@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -63,6 +64,7 @@ func (server *Server) CommentAd(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
+	comment.Text = strings.Trim(comment.Text, " ")
 	if len(comment.Text) > server.config.MaxCommentLen {
 		WriteToResponse(w, http.StatusRequestEntityTooLarge, nil)
 		return
@@ -138,6 +140,7 @@ func (server *Server) EditComment(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
+	comment.Text = strings.Trim(comment.Text, " ")
 	if len(comment.Text) > server.config.MaxCommentLen {
 		WriteToResponse(w, http.StatusRequestEntityTooLarge, nil)
 		return

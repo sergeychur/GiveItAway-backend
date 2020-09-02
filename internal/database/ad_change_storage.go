@@ -2,10 +2,9 @@ package database
 
 import (
 	"fmt"
-	"log"
-
 	"github.com/sergeychur/give_it_away/internal/models"
 	"gopkg.in/jackc/pgx.v2"
+	"log"
 )
 
 const (
@@ -339,6 +338,12 @@ func (db *DB) EditAd(adId int, userId int, ad models.Ad) int {
 	if err != nil {
 		return DB_ERROR
 	}
+
+	_, err = tx.Exec(SetHidden, adId)
+	if err != nil {
+		return DB_ERROR
+	}
+
 	err = tx.Commit()
 	if err != nil {
 		return DB_ERROR
