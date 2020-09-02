@@ -53,7 +53,7 @@ func (db *DB) Start() error {
 	poolConf := pgx.ConnPoolConfig{
 		ConnConfig:     conf,
 		MaxConnections: 80,
-		AcquireTimeout: time.Duration(7 * time.Second),
+		AcquireTimeout: time.Duration(1 * time.Second),
 	}
 	dataBase, err := pgx.NewConnPool(poolConf)
 	if err != nil {
