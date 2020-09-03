@@ -426,7 +426,7 @@ func (db *DB) ViewAd(AuthorId, AdId, MinutesAntiFlood, maxViews int) {
 	}
 
 	userId := 0
-	err := db.db.QueryRow(checkAdExist).Scan(&userId)
+	err := db.db.QueryRow(checkAdExist, AdId).Scan(&userId)
 	if err != nil {
 		log.Println("view ad error: ", err)
 		return
