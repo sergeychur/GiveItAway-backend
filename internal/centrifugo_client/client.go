@@ -19,7 +19,7 @@ type CentrifugoClient struct {
 	db       *database.DB
 }
 
-func NewClient(host, port, apiKey, vkApiKey string, db *database.DB) *CentrifugoClient {
+func NewClient(host, port,  apiKey string, vkClient *vk.Client, db *database.DB) *CentrifugoClient {
 	cl := new(CentrifugoClient)
 
 	cl.client = gocent.New(gocent.Config{
@@ -27,13 +27,7 @@ func NewClient(host, port, apiKey, vkApiKey string, db *database.DB) *Centrifugo
 		Key:  apiKey,
 	})
 
-	vkClient, err := vk.NewClientWithOptions(
-		vk.WithToken(vkApiKey),
-	)
-	if err != nil {
-		log.Print("init error", err)
-		return cl
-	}
+
 	cl.vkClient = vkClient
 	cl.db = db
 

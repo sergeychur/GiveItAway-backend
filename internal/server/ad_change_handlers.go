@@ -198,7 +198,8 @@ func (server *Server) EditAd(w http.ResponseWriter, r *http.Request) {
 
 	status := server.db.EditAd(adId, userId, ad)
 	if status == database.OK {
-		retVal, getStatus := server.db.GetAd(adId, userId, server.config.MinutesAntiFlood, server.config.MaxViewsAd)
+		retVal, getStatus := server.db.GetAd(adId, userId, server.config.MinutesAntiFlood, server.config.MaxViewsAd,
+			server.VKClient, global_constants.CacheInvalidTime)
 		if getStatus != database.OK {
 			log.Println("cannot get ad, strange")
 		} else {

@@ -41,3 +41,10 @@ type UserForProfile struct {
 type CanSend struct {
 	CanSend bool `json:"can_send"`
 }
+
+type UserCacheCheck struct {
+	VkId int64
+	Name string
+	Surname string
+	PhotoURL string
+}

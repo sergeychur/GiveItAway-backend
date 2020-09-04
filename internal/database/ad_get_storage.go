@@ -2,6 +2,7 @@ package database
 
 import (
 	"fmt"
+	"github.com/go-vk-api/vk"
 	"log"
 	"strconv"
 	"strings"
@@ -22,14 +23,16 @@ const (
 	GetAdById = "SELECT a.ad_id, u.vk_id, u.name, u.surname, u.photo_url, a.header, a.text, a.region," +
 		" a.district, a.ad_type, a.ls_enabled, a.comments_enabled, a.extra_enabled, " +
 		"a.extra_field, a.creation_datetime, a.lat, a.long, a.status," +
-		" a.category, a.subcat_list, a.subcat, a.comments_count, aw.views_count, a.hidden, a.subscribers_count, a.metro, a.full_adress FROM ad a JOIN users u ON (a.author_id = u.vk_id) " +
+		" a.category, a.subcat_list, a.subcat, a.comments_count, aw.views_count, a.hidden, a.subscribers_count, a.metro," +
+		" a.full_adress, u.last_change_time FROM ad a JOIN users u ON (a.author_id = u.vk_id) " +
 		"JOIN ad_view aw ON (a.ad_id = aw.ad_id) WHERE a.ad_id = $1"
 
 	// get ads query
 	GetAds = "SELECT a.ad_id, u.vk_id, u.name, u.surname, u.photo_url, a.header, a.region," +
 		" a.district, a.ad_type, a.ls_enabled, a.comments_enabled, a.extra_enabled, " +
 		"a.extra_field, a.creation_datetime, a.status," +
-		" a.category, a.subcat_list, a.subcat, a.comments_count, a.hidden, a.metro FROM ad a JOIN users u ON (a.author_id = u.vk_id) " +
+		" a.category, a.subcat_list, a.subcat, a.comments_count, a.hidden, a.metro, u.last_change_time" +
+		" FROM ad a JOIN users u ON (a.author_id = u.vk_id) " +
 		"JOIN (SELECT ad_id FROM ad%s ORDER BY %s LIMIT $%d OFFSET $%d) l ON (l.ad_id = a.ad_id) ORDER BY %s"
 	And              = "AND"
 	Where            = " WHERE "
@@ -47,7 +50,8 @@ const (
 		" ON CONFLICT (ad_id) DO UPDATE SET views_count = ad_view.views_count + 1"
 )
 
-func (db *DB) GetAd(adId int, userId int, MinutesAntiFlood int64, maxViews int) (models.AdForUsersDetailed, int) {
+func (db *DB) GetAd(adId int, userId int, MinutesAntiFlood int64, maxViews int, client *vk.Client,
+	allowedDuration time.Duration) (models.AdForUsersDetailed, int) {
 	row := db.db.QueryRow(GetAdById, adId)
 	ad := models.AdForUsersDetailed{}
 	ad.GeoPosition = new(models.GeoPosition)
@@ -60,11 +64,12 @@ func (db *DB) GetAd(adId int, userId int, MinutesAntiFlood int64, maxViews int) 
 	fullAdress := pgx.NullString{}
 	subcatList := pgx.NullString{}
 	subcat := pgx.NullString{}
+	lastUpdated := time.Time{}
 	err := row.Scan(&ad.AdId, &ad.Author.VkId, &ad.Author.Name, &ad.Author.Surname,
 		&ad.Author.PhotoUrl, &ad.Header, &ad.Text, &ad.Region, &ad.District, &ad.AdType,
 		&ad.LSEnabled, &ad.CommentsEnabled, &ad.ExtraEnabled,
 		&extraFieldTry, &timeStamp, &lat, &long, &ad.Status, &ad.Category, &subcatList, &subcat,
-		&ad.CommentsCount, &ad.ViewsCount, &ad.Hidden, &ad.SubscribersNum, &metro, &fullAdress)
+		&ad.CommentsCount, &ad.ViewsCount, &ad.Hidden, &ad.SubscribersNum, &metro, &fullAdress, &lastUpdated)
 	if err == pgx.ErrNoRows {
 		return ad, EMPTY_RESULT
 	}
@@ -110,10 +115,17 @@ func (db *DB) GetAd(adId int, userId int, MinutesAntiFlood int64, maxViews int) 
 	if err != nil {
 		return ad, DB_ERROR
 	}
+	userCache, err := db.CheckVKUserCacheConsist(client, ad.Author.VkId, lastUpdated, allowedDuration)
+	if err == nil {
+		ad.Author.Name = userCache.Name
+		ad.Author.Surname = userCache.Surname
+		ad.Author.PhotoUrl = userCache.PhotoURL
+	}
 	return ad, FOUND
 }
 
-func (db *DB) GetAds(page int, rowsPerPage int, params map[string][]string, userId int) ([]models.AdForUsers, int) {
+func (db *DB) GetAds(page int, rowsPerPage int, params map[string][]string, userId int,
+	client *vk.Client, allowedDuration time.Duration) ([]models.AdForUsers, int) {
 	offset := rowsPerPage * (page - 1)
 	query := GetAds
 	whereClause := ""
@@ -319,7 +331,7 @@ func (db *DB) GetAds(page int, rowsPerPage int, params map[string][]string, user
 	}
 	defer rows.Close()
 	for rows.Next() {
-		ads, err = db.WorkWithOneAd(rows, ads)
+		ads, err = db.WorkWithOneAd(rows, ads, client, allowedDuration)
 		if err != nil {
 			return nil, DB_ERROR
 		}
@@ -332,7 +344,7 @@ func (db *DB) GetAds(page int, rowsPerPage int, params map[string][]string, user
 
 type Ads []models.AdForUsers
 
-func (db *DB) WorkWithOneAd(rows *pgx.Rows, ads Ads) (Ads, error) {
+func (db *DB) WorkWithOneAd(rows *pgx.Rows, ads Ads, client *vk.Client, allowedDuration time.Duration) (Ads, error) {
 	ad := new(models.AdForUsers)
 	ad.Author = new(models.User)
 	//ad.GeoPosition = new(models.GeoPosition)
@@ -344,11 +356,12 @@ func (db *DB) WorkWithOneAd(rows *pgx.Rows, ads Ads) (Ads, error) {
 	subcat := pgx.NullString{}
 	timeStamp := time.Time{}
 
+	lastUpdated := time.Time{}
 	err := rows.Scan(&ad.AdId, &ad.Author.VkId, &ad.Author.Name, &ad.Author.Surname,
 		&ad.Author.PhotoUrl, &ad.Header /*&ad.Text,*/, &ad.Region, &ad.District, &ad.AdType,
 		&ad.LSEnabled, &ad.CommentsEnabled, &ad.ExtraEnabled,
 		&extraFieldTry, &timeStamp /*&lat, &long,*/, &ad.Status, &ad.Category, &subcatList, &subcat,
-		&ad.CommentsCount, &ad.Hidden, &metro)
+		&ad.CommentsCount, &ad.Hidden, &metro, &lastUpdated)
 	if err != nil {
 		return nil, err
 	}
@@ -375,6 +388,15 @@ func (db *DB) WorkWithOneAd(rows *pgx.Rows, ads Ads) (Ads, error) {
 	if err != nil {
 		return nil, err
 	}
+	if client != nil {
+		userCache, err := db.CheckVKUserCacheConsist(client, ad.Author.VkId, lastUpdated, allowedDuration)
+		if err == nil {
+			ad.Author.Name = userCache.Name
+			ad.Author.Surname = userCache.Surname
+			ad.Author.PhotoUrl = userCache.PhotoURL
+		}
+	}
+
 	ads = append(ads, *ad)
 	return ads, nil
 }
@@ -426,7 +448,7 @@ func (db *DB) ViewAd(AuthorId, AdId, MinutesAntiFlood, maxViews int) {
 	}
 
 	userId := 0
-	err := db.db.QueryRow(checkAdExist).Scan(&userId)
+	err := db.db.QueryRow(checkAdExist, AdId).Scan(&userId)
 	if err != nil {
 		log.Println("view ad error: ", err)
 		return

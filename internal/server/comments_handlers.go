@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/go-chi/chi"
 	"github.com/sergeychur/give_it_away/internal/database"
+	"github.com/sergeychur/give_it_away/internal/global_constants"
 	"github.com/sergeychur/give_it_away/internal/models"
 	"log"
 	"net/http"
@@ -42,7 +43,8 @@ func (server *Server) GetAdComments(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	comments, status := server.db.GetComments(adId, page, rowsPerPage)
+	comments, status := server.db.GetComments(adId, page, rowsPerPage, server.VKClient,
+		global_constants.CacheInvalidTime)
 	DealRequestFromDB(w, comments, status)
 }
 
