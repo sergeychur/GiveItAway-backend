@@ -10,3 +10,6 @@ const (
 	MaxCreationDate = 100
 	MaxDistrict = 100
 )
+
+
+var PossibleTypes = []string{"auction", "random", "choice"}

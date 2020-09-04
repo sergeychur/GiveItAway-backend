@@ -258,5 +258,16 @@ func validateFields(ad models.Ad) (error, int) {
 			return fmt.Errorf("too large"), http.StatusRequestEntityTooLarge
 		}
 	}
+	isTypePossible := false
+	for _, adType := range global_constants.PossibleTypes {
+		if ad.AdType == adType {
+			isTypePossible = true
+			break
+		}
+	}
+	if !isTypePossible {
+		log.Printf("impossible type for ad: %s", ad.AdType)
+		return fmt.Errorf("impossible type for ad: %s", ad.AdType), http.StatusBadRequest
+	}
 	return nil, http.StatusOK
 }
