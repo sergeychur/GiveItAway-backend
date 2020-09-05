@@ -109,6 +109,9 @@ func NewServer(pathToConfig string) (*Server, error) {
 	needLogin.Get("/ws_token", server.GetCentrifugoToken)
 	subRouter.Get("/test_cent", server.TestCentrifugo)
 
+	// vk proxy
+	needLogin.Post("/proxy_to_vk/{method_name}", server.ProxyToVK)
+
 	r.Mount("/api/", subRouter)
 	subRouter.Mount("/", needLogin)
 
