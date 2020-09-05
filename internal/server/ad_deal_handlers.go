@@ -5,6 +5,7 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/sergeychur/give_it_away/internal/database"
 	"github.com/sergeychur/give_it_away/internal/global_constants"
+	notifications2 "github.com/sergeychur/give_it_away/internal/notifications"
 	"net/http"
 	"strconv"
 )
@@ -164,6 +165,12 @@ func (server *Server) CancelDeal(w http.ResponseWriter, r *http.Request) {
 	}
 	notifications, err := server.db.FormStatusChangedNotificationsByDeal(dealId)
 	status, cancelInfo := server.db.CancelDeal(dealId, userId)
+
+	if cancelInfo.CancelType == notifications2.AUTHOR_CANCELLED {
+		// TODO: check if works
+		server.db.DeleteInvalidNotesCancelDeal(notifications[0].AdId)
+	}
+
 	if status == database.OK { // TODO: mb go func
 		server.CancelDealSendUpd(err, cancelInfo, userId, notifications, r)
 	}

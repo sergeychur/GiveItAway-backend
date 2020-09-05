@@ -17,6 +17,8 @@ tags:
     description: "Вкладка обновлений, запросы на них"
   - name: "ws_token"
     description: "Получение токена для центрифуги"
+  - name: "vk_proxy"
+    description: "Проксирование запросов к vk api"
 schemes:
   - "https"
   - "http"
@@ -628,8 +630,6 @@ paths:
           description: "no auth"
         403:
           description: "ad under moderation"
-        413:
-          description: "length > 500"
         429:
           description: "floooooooooooooood"
   /comment/{comment_id}:
@@ -922,6 +922,31 @@ paths:
             $ref: "#/definitions/TokenObj"
         401:
           description: Unloginned
+
+  /vk_proxy/{method_name}:
+    post:
+      tags:
+        - "vk_proxy"
+      summary: "Проксировать запрос к API vk"
+      parameters:
+        - name: "method_name"
+          in: "path"
+          required: true
+          type: "string"
+          description: "name of vk api method"
+        - name: "other parameters"
+          in: "query"
+          type: "string"
+          description: "instead of this parameter we place parameters needed for api method"
+      responses:
+        200:
+          description: "OK"
+        401:
+          description: "unauthorized"
+        400:
+          description: "some parameters in request are invalid"
+        403:
+          description: "no response from vk api"
 
 
 definitions:

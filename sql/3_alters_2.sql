@@ -1,0 +1,1 @@
+ALTER TABLE users add column if not exists last_change_time TIMESTAMP WITH TIME ZONE default (now() at time zone 'utc');

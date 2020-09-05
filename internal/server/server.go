@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"github.com/go-vk-api/vk"
 	"log"
 	"net"
 	"net/http"
@@ -29,6 +30,7 @@ type Server struct {
 	CookieField        string
 	AntiFloodCommentMap map[int][]time.Time
 	AntiFloodAdMap map[int][]time.Time
+	VKClient *vk.Client
 }
 
 func NewServer(pathToConfig string) (*Server, error) {
@@ -107,6 +109,9 @@ func NewServer(pathToConfig string) (*Server, error) {
 	needLogin.Get("/ws_token", server.GetCentrifugoToken)
 	subRouter.Get("/test_cent", server.TestCentrifugo)
 
+	// vk proxy
+	needLogin.Post("/proxy_to_vk/{method_name}", server.ProxyToVK)
+
 	r.Mount("/api/", subRouter)
 	subRouter.Mount("/", needLogin)
 
@@ -119,11 +124,19 @@ func NewServer(pathToConfig string) (*Server, error) {
 	db := database.NewDB(server.config.DBUser, server.config.DBPass,
 		server.config.DBName, server.config.DBHost, uint16(dbPort))
 	server.db = db
+
+	server.VKClient, err = vk.NewClientWithOptions(
+		vk.WithToken(server.config.VKApiKey),
+	)
+	if err != nil {
+		log.Print("vk client init error", err)
+		return nil, err
+	}
 	server.NotificationSender = centrifugo_client.NewClient(
 		server.config.CentrifugoHost,
 		server.config.CentrifugoPort,
 		server.config.ApiKey,
-		server.config.VKApiKey,
+		server.VKClient,
 		db,
 	)
 	return server, nil

@@ -118,6 +118,7 @@ func (server *Server) DeleteAd(w http.ResponseWriter, r *http.Request) {
 		true, notifications.AD_DELETED)
 
 	status := server.db.DeleteAd(adId, userId)
+	server.db.DeleteInvalidNotesDelete(adId)
 	DealRequestFromDB(w, "OK", status)
 	{
 
@@ -128,7 +129,7 @@ func (server *Server) DeleteAd(w http.ResponseWriter, r *http.Request) {
 				log.Println(err)
 			}
 		} else {
-			log.Println(err)
+			log.Println(errNotif)
 		}
 
 	}
@@ -198,7 +199,8 @@ func (server *Server) EditAd(w http.ResponseWriter, r *http.Request) {
 
 	status := server.db.EditAd(adId, userId, ad)
 	if status == database.OK {
-		retVal, getStatus := server.db.GetAd(adId, userId, server.config.MinutesAntiFlood, server.config.MaxViewsAd)
+		retVal, getStatus := server.db.GetAd(adId, userId, server.config.MinutesAntiFlood, server.config.MaxViewsAd,
+			server.VKClient, global_constants.CacheInvalidTime)
 		if getStatus != database.OK {
 			log.Println("cannot get ad, strange")
 		} else {
@@ -257,6 +259,17 @@ func validateFields(ad models.Ad) (error, int) {
 			log.Println(field, " is too large for ad")
 			return fmt.Errorf("too large"), http.StatusRequestEntityTooLarge
 		}
+	}
+	isTypePossible := false
+	for _, adType := range global_constants.PossibleTypes {
+		if ad.AdType == adType {
+			isTypePossible = true
+			break
+		}
+	}
+	if !isTypePossible {
+		log.Printf("impossible type for ad: %s", ad.AdType)
+		return fmt.Errorf("impossible type for ad: %s", ad.AdType), http.StatusBadRequest
 	}
 	return nil, http.StatusOK
 }

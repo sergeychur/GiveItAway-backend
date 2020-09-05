@@ -22,12 +22,12 @@ func (server *Server) AuthUser(w http.ResponseWriter, r *http.Request) {
 		WriteToResponse(w, http.StatusUnauthorized, fmt.Errorf("auth data is invalid"))
 		return
 	}
-	user, status := server.db.GetUser(userId)
+	user, status := server.db.GetUser(userId, server.VKClient, global_constants.CacheInvalidTime)
 	if status == database.EMPTY_RESULT {
 		status = server.db.CreateUser(userId, info.Name, info.Surname, info.PhotoURL, global_constants.InitialCarma)
 		if status == database.CREATED {
 			newStatus := 0
-			user, newStatus = server.db.GetUser(userId)
+			user, newStatus = server.db.GetUser(userId, server.VKClient, global_constants.CacheInvalidTime)
 			if newStatus != database.FOUND {
 				// mb not that way, dunno. but after creation there should be a result
 				status = database.DB_ERROR
@@ -49,7 +49,7 @@ func (server *Server) GetUserInfo(w http.ResponseWriter, r *http.Request) {
 		WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("id should be int"))
 		return
 	}
-	user, status := server.db.GetUserProfile(userId)
+	user, status := server.db.GetUserProfile(userId, server.VKClient, global_constants.CacheInvalidTime)
 	DealRequestFromDB(w, &user, status)
 }
 
@@ -149,7 +149,7 @@ func (server *Server) GetWanted(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ads, status := server.db.GetWanted(userId, page, rowsPerPage)
+	ads, status := server.db.GetWanted(userId, page, rowsPerPage, server.VKClient, global_constants.CacheInvalidTime)
 	DealRequestFromDB(w, ads, status)
 }
 

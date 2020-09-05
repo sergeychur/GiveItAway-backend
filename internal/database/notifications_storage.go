@@ -104,7 +104,7 @@ func (db *DB) FormRespondNotification(subscriberId int, adId int) (models.Notifi
 		return models.Notification{}, err
 	}
 	val.Ad.PathesToPhoto, err = db.GetAdPhotos(val.Ad.AdId)
-	user, status := db.GetUser(subscriberId)
+	user, status := db.GetUser(subscriberId, nil, 1)
 	if status == DB_ERROR {
 		return models.Notification{}, fmt.Errorf("get user failed")
 	}
@@ -221,7 +221,7 @@ func (db *DB) FormCancelNotification(cancelType string, initiatorId int, adId in
 		note.NotificationType = notifications.SUBSCRIBER_CANCELLED
 		val := models.SubscriberCancelled{}
 		val.Ad = ad
-		user, status := db.GetUser(initiatorId)
+		user, status := db.GetUser(initiatorId, nil, 1)
 		if status != FOUND {
 			return models.Notification{}, fmt.Errorf("error getting user")
 		}

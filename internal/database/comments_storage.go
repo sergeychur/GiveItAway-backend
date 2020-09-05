@@ -1,6 +1,7 @@
 package database
 
 import (
+	"github.com/go-vk-api/vk"
 	"time"
 
 	"github.com/sergeychur/give_it_away/internal/models"
@@ -8,14 +9,15 @@ import (
 )
 
 const (
-	GetAdComments = "SELECT c.comment_id, c.creation_datetime, c.text, u.vk_id, u.name, u.surname, u.photo_url " +
+	GetAdComments = "SELECT c.comment_id, c.creation_datetime, c.text, u.vk_id, u.name, u.surname, u.photo_url, " +
+		"u.last_change_time " +
 		"FROM comment c JOIN (SELECT comment_id FROM comment WHERE ad_id = $1 ORDER BY comment_id " +
 		"LIMIT $2 OFFSET $3) v ON (v.comment_id = c.comment_id) JOIN users u ON (u.vk_id = c.author_id) " +
 		"ORDER BY c.comment_id"
 
 	CreateComment = "INSERT INTO COMMENT (ad_id, text, author_id) VALUES ($1, $2, $3) RETURNING comment_id"
 	GetComment    = "SELECT c.comment_id, c.creation_datetime, c.text, u.vk_id, u.name, u.surname, u.photo_url " +
-		"FROM comment c JOIN users u ON (c.author_id = u.vk_id) WHERE c.comment_id = $1"
+		" FROM comment c JOIN users u ON (c.author_id = u.vk_id) WHERE c.comment_id = $1"
 
 	CheckCommentExists = "SELECT author_id FROM comment WHERE comment_id = $1"
 
@@ -24,7 +26,8 @@ const (
 	GetCommentAdId = "SELECT ad_id FROM comment WHERE comment_id = $1"
 )
 
-func (db *DB) GetComments(adId int, page int, rowsPerPage int) ([]models.CommentForUser, int) {
+func (db *DB) GetComments(adId int, page int, rowsPerPage int, client *vk.Client,
+	allowedDuration time.Duration) ([]models.CommentForUser, int) {
 	offset := rowsPerPage * (page - 1)
 	rows, err := db.db.Query(GetAdComments, adId, rowsPerPage, offset)
 	if err == pgx.ErrNoRows {
@@ -38,14 +41,21 @@ func (db *DB) GetComments(adId int, page int, rowsPerPage int) ([]models.Comment
 	for rows.Next() {
 		timeStamp := time.Time{}
 		comment := models.CommentForUser{}
+		lastUpdated := time.Time{}
 		err = rows.Scan(&comment.CommentId, &timeStamp, &comment.Text, &comment.Author.VkId,
-			&comment.Author.Name, &comment.Author.Surname, &comment.Author.PhotoUrl)
+			&comment.Author.Name, &comment.Author.Surname, &comment.Author.PhotoUrl, &lastUpdated)
 		if err != nil {
 			return nil, DB_ERROR
 		}
 		loc, _ := time.LoadLocation("UTC")
 		timeStamp.In(loc)
 		comment.CreationDateTime = timeStamp.Format("02 Jan 06 15:04 UTC")
+		userCache, err := db.CheckVKUserCacheConsist(client, comment.Author.VkId, lastUpdated, allowedDuration)
+		if err == nil {
+			comment.Author.Name = userCache.Name
+			comment.Author.Surname = userCache.Surname
+			comment.Author.PhotoUrl = userCache.PhotoURL
+		}
 		comments = append(comments, comment)
 	}
 
