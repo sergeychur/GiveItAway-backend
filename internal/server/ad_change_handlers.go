@@ -118,6 +118,7 @@ func (server *Server) DeleteAd(w http.ResponseWriter, r *http.Request) {
 		true, notifications.AD_DELETED)
 
 	status := server.db.DeleteAd(adId, userId)
+	server.db.DeleteInvalidNotesDelete(adId)
 	DealRequestFromDB(w, "OK", status)
 	{
 
@@ -128,7 +129,7 @@ func (server *Server) DeleteAd(w http.ResponseWriter, r *http.Request) {
 				log.Println(err)
 			}
 		} else {
-			log.Println(err)
+			log.Println(errNotif)
 		}
 
 	}

@@ -3,11 +3,14 @@ package database
 import (
 	"github.com/sergeychur/give_it_away/internal/models"
 	"github.com/sergeychur/give_it_away/internal/notifications"
+	"log"
 	"time"
 )
 
 const (
 	GetUnreadNotesNumber = "SELECT COUNT(*) FROM notifications WHERE is_read = false AND user_id = $1"
+	InvalidateCancelDeal = "UPDATE notifications SET is_read = TRUE WHERE ad_id = $1 AND notification_type = $2"
+	InvalidateDeleteAd = "DELETE FROM notifications WHERE ad_id = $1"
 )
 
 func (db *DB) FormNewCommentNotif(comment models.CommentForUser, adId int) (models.Notification, error) {
@@ -44,4 +47,18 @@ func (db *DB) GetUnreadNotesCount(userId int) (models.NotesNumber, int) {
 		return models.NotesNumber{}, DB_ERROR
 	}
 	return num, FOUND
+}
+
+func (db *DB) DeleteInvalidNotesCancelDeal(adId int64) {
+	_, err := db.db.Exec(InvalidateCancelDeal, adId, notifications.DEAL_FULFILL)
+	if err != nil {
+		log.Println("failed to invalidate old notifications (cancel deal): ", err)
+	}
+}
+
+func (db* DB) DeleteInvalidNotesDelete(adId int) {
+	_, err := db.db.Exec(InvalidateDeleteAd, adId)
+	if err != nil {
+		log.Println("failed to invalidate old notifications (delete ad): ", err)
+	}
 }

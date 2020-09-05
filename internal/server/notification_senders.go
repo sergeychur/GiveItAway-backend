@@ -114,6 +114,7 @@ func (server *Server) NewMaxBidUpd(note models.Notification, r *http.Request) {
 		log.Println("No notification needed, increase own bid")
 		return
 	}
+
 	err := server.db.InsertNotification(note.WhomId, note)
 	if err != nil {
 		log.Println(err)
