@@ -4,6 +4,7 @@ import (
 	"github.com/sergeychur/give_it_away/internal/global_constants"
 	"github.com/sergeychur/give_it_away/internal/models"
 	"gopkg.in/jackc/pgx.v2"
+	"log"
 	"math/rand"
 	"net/url"
 	"strconv"
@@ -44,6 +45,10 @@ const (
 
 	CheckAdHidden = "SELECT hidden FROM ad WHERE ad_id = $1"
 	CheckAdOffer = "SELECT status = 'offer' FROM ad WHERE ad_id = $1"
+	GetTimesSubscribed = "SELECT times FROM subscribe_history WHERE ad_id = $1 AND subscriber_id = $2"
+
+	IncreaseTimesSubscribed = "INSERT INTO subscribe_history (ad_id, subscriber_id, times) VALUES ($1, $2, 1) " +
+		"ON CONFLICT ON CONSTRAINT subscribe_history_unique DO UPDATE SET times = subscribe_history.times + 1"
 )
 
 func (db *DB) SubscribeToAd(adId int, userId int, priceCoeff int) (int, *models.Notification) {
@@ -92,8 +97,24 @@ func (db *DB) SubscribeToAd(adId int, userId int, priceCoeff int) (int, *models.
 	if !canSubscribe {
 		return CONFLICT, nil
 	}
+	timesSubscribed := 0
+	err = tx.QueryRow(GetTimesSubscribed, adId, userId).Scan(&timesSubscribed)
+	if err == pgx.ErrNoRows {
+		err = nil
+	}
+	if err != nil {
+		return DB_ERROR, nil
+	}
+	if timesSubscribed >= global_constants.MaxTimesSubscribed {
+		return FORBIDDEN, nil
+	}
 	_, err = tx.Exec(SubscribeToAd, adId, userId, frozencarma)
 	if err != nil {
+		return DB_ERROR, nil
+	}
+	_, err = tx.Exec(IncreaseTimesSubscribed, adId, userId)
+	if err != nil {
+		log.Println(err)
 		return DB_ERROR, nil
 	}
 	err = tx.Commit()
