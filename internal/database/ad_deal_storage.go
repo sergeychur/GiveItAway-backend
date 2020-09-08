@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"net/url"
 	"strconv"
+	"log"
 )
 
 const (
@@ -50,6 +51,7 @@ func (db *DB) SubscribeToAd(adId int, userId int, priceCoeff int) (int, *models.
 	// todo check if user can subscribe; two different functions for auction and usual ad
 	tx, err := db.StartTransaction()
 	if err != nil {
+		log.Println("error in transaction start: ", err)
 		return DB_ERROR, nil
 	}
 	defer func() {
@@ -61,11 +63,16 @@ func (db *DB) SubscribeToAd(adId int, userId int, priceCoeff int) (int, *models.
 		return EMPTY_RESULT, nil
 	}
 	if err != nil {
+		log.Println("err in check ad exists", err)
 		return DB_ERROR, nil
 	}
 
 	hidden := false
 	err = tx.QueryRow(CheckAdHidden, adId).Scan(&hidden)
+	if err != nil {
+		log.Println("error in check ad hidden: ", err)
+		return DB_ERROR, nil
+	}
 	if hidden {
 		return FORBIDDEN, nil
 	}
@@ -73,6 +80,7 @@ func (db *DB) SubscribeToAd(adId int, userId int, priceCoeff int) (int, *models.
 	isOffer := false
 	err = tx.QueryRow(CheckAdOffer, adId).Scan(&isOffer)
 	if !isOffer {
+		log.Println("error in check ad offer: ", err)
 		return FORBIDDEN, nil
 	}
 
@@ -86,6 +94,7 @@ func (db *DB) SubscribeToAd(adId int, userId int, priceCoeff int) (int, *models.
 	}
 	canSubscribe, frozencarma, err, note := db.DealWithCarmaSubscribe(tx, adId, userId)
 	if err != nil {
+		log.Println("error in deal with carma: ", err)
 		return DB_ERROR, nil
 	}
 
@@ -94,10 +103,12 @@ func (db *DB) SubscribeToAd(adId int, userId int, priceCoeff int) (int, *models.
 	}
 	_, err = tx.Exec(SubscribeToAd, adId, userId, frozencarma)
 	if err != nil {
+		log.Println("error in subscribe to ad: ", err)
 		return DB_ERROR, nil
 	}
 	err = tx.Commit()
 	if err != nil {
+		log.Println("error in commit: ", err)
 		return DB_ERROR, nil
 	}
 	return OK, note
