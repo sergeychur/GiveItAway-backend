@@ -243,7 +243,8 @@ func (db *DB) FormMaxBidUpdatedNote(adId, whomId, newBid, newUserId int) (models
 	loc, _ := time.LoadLocation("UTC")
 	timeStamp.In(loc)
 	user := models.User{}
-	err := db.db.QueryRow(GetUserById, newUserId).Scan(&user.VkId, &user.Name, &user.Surname, &user.PhotoUrl)
+	lastUpdated := time.Time{}
+	err := db.db.QueryRow(GetUserById, newUserId).Scan(&user.VkId, &user.Name, &user.Surname, &user.PhotoUrl, &lastUpdated)
 	if err != nil {
 		return models.Notification{}, err
 	}
