@@ -109,7 +109,11 @@ func (server *Server) SubscribeToAdSendUpd(userId, adId int, r *http.Request) {
 }
 
 func (server *Server) NewMaxBidUpd(note models.Notification, r *http.Request) {
-	server.NotificationSender.SendToChannel(r.Context(), note, fmt.Sprintf("ad_%d", note.AdId))
+	updToAd := models.AdUpdate{
+		Type:    note.NotificationType,
+		Payload: note.Payload,
+	}
+	server.NotificationSender.SendToChannel(r.Context(), updToAd, fmt.Sprintf("ad_%d", note.AdId))
 	if note.WhomId == global_constants.NoNote {
 		log.Println("No notification needed, increase own bid")
 		return
