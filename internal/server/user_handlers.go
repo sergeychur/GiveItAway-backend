@@ -2,13 +2,12 @@ package server
 
 import (
 	"fmt"
-	"net/http"
-	"strconv"
-
 	"github.com/go-chi/chi"
 	"github.com/sergeychur/give_it_away/internal/database"
 	"github.com/sergeychur/give_it_away/internal/global_constants"
 	"github.com/sergeychur/give_it_away/internal/models"
+	"net/http"
+	"strconv"
 )
 
 func (server *Server) AuthUser(w http.ResponseWriter, r *http.Request) {
@@ -34,12 +33,17 @@ func (server *Server) AuthUser(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	err = SetJWTToCookie([]byte(server.config.Secret), userId, w, 60*24, server.CookieField)
+	cookie, err := SetJWTToCookie([]byte(server.config.Secret), userId, w, 60*24, server.CookieField)
 	if err != nil {
 		WriteToResponse(w, http.StatusInternalServerError, fmt.Errorf("auth failed"))
 		return
 	}
-	DealRequestFromDB(w, &user, status)
+
+	someStruct := struct {
+		Token string `json:"token"`
+		User models.User	`json:"user"`
+	}{Token: cookie.Value, User: user}
+	DealRequestFromDB(w, &someStruct, status)
 }
 
 func (server *Server) GetUserInfo(w http.ResponseWriter, r *http.Request) {
