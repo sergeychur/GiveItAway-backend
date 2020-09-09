@@ -130,6 +130,9 @@ func (db *DB) DealWithCarmaUnsubscribe(tx *pgx.Tx, adId, userId int) error {
 func (db *DB) DealWithCarmaUnsubscribeAuct(tx *pgx.Tx, adId, userId int) error {
 	priceToReturn := 0
 	err := tx.QueryRow(GetCarmaToReturnUnsubscribe, adId, userId).Scan(&priceToReturn)
+	if err != nil {
+		return err
+	}
 	_, err = tx.Exec(updateCarmaUnsubscribeAuct, priceToReturn, userId)
 	return err
 }
