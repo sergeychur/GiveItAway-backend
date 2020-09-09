@@ -106,7 +106,7 @@ func (db *DB) SubscribeToAd(adId int, userId int, priceCoeff int) (int, *models.
 		return DB_ERROR, nil
 	}
 	if timesSubscribed >= global_constants.MaxTimesSubscribed {
-		return FORBIDDEN, nil
+		return TOO_MUCH_TIMES, nil
 	}
 	_, err = tx.Exec(SubscribeToAd, adId, userId, frozencarma)
 	if err != nil {
@@ -190,6 +190,15 @@ func (db *DB) MakeDeal(adId int, initiatorId int, dealType string, params url.Va
 	}
 	if dealExists || !isSubscriber {
 		return CONFLICT, 0, 0
+	}
+	hidden := false
+	err = tx.QueryRow(CheckAdHidden, adId).Scan(&hidden)
+	if err != nil {
+		return DB_ERROR, 0, 0
+	}
+	if hidden {
+		log.Println("tried to give away ad under moderation")
+		return FORBIDDEN, 0, 0
 	}
 
 	dealId := 0
