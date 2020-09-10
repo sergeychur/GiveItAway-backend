@@ -51,7 +51,7 @@ func (cl *CentrifugoClient) SendOneClient(ctx context.Context, notification mode
 		log.Println(err)
 		return
 	}
-	log.Print("prepare", cl.vkClient, cl.db)
+	//log.Print("prepare", cl.vkClient, cl.db)
 	if cl.vkClient != nil && cl.db != nil {
 		log.Print("get is", notification)
 		var b, status = cl.db.GetPermissoinToPM(whomId)

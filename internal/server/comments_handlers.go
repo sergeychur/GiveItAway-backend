@@ -78,24 +78,24 @@ func (server *Server) CommentAd(w http.ResponseWriter, r *http.Request) {
 	}
 
 	now := time.Now()
-	_, ok := server.AntiFloodAdMap[userId]
+	_, ok := server.AntiFloodCommentMap[userId]
 	if !ok {
-		server.AntiFloodAdMap[userId] = make([]time.Time, 1)
-		server.AntiFloodAdMap[userId][0] = time.Now()
+		server.AntiFloodCommentMap[userId] = make([]time.Time, 1)
+		server.AntiFloodCommentMap[userId][0] = time.Now()
 	} else {
 		n := 0
 		// filter slice in place
-		for _, x := range server.AntiFloodAdMap[userId] {
+		for _, x := range server.AntiFloodCommentMap[userId] {
 			if now.Sub(x) <=  time.Minute * time.Duration(server.config.MinutesAntiFlood) {
-				server.AntiFloodAdMap[userId][n] = x
+				server.AntiFloodCommentMap[userId][n] = x
 				n++
 			}
 		}
-		server.AntiFloodAdMap[userId] = server.AntiFloodAdMap[userId][:n]
+		server.AntiFloodCommentMap[userId] = server.AntiFloodCommentMap[userId][:n]
 
 		// add new request time
-		server.AntiFloodAdMap[userId] = append(server.AntiFloodAdMap[userId], now)
-		if len(server.AntiFloodAdMap[userId]) > server.config.MaxCommentsAntiFlood {
+		server.AntiFloodCommentMap[userId] = append(server.AntiFloodCommentMap[userId], now)
+		if len(server.AntiFloodCommentMap[userId]) > server.config.MaxCommentsAntiFlood {
 			WriteToResponse(w, http.StatusTooManyRequests, nil)
 			return
 		}

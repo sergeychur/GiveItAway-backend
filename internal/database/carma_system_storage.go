@@ -130,6 +130,9 @@ func (db *DB) DealWithCarmaUnsubscribe(tx *pgx.Tx, adId, userId int) error {
 func (db *DB) DealWithCarmaUnsubscribeAuct(tx *pgx.Tx, adId, userId int) error {
 	priceToReturn := 0
 	err := tx.QueryRow(GetCarmaToReturnUnsubscribe, adId, userId).Scan(&priceToReturn)
+	if err != nil {
+		return err
+	}
 	_, err = tx.Exec(updateCarmaUnsubscribeAuct, priceToReturn, userId)
 	return err
 }
@@ -284,12 +287,15 @@ func (db *DB) IncreaseBid(adId, userId int) (models.Notification, int) {
 	if err != nil {
 		return models.Notification{}, DB_ERROR
 	}
-	if prevMaxId == userId {
+	/*if prevMaxId == userId {
 		return models.Notification{WhomId: global_constants.NoNote}, OK
-	}
+	}*/
 	note, err := db.FormMaxBidUpdatedNote(adId, prevMaxId, maxBid+1, userId)
 	if err != nil {
 		return models.Notification{}, DB_ERROR
+	}
+	if prevMaxId == userId {
+		note.WhomId = global_constants.NoNote
 	}
 	return note, OK
 }

@@ -61,7 +61,7 @@ func CheckUserAuth(info models.AuthInfo, secret string) (int, bool) {
 	return userId, str[0:len(str)-1] == digest
 }
 
-func SetJWTToCookie(secret []byte, userId int, w http.ResponseWriter, minutes int, cookieField string) error {
+func SetJWTToCookie(secret []byte, userId int, w http.ResponseWriter, minutes int, cookieField string) (*http.Cookie, error) {
 	expirationTime := time.Now().Add(time.Duration(minutes) * time.Minute)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"expires": expirationTime.Unix(),
@@ -69,10 +69,10 @@ func SetJWTToCookie(secret []byte, userId int, w http.ResponseWriter, minutes in
 	})
 	tokenString, err := token.SignedString(secret)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	http.SetCookie(w, &http.Cookie{
+	cookie := &http.Cookie{
 		Name:     cookieField,
 		Value:    tokenString,
 		Expires:  expirationTime,
@@ -81,8 +81,9 @@ func SetJWTToCookie(secret []byte, userId int, w http.ResponseWriter, minutes in
 		// TODO (sergeychur): place "Secure" back
 		Secure:   true,                  // https://developer.mozilla.org/ru/docs/Web/HTTP/Куки
 		SameSite: http.SameSiteNoneMode, // https://web.dev/samesite-cookies-explained/
-	})
-	return nil
+	}
+	http.SetCookie(w, cookie)
+	return cookie ,nil
 }
 
 func (server *Server) IsLogined(r *http.Request, secret []byte, cookieField string) bool {
@@ -92,19 +93,25 @@ func (server *Server) IsLogined(r *http.Request, secret []byte, cookieField stri
 
 func (server *Server) GetUserIdFromCookie(r *http.Request) (int, error) {
 	cookie, err := r.Cookie(server.CookieField)
+	str := ""
 	if err != nil {
-		return 0, err
+		str = r.Header.Get("Authorization")
+		str = strings.TrimPrefix(str, "Bearer ")
+		err = nil
+	} else {
+		str = cookie.Value
 	}
 	ctx := context.Background()
 	StrUserId, err := server.AuthClient.GetUserId(ctx,
 		&auth.AuthCookie{
-			Data:   cookie.Value,
+			Data:   str,
 			Secret: server.config.Secret,
 		})
 	if err != nil {
 		log.Println("GetUserIdFromCookie ", err)
 		return int(0), err
 	}
+
 	return int(StrUserId.Id), nil
 }
 
