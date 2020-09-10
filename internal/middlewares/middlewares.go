@@ -9,7 +9,7 @@ import (
 func CreateCorsMiddleware(allowedHosts []string) func(http.Handler) http.Handler {
 	return func(handler http.Handler) http.Handler {
 		c := cors.New(cors.Options{
-			AllowedHeaders:     []string{"Access-Control-Allow-Origin", "Charset", "Content-Type", "Access-Control-Allow-Credentials"},
+			AllowedHeaders:     []string{"Access-Control-Allow-Origin", "Charset", "Content-Type", "Access-Control-Allow-Credentials", "Authorization"},
 			AllowedOrigins:     allowedHosts,
 			AllowCredentials:   true,
 			AllowedMethods:     []string{"GET", "HEAD", "POST", "PUT", "OPTIONS", "DELETE", "PATCH"},
