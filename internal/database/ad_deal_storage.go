@@ -8,7 +8,6 @@ import (
 	"math/rand"
 	"net/url"
 	"strconv"
-	"log"
 )
 
 const (
