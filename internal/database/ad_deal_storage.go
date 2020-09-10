@@ -49,6 +49,11 @@ const (
 
 	IncreaseTimesSubscribed = "INSERT INTO subscribe_history (ad_id, subscriber_id, times) VALUES ($1, $2, 1) " +
 		"ON CONFLICT ON CONSTRAINT subscribe_history_unique DO UPDATE SET times = subscribe_history.times + 1"
+
+	GetTimesDealMade = "SELECT times FROM deal_history WHERE ad_id = $1 AND subscriber_id = $2"
+
+	IncreaseTimesDealMade = "INSERT INTO deal_history (ad_id, subscriber_id, times) VALUES ($1, $2, 1) " +
+		"ON CONFLICT ON CONSTRAINT deal_history_unique DO UPDATE SET times = deal_history.times + 1"
 )
 
 func (db *DB) SubscribeToAd(adId int, userId int, priceCoeff int) (int, *models.Notification) {
@@ -210,12 +215,30 @@ func (db *DB) MakeDeal(adId int, initiatorId int, dealType string, params url.Va
 		log.Println("tried to give away ad under moderation")
 		return FORBIDDEN, 0, 0
 	}
+	timesDealMade := 0
+	err = tx.QueryRow(GetTimesDealMade, adId, subscriberId).Scan(&timesDealMade)
+	if err == pgx.ErrNoRows {
+		err = nil
+	}
+	if err != nil {
+		return DB_ERROR, 0, 0
+	}
 
+	if timesDealMade >= global_constants.MaxTimesDealMade {
+		return TOO_MUCH_TIMES, 0, 0
+	}
 	dealId := 0
 	err = tx.QueryRow(CreateDeal, adId, subscriberId).Scan(&dealId)
 	if err != nil {
 		return DB_ERROR, 0, 0
 	}
+
+	_, err = tx.Exec(IncreaseTimesDealMade, adId, subscriberId)
+	if err != nil {
+		log.Println(err)
+		return DB_ERROR, 0, 0
+	}
+
 	_ = tx.Commit()
 	return CREATED, dealId, subscriberId
 }

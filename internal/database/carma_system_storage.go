@@ -254,6 +254,14 @@ func (db *DB) IncreaseBid(adId, userId int) (models.Notification, int) {
 	if !isSubscriber {
 		return models.Notification{}, EMPTY_RESULT
 	}
+	isOffer := false
+	err = tx.QueryRow(CheckAdOffer, adId).Scan(&isOffer)
+	if err != nil {
+		return models.Notification{}, DB_ERROR
+	}
+	if !isOffer {
+		return models.Notification{}, FORBIDDEN
+	}
 	maxBid := 0
 	prevMaxId := 0
 	err = tx.QueryRow(getMaxBidInAuctionWithUserId, adId).Scan(&maxBid, &prevMaxId)
