@@ -76,5 +76,11 @@ func DealRequestFromDB(w http.ResponseWriter, v interface{}, status int) {
 			fmt.Errorf("input is incorrect"))
 		return
 	}
+
+	if status == database.TOO_MUCH_TIMES {
+		WriteToResponse(w, http.StatusTooManyRequests,
+			fmt.Errorf("flood"))
+		return
+	}
 }
 

@@ -106,7 +106,7 @@ func (db *DB) SubscribeToAd(adId int, userId int, priceCoeff int) (int, *models.
 		return DB_ERROR, nil
 	}
 	if timesSubscribed >= global_constants.MaxTimesSubscribed {
-		return FORBIDDEN, nil
+		return TOO_MUCH_TIMES, nil
 	}
 	_, err = tx.Exec(SubscribeToAd, adId, userId, frozencarma)
 	if err != nil {

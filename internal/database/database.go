@@ -16,6 +16,7 @@ const (
 	FORBIDDEN    = 4
 	CONFLICT     = 5
 	WRONG_INPUT  = 6
+	TOO_MUCH_TIMES = 7
 )
 
 type DB struct {
