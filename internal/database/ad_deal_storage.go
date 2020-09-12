@@ -54,6 +54,8 @@ const (
 
 	IncreaseTimesDealMade = "INSERT INTO deal_history (ad_id, subscriber_id, times) VALUES ($1, $2, 1) " +
 		"ON CONFLICT ON CONSTRAINT deal_history_unique DO UPDATE SET times = deal_history.times + 1"
+
+	GetAdType = "SELECT ad_type FROM ad WHERE ad_id = $1"
 )
 
 func (db *DB) SubscribeToAd(adId int, userId int, priceCoeff int) (int, *models.Notification) {
@@ -191,6 +193,10 @@ func (db *DB) MakeDeal(adId int, initiatorId int, dealType string, params url.Va
 	}
 	dealExists := true
 	err = tx.QueryRow(CheckIfDealExists, adId).Scan(&dealExists)
+	if err != nil {
+		return DB_ERROR, 0, 0
+	}
+	err = tx.QueryRow(GetAdType, adId).Scan(&dealType)
 	if err != nil {
 		return DB_ERROR, 0, 0
 	}
