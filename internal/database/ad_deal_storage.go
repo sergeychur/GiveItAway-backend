@@ -56,6 +56,8 @@ const (
 		"ON CONFLICT ON CONSTRAINT deal_history_unique DO UPDATE SET times = deal_history.times + 1"
 
 	GetAdType = "SELECT ad_type FROM ad WHERE ad_id = $1"
+	CheckIfUserInDeal = "select exists(select 1 from deal where ad_id=$1 and subscriber_id=$2" +
+		" and status='open');"
 )
 
 func (db *DB) SubscribeToAd(adId int, userId int, priceCoeff int) (int, *models.Notification) {
@@ -153,6 +155,14 @@ func (db *DB) UnsubscribeFromAd(adId int, userId int) int {
 	isSubscriber := false
 	err = db.db.QueryRow(CheckIfSubscriber, adId, userId).Scan(&isSubscriber)
 	if !isSubscriber {
+		return FORBIDDEN
+	}
+	dealExists := false
+	err = db.db.QueryRow(CheckIfUserInDeal, adId, userId).Scan(&dealExists)
+	if err != nil {
+		return DB_ERROR
+	}
+	if dealExists {
 		return FORBIDDEN
 	}
 	err = db.DealWithCarmaUnsubscribe(tx, adId, userId)

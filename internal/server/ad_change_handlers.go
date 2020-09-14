@@ -271,5 +271,10 @@ func validateFields(ad models.Ad) (error, int) {
 		log.Printf("impossible type for ad: %s", ad.AdType)
 		return fmt.Errorf("impossible type for ad: %s", ad.AdType), http.StatusBadRequest
 	}
+
+	if ad.GeoPosition == nil && ad.Category != "Цифровые товары" {
+		return fmt.Errorf("ad should have geopostion if not electronic goods"), http.StatusBadRequest
+	}
+
 	return nil, http.StatusOK
 }
