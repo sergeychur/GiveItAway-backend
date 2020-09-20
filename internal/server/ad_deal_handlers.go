@@ -101,6 +101,7 @@ func (server *Server) UnsubscribeFromAd(w http.ResponseWriter, r *http.Request) 
 	status := server.db.UnsubscribeFromAd(adId, userId)
 	if status == database.OK {
 		server.UnsubscribeToAdSendUpd(userId, adId, r)
+		server.db.DeleteInvalidNotesDelete(adId)
 	}
 	DealRequestFromDB(w, "OK", status)
 

@@ -17,6 +17,7 @@ const (
 	SUBSCRIBER_CANCELLED = "subscriberCancel"
 	COMMENT_CREATED      = "new_comment"
 	MAX_BID_UPDATED      = "max_bid_upd"
+	MODERATION_APPLIED = "moderation"
 )
 
 var (
@@ -47,6 +48,9 @@ var (
 		},
 		MAX_BID_UPDATED: func() interface{} {
 			return &models.MaxBidUpdated{}
+		},
+		MODERATION_APPLIED: func() interface{} {
+			return &models.AdStatusChanged{}
 		},
 	}
 )

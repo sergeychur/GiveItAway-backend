@@ -56,9 +56,11 @@ func (db *DB) GetNotifications(userId int, page int, rowsPerPage int) ([]models.
 		if err != nil {
 			return nil, DB_ERROR
 		}
-		_, err = db.db.Exec(SetReadTrue, notification.NotificationId)
-		if err != nil {
-			return nil, DB_ERROR
+		if notification.NotificationType != notifications.MODERATION_APPLIED {
+			_, err = db.db.Exec(SetReadTrue, notification.NotificationId)
+			if err != nil {
+				return nil, DB_ERROR
+			}
 		}
 		notificationArr = append(notificationArr, notification)
 	}

@@ -223,6 +223,16 @@ func (server *Server) SetHidden(w http.ResponseWriter, r *http.Request) {
 		WriteToResponse(w, http.StatusInternalServerError, fmt.Errorf("server cannot get userId from cookie"))
 	}
 	status := server.db.SetAdHidden(adId, userId)
+	notes, errNotif := server.db.FormStatusChangedNotificationsByAd(adId, false, notifications.MODERATION_APPLIED)
+	if errNotif == nil {
+		server.NotificationSender.SendAllNotifications(r.Context(), notes)
+		err = server.db.InsertNotifications(notes)
+		if err != nil {
+			log.Println(err)
+		}
+	} else {
+			log.Println(errNotif)
+	}
 	DealRequestFromDB(w, "OK", status)
 }
 
@@ -238,6 +248,7 @@ func (server *Server) SetVisible(w http.ResponseWriter, r *http.Request) {
 		WriteToResponse(w, http.StatusInternalServerError, fmt.Errorf("server cannot get userId from cookie"))
 	}
 	status := server.db.SetAdVisible(adId, userId)
+	server.db.DeleteInvalidNotesDelete(adId)
 	DealRequestFromDB(w, "OK", status)
 }
 

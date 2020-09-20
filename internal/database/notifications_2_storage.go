@@ -62,3 +62,10 @@ func (db* DB) DeleteInvalidNotesDelete(adId int) {
 		log.Println("failed to invalidate old notifications (delete ad): ", err)
 	}
 }
+
+func (db *DB) DeleteInvalidNotesModeration(adId int) {
+	_, err := db.db.Exec(InvalidateCancelDeal, adId, notifications.MODERATION_APPLIED)
+	if err != nil {
+		log.Println("failed to invalidate old notifications (cancel deal): ", err)
+	}
+}
