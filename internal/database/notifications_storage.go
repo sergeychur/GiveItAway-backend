@@ -56,9 +56,11 @@ func (db *DB) GetNotifications(userId int, page int, rowsPerPage int) ([]models.
 		if err != nil {
 			return nil, DB_ERROR
 		}
-		_, err = db.db.Exec(SetReadTrue, notification.NotificationId)
-		if err != nil {
-			return nil, DB_ERROR
+		if notification.NotificationType != notifications.MODERATION_APPLIED {
+			_, err = db.db.Exec(SetReadTrue, notification.NotificationId)
+			if err != nil {
+				return nil, DB_ERROR
+			}
 		}
 		notificationArr = append(notificationArr, notification)
 	}
@@ -104,7 +106,7 @@ func (db *DB) FormRespondNotification(subscriberId int, adId int) (models.Notifi
 		return models.Notification{}, err
 	}
 	val.Ad.PathesToPhoto, err = db.GetAdPhotos(val.Ad.AdId)
-	user, status := db.GetUser(subscriberId)
+	user, status := db.GetUser(subscriberId, nil, 1)
 	if status == DB_ERROR {
 		return models.Notification{}, fmt.Errorf("get user failed")
 	}
@@ -221,7 +223,7 @@ func (db *DB) FormCancelNotification(cancelType string, initiatorId int, adId in
 		note.NotificationType = notifications.SUBSCRIBER_CANCELLED
 		val := models.SubscriberCancelled{}
 		val.Ad = ad
-		user, status := db.GetUser(initiatorId)
+		user, status := db.GetUser(initiatorId, nil, 1)
 		if status != FOUND {
 			return models.Notification{}, fmt.Errorf("error getting user")
 		}
@@ -243,20 +245,32 @@ func (db *DB) FormMaxBidUpdatedNote(adId, whomId, newBid, newUserId int) (models
 	loc, _ := time.LoadLocation("UTC")
 	timeStamp.In(loc)
 	user := models.User{}
-	err := db.db.QueryRow(GetUserById, newUserId).Scan(&user.VkId, &user.Name, &user.Surname, &user.PhotoUrl)
+	lastUpdated := time.Time{}
+	err := db.db.QueryRow(GetUserById, newUserId).Scan(&user.VkId, &user.Name, &user.Surname, &user.PhotoUrl, &lastUpdated)
+	if err != nil {
+		return models.Notification{}, err
+	}
+	ad := models.AdForNotification{}
+
+	spare := 0
+	err = db.db.QueryRow(GetAdForNotif, adId).Scan(&ad.AdId, &ad.Header, &ad.Status, &spare)
+	if err == pgx.ErrNoRows {
+		return models.Notification{}, fmt.Errorf("no ad")
+	}
 	if err != nil {
 		return models.Notification{}, err
 	}
 	note := models.Notification{
-		AdId: int64(adId),
-		WhomId: whomId,
+		AdId:             int64(adId),
+		WhomId:           whomId,
 		NotificationType: notifications.MAX_BID_UPDATED,
 		Payload: models.MaxBidUpdated{
+			Ad: ad,
 			NewBid: newBid,
-			User: user,
+			User:   user,
 		},
 		CreationDateTime: timeStamp.Format("02 Jan 06 15:04 UTC"),
-		IsRead: false,
+		IsRead:           false,
 	}
 	return note, err
 }

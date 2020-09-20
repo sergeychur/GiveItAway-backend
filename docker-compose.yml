@@ -66,6 +66,7 @@ services:
       - ./data/certbot/conf:/etc/letsencrypt
       - ./data/certbot/www:/var/www/certbot
       - /home/artyom/GiveItAway/build:/front
+      - /home/artyom/GiveItAway/src/img:/img
     ports:
       - "80:80"
       - "443:443"
@@ -91,4 +92,5 @@ services:
       - "8000:8000"
     expose:
       - 8000
+
 

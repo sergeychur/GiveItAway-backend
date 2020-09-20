@@ -17,6 +17,8 @@ tags:
     description: "Вкладка обновлений, запросы на них"
   - name: "ws_token"
     description: "Получение токена для центрифуги"
+  - name: "vk_proxy"
+    description: "Проксирование запросов к vk api"
 schemes:
   - "https"
   - "http"
@@ -66,6 +68,8 @@ paths:
           description: "Invalid input"
         404:
           description: "user doesn't exist"
+        429:
+          description: "floooooooooooooood"
   /post/{ad_id}/edit:
     put:
       tags:
@@ -195,6 +199,14 @@ paths:
           in: "query"
           type: "string"
           description: "District where to search"
+        - name: "subcat_list"
+          in: "query"
+          type: "string"
+          description: "Subcategory list where to search"
+        - name: "subcat"
+          in: "query"
+          type: "string"
+          description: "Subcategory where to search"
         - name: "query"
           in: "query"
           type: "string"
@@ -295,7 +307,7 @@ paths:
         404:
           description: "ad not found"
         403:
-          description: "user id is the same as author's"
+          description: "user id is the same as author's or ad is under moderation"
         401:
           description: "no auth"
         409:
@@ -616,6 +628,10 @@ paths:
           description: "Invalid input"
         401:
           description: "no auth"
+        403:
+          description: "ad under moderation"
+        429:
+          description: "floooooooooooooood"
   /comment/{comment_id}:
     put:
       tags: ["comment"]
@@ -836,9 +852,10 @@ paths:
           description: "rows per page for pagination"
           required: true
         - name: "user_id"
-          in: "path"
+          in: "body"
           required: true
-          type: integer
+          schema:
+            type: integer
       responses:
         200:
           description: "found smth"
@@ -905,6 +922,31 @@ paths:
             $ref: "#/definitions/TokenObj"
         401:
           description: Unloginned
+
+  /vk_proxy/{method_name}:
+    post:
+      tags:
+        - "vk_proxy"
+      summary: "Проксировать запрос к API vk"
+      parameters:
+        - name: "method_name"
+          in: "path"
+          required: true
+          type: "string"
+          description: "name of vk api method"
+        - name: "other parameters"
+          in: "query"
+          type: "string"
+          description: "instead of this parameter we place parameters needed for api method"
+      responses:
+        200:
+          description: "OK"
+        401:
+          description: "unauthorized"
+        400:
+          description: "some parameters in request are invalid"
+        403:
+          description: "no response from vk api"
 
 
 definitions:
@@ -1013,6 +1055,10 @@ definitions:
           $ref: "#/definitions/AdPhoto"
       category:
         type: "string"
+      subcat_list:
+        type: "string"
+      subcat:
+        type: "string"
       comments_count:
         type: integer
   AdForUsersDetailed:
@@ -1059,6 +1105,10 @@ definitions:
         items:
           $ref: "#/definitions/AdPhoto"
       category:
+        type: "string"
+      subcat_list:
+        type: "string"
+      subcat:
         type: "string"
       comments_count:
         type: integer
@@ -1110,6 +1160,10 @@ definitions:
         items:
           $ref: "#/definitions/AdPhoto"
       category:
+        type: "string"
+      subcat_list:
+        type: "string"
+      subcat:
         type: "string"
       comments_count:
         type: integer

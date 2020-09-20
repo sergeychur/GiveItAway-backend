@@ -20,8 +20,15 @@ type Config struct {
 	AllowedHosts   []string `json:"allowedHosts,omitempty"`
 	UploadPath     string   `json:"uploadPath,omitempty"`
 	ApiKey         string   `json:"api_key"`
+	VKApiKey       string   `json:"vk_api_key"`
 	CentrifugoPort string   `json:"centrifugo_port"`
 	CentrifugoHost string   `json:"centrifugo_host"`
+	MinutesAntiFlood int64 	`json:"minutes_anti_flood"`
+	MaxCommentsAntiFlood int `json:"max_comments_anti_flood"`
+	MaxAdsAntiFlood int 	 `json:"max_ads_anti_flood"`
+	MaxPhotosAd int `json:"max_photos_ad"`
+	MaxViewsAd int `json:"max_views_ad"`
+	MaxCommentLen int `json:"max_comment_len"`
 }
 
 func NewConfig(pathToConfig string) (*Config, error) {

@@ -3,11 +3,14 @@ package database
 import (
 	"github.com/sergeychur/give_it_away/internal/models"
 	"github.com/sergeychur/give_it_away/internal/notifications"
+	"log"
 	"time"
 )
 
 const (
 	GetUnreadNotesNumber = "SELECT COUNT(*) FROM notifications WHERE is_read = false AND user_id = $1"
+	InvalidateCancelDeal = "UPDATE notifications SET is_read = TRUE WHERE ad_id = $1 AND notification_type = $2"
+	InvalidateDeleteAd = "DELETE FROM notifications WHERE ad_id = $1"
 )
 
 func (db *DB) FormNewCommentNotif(comment models.CommentForUser, adId int) (models.Notification, error) {
@@ -29,7 +32,7 @@ func (db *DB) FormNewCommentNotif(comment models.CommentForUser, adId int) (mode
 		return models.Notification{}, err
 	}
 	note.Payload = models.NewComment{
-		Ad: ad,
+		Ad:      ad,
 		Comment: comment,
 	}
 	note.WhomId = authorId
@@ -37,11 +40,32 @@ func (db *DB) FormNewCommentNotif(comment models.CommentForUser, adId int) (mode
 	return note, nil
 }
 
-func (db *DB) GetUnreadNotesCount(userId int) (models.NotesNumber, int){
+func (db *DB) GetUnreadNotesCount(userId int) (models.NotesNumber, int) {
 	num := models.NotesNumber{}
 	err := db.db.QueryRow(GetUnreadNotesNumber, userId).Scan(&num.Number)
 	if err != nil {
 		return models.NotesNumber{}, DB_ERROR
 	}
 	return num, FOUND
+}
+
+func (db *DB) DeleteInvalidNotesCancelDeal(adId int64) {
+	_, err := db.db.Exec(InvalidateCancelDeal, adId, notifications.DEAL_FULFILL)
+	if err != nil {
+		log.Println("failed to invalidate old notifications (cancel deal): ", err)
+	}
+}
+
+func (db* DB) DeleteInvalidNotesDelete(adId int) {
+	_, err := db.db.Exec(InvalidateDeleteAd, adId)
+	if err != nil {
+		log.Println("failed to invalidate old notifications (delete ad): ", err)
+	}
+}
+
+func (db *DB) DeleteInvalidNotesModeration(adId int) {
+	_, err := db.db.Exec(InvalidateCancelDeal, adId, notifications.MODERATION_APPLIED)
+	if err != nil {
+		log.Println("failed to invalidate old notifications (cancel deal): ", err)
+	}
 }

@@ -22,18 +22,29 @@ type UserForProfile struct {
 	Surname string `json:"surname,omitempty"`
 
 	PhotoUrl string `json:"photo_url,omitempty"`
-	
+
 	RegistrationDate string `json:"registration_date"`
-	
+
 	FrozenCarma int `json:"frozen_carma"`
-	
+
 	TotalEarnedCarma int `json:"total_earned_carma"`
 
 	TotalSpentCarma int `json:"total_spent_carma"`
-	
+
 	TotalGivenAds int `json:"total_given_ads"`
-	
+
 	TotalReceivedAds int `json:"total_received_ads"`
-	
+
 	TotalAbortedAds int `json:"total_aborted_ads"`
+}
+
+type CanSend struct {
+	CanSend bool `json:"can_send"`
+}
+
+type UserCacheCheck struct {
+	VkId int64
+	Name string
+	Surname string
+	PhotoURL string
 }

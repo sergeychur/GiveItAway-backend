@@ -2,26 +2,40 @@ package filesystem
 
 import (
 	"fmt"
-	"io/ioutil"
+	//_ "github.com/jdeng/goheif"
+	_ "golang.org/x/image/webp"
+	"image"
+	_ "image/gif"
+	"image/jpeg"
+	_ "image/jpeg"
+	_ "image/png"
 	"mime/multipart"
 	"net/http"
 	"os"
 	"path/filepath"
 )
 
-func saveFile(file multipart.File, handle *multipart.FileHeader, path string, adName string) (string, error) {
+func saveFile(img image.Image, handle *multipart.FileHeader, path string, adName string) (string, error) {
 	// takes path to directory where to save and adds filename
-	data, err := ioutil.ReadAll(file)
+	filename := getFileName(path, adName, handle.Filename)
+	err := CreateDir(path)
+	if err != nil {
+		return "", err
+	}
+	f, err := os.Create(filepath.Join(path, filename))
 	if err != nil {
 		return "", err
 	}
 
-	filename := getFileName(path, adName, handle.Filename)
-	err = CreateDir(path)
-	if err != nil {
-		return "", err
+	defer func() {
+		_ = f.Close()
+	}()
+
+	opt := jpeg.Options{
+		Quality: 90,
 	}
-	err = ioutil.WriteFile(filepath.Join(path, filename), data, 0644)
+
+	err = jpeg.Encode(f, img, &opt)
 	if err != nil {
 		return "", err
 	}
@@ -45,8 +59,12 @@ func UploadFile(w http.ResponseWriter, r *http.Request, callback func(header mul
 	defer func() {
 		_ = file.Close()
 	}()
+	img, _, err := image.Decode(file)
+	if err != nil {
+		return "", fmt.Errorf("couldn't detect image format")
+	}
 
-	retPath, err := saveFile(file, handle, filepath.Join(basePath, path), path)
+	retPath, err := saveFile(img, handle, filepath.Join(basePath, path), path)
 	if err != nil {
 		return "", err
 	}
@@ -65,7 +83,7 @@ func CreateDir(path string) error {
 }
 
 func getFileName(path string, adName string, initFilename string) string {
-	extension := filepath.Ext(initFilename)
+	extension := ".jpeg"
 	_, errNotFound := os.Stat(filepath.Join(path, adName+extension))
 	curFileName := adName + extension
 	index := 0

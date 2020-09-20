@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 	"github.com/go-chi/chi"
+	"github.com/sergeychur/give_it_away/internal/global_constants"
 	"net/http"
 	"strconv"
 )
@@ -42,7 +43,8 @@ func (server *Server) FindAds(w http.ResponseWriter, r *http.Request) {
 	} else {
 
 	}*/
-	ads, status := server.db.GetAds(page, rowsPerPage, params, userId)
+	ads, status := server.db.GetAds(page, rowsPerPage, params, userId, server.VKClient,
+		global_constants.CacheInvalidTime)
 	DealRequestFromDB(w, ads, status)
 }
 
@@ -57,6 +59,7 @@ func (server *Server) GetAdInfo(w http.ResponseWriter, r *http.Request) {
 		WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("id should be int"))
 		return
 	}
-	ad, status := server.db.GetAd(adId, userId)
+	ad, status := server.db.GetAd(adId, userId, server.config.MinutesAntiFlood, server.config.MaxViewsAd,
+		server.VKClient, global_constants.CacheInvalidTime)
 	DealRequestFromDB(w, &ad, status)
 }

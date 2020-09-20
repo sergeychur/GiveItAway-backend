@@ -5,6 +5,7 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/sergeychur/give_it_away/internal/database"
 	"github.com/sergeychur/give_it_away/internal/filesystem"
+	"github.com/sergeychur/give_it_away/internal/global_constants"
 	"github.com/sergeychur/give_it_away/internal/models"
 	"github.com/sergeychur/give_it_away/internal/notifications"
 	"log"
@@ -12,6 +13,7 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
+	"time"
 )
 
 func (server *Server) CreateAd(w http.ResponseWriter, r *http.Request) {
@@ -29,6 +31,34 @@ func (server *Server) CreateAd(w http.ResponseWriter, r *http.Request) {
 	//	WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("wrong feedback type"))
 	//	return
 	//}
+	now := time.Now()
+	_, ok := server.AntiFloodAdMap[ad.AuthorId]
+	if !ok {
+		server.AntiFloodAdMap[ad.AuthorId] = make([]time.Time, 1)
+		server.AntiFloodAdMap[ad.AuthorId][0] = time.Now()
+	} else {
+		n := 0
+		// filter slice in place
+		for _, x := range server.AntiFloodAdMap[ad.AuthorId] {
+			if now.Sub(x) <= time.Duration(server.config.MinutesAntiFlood) * time.Minute {
+				server.AntiFloodAdMap[ad.AuthorId][n] = x
+				n++
+			}
+		}
+		server.AntiFloodAdMap[ad.AuthorId] = server.AntiFloodAdMap[ad.AuthorId][:n]
+
+		// add new request time
+		server.AntiFloodAdMap[ad.AuthorId] = append(server.AntiFloodAdMap[ad.AuthorId], now)
+		if len(server.AntiFloodAdMap[ad.AuthorId]) > server.config.MaxAdsAntiFlood {
+			WriteToResponse(w, http.StatusTooManyRequests, nil)
+			return
+		}
+	}
+	err, httpStatus := validateFields(ad)
+	if err != nil {
+		WriteToResponse(w, httpStatus, nil)
+		return
+	}
 	status, adId := server.db.CreateAd(ad)
 	DealRequestFromDB(w, &adId, status)
 }
@@ -46,6 +76,16 @@ func (server *Server) AddPhotoToAd(w http.ResponseWriter, r *http.Request) {
 	adId, err := strconv.Atoi(adIdStr)
 	if err != nil {
 		WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("id should be int"))
+		return
+	}
+	canUpload, stat := server.db.CanUploadPhoto(adId, server.config.MaxPhotosAd)
+	if stat != database.OK {
+		WriteToResponse(w, http.StatusInternalServerError, fmt.Errorf("database error"))
+		return
+	}
+	if !canUpload {
+		WriteToResponse(w, http.StatusForbidden, fmt.Errorf("too musch photos"))
+		return
 	}
 	pathToPhoto, err := filesystem.UploadFile(w, r, function,
 		server.config.UploadPath, fmt.Sprintf("post_%d", adId))
@@ -78,6 +118,7 @@ func (server *Server) DeleteAd(w http.ResponseWriter, r *http.Request) {
 		true, notifications.AD_DELETED)
 
 	status := server.db.DeleteAd(adId, userId)
+	server.db.DeleteInvalidNotesDelete(adId)
 	DealRequestFromDB(w, "OK", status)
 	{
 
@@ -88,7 +129,7 @@ func (server *Server) DeleteAd(w http.ResponseWriter, r *http.Request) {
 				log.Println(err)
 			}
 		} else {
-			log.Println(err)
+			log.Println(errNotif)
 		}
 
 	}
@@ -149,11 +190,17 @@ func (server *Server) EditAd(w http.ResponseWriter, r *http.Request) {
 	//	WriteToResponse(w, http.StatusBadRequest, fmt.Errorf("wrong feedback type"))
 	//	return
 	//}
+	err, httpStatus := validateFields(ad)
+	if err != nil {
+		WriteToResponse(w, httpStatus, nil)
+		return
+	}
 	// TODO(EDIT): check this
 
 	status := server.db.EditAd(adId, userId, ad)
 	if status == database.OK {
-		retVal, getStatus := server.db.GetAd(adId, userId)
+		retVal, getStatus := server.db.GetAd(adId, userId, server.config.MinutesAntiFlood, server.config.MaxViewsAd,
+			server.VKClient, global_constants.CacheInvalidTime)
 		if getStatus != database.OK {
 			log.Println("cannot get ad, strange")
 		} else {
@@ -176,6 +223,16 @@ func (server *Server) SetHidden(w http.ResponseWriter, r *http.Request) {
 		WriteToResponse(w, http.StatusInternalServerError, fmt.Errorf("server cannot get userId from cookie"))
 	}
 	status := server.db.SetAdHidden(adId, userId)
+	notes, errNotif := server.db.FormStatusChangedNotificationsByAd(adId, false, notifications.MODERATION_APPLIED)
+	if errNotif == nil {
+		server.NotificationSender.SendAllNotifications(r.Context(), notes)
+		err = server.db.InsertNotifications(notes)
+		if err != nil {
+			log.Println(err)
+		}
+	} else {
+			log.Println(errNotif)
+	}
 	DealRequestFromDB(w, "OK", status)
 }
 
@@ -191,5 +248,44 @@ func (server *Server) SetVisible(w http.ResponseWriter, r *http.Request) {
 		WriteToResponse(w, http.StatusInternalServerError, fmt.Errorf("server cannot get userId from cookie"))
 	}
 	status := server.db.SetAdVisible(adId, userId)
+	server.db.DeleteInvalidNotesDelete(adId)
 	DealRequestFromDB(w, "OK", status)
+}
+
+func validateFields(ad models.Ad) (error, int) {
+	validationMap := map[string]int{
+		ad.Header: global_constants.MaxHeaderLen,
+		ad.Text: global_constants.MaxTextLen,
+		ad.SubCat: global_constants.MaxCategoryLen,
+		ad.SubCatList: global_constants.MaxCategoryLen,
+		ad.FullAdress: global_constants.MaxFullAdressLen,
+		ad.Metro: global_constants.MaxMetroLen,
+		ad.AdType: global_constants.MaxAdType,
+		ad.Category: global_constants.MaxCategoryLen,
+		ad.CreationDate: global_constants.MaxCreationDate,
+		ad.District: global_constants.MaxDistrict,
+	}
+	for field, length := range validationMap {
+		if len([]rune(field)) > length {
+			log.Println(field, " is too large for ad")
+			return fmt.Errorf("too large"), http.StatusRequestEntityTooLarge
+		}
+	}
+	isTypePossible := false
+	for _, adType := range global_constants.PossibleTypes {
+		if ad.AdType == adType {
+			isTypePossible = true
+			break
+		}
+	}
+	if !isTypePossible {
+		log.Printf("impossible type for ad: %s", ad.AdType)
+		return fmt.Errorf("impossible type for ad: %s", ad.AdType), http.StatusBadRequest
+	}
+
+	if ad.GeoPosition == nil && ad.Category != "Цифровые товары" {
+		return fmt.Errorf("ad should have geopostion if not electronic goods"), http.StatusBadRequest
+	}
+
+	return nil, http.StatusOK
 }

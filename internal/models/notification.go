@@ -1,13 +1,13 @@
 package models
 
 type Notification struct {
-	NotificationId int	`json:"notification_id"` 
+	NotificationId   int         `json:"notification_id"`
 	NotificationType string      `json:"notification_type"`
-	WhomId           int         `json:"-"`/*`json:"whom_id,omitempty"`*/
+	WhomId           int         `json:"-"` /*`json:"whom_id,omitempty"`*/
 	CreationDateTime string      `json:"creation_date_time"`
 	Payload          interface{} `json:"payload"`
 	IsRead           bool        `json:"is_read"`
-	AdId int64 `json:"-"`
+	AdId             int64       `json:"-"`
 }
 
 type AdForNotification struct {
@@ -56,8 +56,8 @@ type NotesNumber struct {
 }
 
 type NewComment struct {
-	Ad AdForNotification `json:"ad"`
-	Comment CommentForUser `json:"comment"`
+	Ad      AdForNotification `json:"ad"`
+	Comment CommentForUser    `json:"comment"`
 }
 
 type CommentId struct {
@@ -65,6 +65,7 @@ type CommentId struct {
 }
 
 type MaxBidUpdated struct {
-	NewBid int `json:"new_bid"`
-	User User `json:"user"`
+	Ad      AdForNotification `json:"ad"`
+	NewBid int  `json:"new_bid"`
+	User   User `json:"user"`
 }

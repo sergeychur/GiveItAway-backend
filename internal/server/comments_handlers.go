@@ -4,10 +4,13 @@ import (
 	"fmt"
 	"github.com/go-chi/chi"
 	"github.com/sergeychur/give_it_away/internal/database"
+	"github.com/sergeychur/give_it_away/internal/global_constants"
 	"github.com/sergeychur/give_it_away/internal/models"
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
+	"time"
 )
 
 func (server *Server) GetAdComments(w http.ResponseWriter, r *http.Request) {
@@ -40,7 +43,8 @@ func (server *Server) GetAdComments(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	comments, status := server.db.GetComments(adId, page, rowsPerPage)
+	comments, status := server.db.GetComments(adId, page, rowsPerPage, server.VKClient,
+		global_constants.CacheInvalidTime)
 	DealRequestFromDB(w, comments, status)
 }
 
@@ -62,6 +66,41 @@ func (server *Server) CommentAd(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
+	comment.Text = strings.Trim(comment.Text, " ")
+	if len([]rune(comment.Text)) > server.config.MaxCommentLen {
+		WriteToResponse(w, http.StatusRequestEntityTooLarge, nil)
+		return
+	}
+
+	if len([]rune(comment.Text)) == 0 {
+		WriteToResponse(w, http.StatusBadRequest, nil)
+		return
+	}
+
+	now := time.Now()
+	_, ok := server.AntiFloodCommentMap[userId]
+	if !ok {
+		server.AntiFloodCommentMap[userId] = make([]time.Time, 1)
+		server.AntiFloodCommentMap[userId][0] = time.Now()
+	} else {
+		n := 0
+		// filter slice in place
+		for _, x := range server.AntiFloodCommentMap[userId] {
+			if now.Sub(x) <=  time.Minute * time.Duration(server.config.MinutesAntiFlood) {
+				server.AntiFloodCommentMap[userId][n] = x
+				n++
+			}
+		}
+		server.AntiFloodCommentMap[userId] = server.AntiFloodCommentMap[userId][:n]
+
+		// add new request time
+		server.AntiFloodCommentMap[userId] = append(server.AntiFloodCommentMap[userId], now)
+		if len(server.AntiFloodCommentMap[userId]) > server.config.MaxCommentsAntiFlood {
+			WriteToResponse(w, http.StatusTooManyRequests, nil)
+			return
+		}
+	}
+
 	retVal, status := server.db.CreateComment(adId, userId, comment)
 	DealRequestFromDB(w, retVal, status)
 	// TODO: mb go func
@@ -102,6 +141,16 @@ func (server *Server) EditComment(w http.ResponseWriter, r *http.Request) {
 	comment := models.Comment{}
 	err = ReadFromBody(r, w, &comment)
 	if err != nil {
+		return
+	}
+	comment.Text = strings.Trim(comment.Text, " ")
+	if len([]rune(comment.Text)) > server.config.MaxCommentLen {
+		WriteToResponse(w, http.StatusRequestEntityTooLarge, nil)
+		return
+	}
+
+	if len([]rune(comment.Text)) == 0 {
+		WriteToResponse(w, http.StatusBadRequest, nil)
 		return
 	}
 	// todo: check

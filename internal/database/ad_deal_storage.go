@@ -4,6 +4,7 @@ import (
 	"github.com/sergeychur/give_it_away/internal/global_constants"
 	"github.com/sergeychur/give_it_away/internal/models"
 	"gopkg.in/jackc/pgx.v2"
+	"log"
 	"math/rand"
 	"net/url"
 	"strconv"
@@ -21,7 +22,7 @@ const (
 	CheckIfDealExists = "SELECT EXISTS(SELECT 1 FROM deal WHERE ad_id = $1)"
 	CreateDeal        = "SELECT make_deal($1, $2)"
 	GetDeal           = "SELECT * FROM deal WHERE deal_id = $1"
-	GetRichest = "select subscriber_id from ad_subscribers where ad_id = $1 order by bid desc limit 1"
+	GetRichest        = "select subscriber_id from ad_subscribers where ad_id = $1 order by bid desc limit 1"
 
 	// Fulfill deal
 	GetDealWithAuthor = "SELECT d.*, a.author_id FROM deal d JOIN ad a ON (a.ad_id = d.Ad_id) WHERE d.deal_id = $1"
@@ -42,12 +43,28 @@ const (
 
 	GetAdSubscribersIds = "SELECT a_s.subscriber_id FROM ad_subscribers a_s WHERE a_s.ad_id = $1"
 
+	CheckAdHidden = "SELECT hidden FROM ad WHERE ad_id = $1"
+	CheckAdOffer = "SELECT status = 'offer' FROM ad WHERE ad_id = $1"
+	GetTimesSubscribed = "SELECT times FROM subscribe_history WHERE ad_id = $1 AND subscriber_id = $2"
+
+	IncreaseTimesSubscribed = "INSERT INTO subscribe_history (ad_id, subscriber_id, times) VALUES ($1, $2, 1) " +
+		"ON CONFLICT ON CONSTRAINT subscribe_history_unique DO UPDATE SET times = subscribe_history.times + 1"
+
+	GetTimesDealMade = "SELECT times FROM deal_history WHERE ad_id = $1 AND subscriber_id = $2"
+
+	IncreaseTimesDealMade = "INSERT INTO deal_history (ad_id, subscriber_id, times) VALUES ($1, $2, 1) " +
+		"ON CONFLICT ON CONSTRAINT deal_history_unique DO UPDATE SET times = deal_history.times + 1"
+
+	GetAdType = "SELECT ad_type FROM ad WHERE ad_id = $1"
+	CheckIfUserInDeal = "select exists(select 1 from deal where ad_id=$1 and subscriber_id=$2" +
+		" and status='open');"
 )
 
 func (db *DB) SubscribeToAd(adId int, userId int, priceCoeff int) (int, *models.Notification) {
 	// todo check if user can subscribe; two different functions for auction and usual ad
 	tx, err := db.StartTransaction()
 	if err != nil {
+		log.Println("error in transaction start: ", err)
 		return DB_ERROR, nil
 	}
 	defer func() {
@@ -59,7 +76,25 @@ func (db *DB) SubscribeToAd(adId int, userId int, priceCoeff int) (int, *models.
 		return EMPTY_RESULT, nil
 	}
 	if err != nil {
+		log.Println("err in check ad exists", err)
 		return DB_ERROR, nil
+	}
+
+	hidden := false
+	err = tx.QueryRow(CheckAdHidden, adId).Scan(&hidden)
+	if err != nil {
+		log.Println("error in check ad hidden: ", err)
+		return DB_ERROR, nil
+	}
+	if hidden {
+		return FORBIDDEN, nil
+	}
+
+	isOffer := false
+	err = tx.QueryRow(CheckAdOffer, adId).Scan(&isOffer)
+	if !isOffer {
+		log.Println("error in check ad offer: ", err)
+		return FORBIDDEN, nil
 	}
 
 	if authorId == userId {
@@ -72,18 +107,37 @@ func (db *DB) SubscribeToAd(adId int, userId int, priceCoeff int) (int, *models.
 	}
 	canSubscribe, frozencarma, err, note := db.DealWithCarmaSubscribe(tx, adId, userId)
 	if err != nil {
+		log.Println("error in deal with carma: ", err)
 		return DB_ERROR, nil
 	}
 
 	if !canSubscribe {
 		return CONFLICT, nil
 	}
+	timesSubscribed := 0
+	err = tx.QueryRow(GetTimesSubscribed, adId, userId).Scan(&timesSubscribed)
+	if err == pgx.ErrNoRows {
+		err = nil
+	}
+	if err != nil {
+		return DB_ERROR, nil
+	}
+	if timesSubscribed >= global_constants.MaxTimesSubscribed {
+		return TOO_MUCH_TIMES, nil
+	}
 	_, err = tx.Exec(SubscribeToAd, adId, userId, frozencarma)
 	if err != nil {
+		log.Println("error in subscribe to ad: ", err)
+		return DB_ERROR, nil
+	}
+	_, err = tx.Exec(IncreaseTimesSubscribed, adId, userId)
+	if err != nil {
+		log.Println(err)
 		return DB_ERROR, nil
 	}
 	err = tx.Commit()
 	if err != nil {
+		log.Println("error in commit: ", err)
 		return DB_ERROR, nil
 	}
 	return OK, note
@@ -97,6 +151,20 @@ func (db *DB) UnsubscribeFromAd(adId int, userId int) int {
 	defer func() {
 		_ = tx.Rollback()
 	}()
+
+	isSubscriber := false
+	err = db.db.QueryRow(CheckIfSubscriber, adId, userId).Scan(&isSubscriber)
+	if !isSubscriber {
+		return FORBIDDEN
+	}
+	dealExists := false
+	err = db.db.QueryRow(CheckIfUserInDeal, adId, userId).Scan(&dealExists)
+	if err != nil {
+		return DB_ERROR
+	}
+	if dealExists {
+		return FORBIDDEN
+	}
 	err = db.DealWithCarmaUnsubscribe(tx, adId, userId)
 	if err != nil {
 		return DB_ERROR
@@ -138,6 +206,10 @@ func (db *DB) MakeDeal(adId int, initiatorId int, dealType string, params url.Va
 	if err != nil {
 		return DB_ERROR, 0, 0
 	}
+	err = tx.QueryRow(GetAdType, adId).Scan(&dealType)
+	if err != nil {
+		return DB_ERROR, 0, 0
+	}
 	subscriberId, status := db.GetSubscriberIdForDeal(adId, dealType, params)
 	if status != OK {
 		return status, 0, 0
@@ -150,12 +222,39 @@ func (db *DB) MakeDeal(adId int, initiatorId int, dealType string, params url.Va
 	if dealExists || !isSubscriber {
 		return CONFLICT, 0, 0
 	}
+	hidden := false
+	err = tx.QueryRow(CheckAdHidden, adId).Scan(&hidden)
+	if err != nil {
+		return DB_ERROR, 0, 0
+	}
+	if hidden {
+		log.Println("tried to give away ad under moderation")
+		return FORBIDDEN, 0, 0
+	}
+	timesDealMade := 0
+	err = tx.QueryRow(GetTimesDealMade, adId, subscriberId).Scan(&timesDealMade)
+	if err == pgx.ErrNoRows {
+		err = nil
+	}
+	if err != nil {
+		return DB_ERROR, 0, 0
+	}
 
+	if timesDealMade >= global_constants.MaxTimesDealMade {
+		return TOO_MUCH_TIMES, 0, 0
+	}
 	dealId := 0
 	err = tx.QueryRow(CreateDeal, adId, subscriberId).Scan(&dealId)
 	if err != nil {
 		return DB_ERROR, 0, 0
 	}
+
+	_, err = tx.Exec(IncreaseTimesDealMade, adId, subscriberId)
+	if err != nil {
+		log.Println(err)
+		return DB_ERROR, 0, 0
+	}
+
 	_ = tx.Commit()
 	return CREATED, dealId, subscriberId
 }
@@ -267,8 +366,6 @@ func (db *DB) GetDealById(dealId int) (models.DealDetails, int) {
 	return deal, FOUND
 }
 
-
-
 func (db *DB) GetAdSubscribers(adId int, page int, rowsPerPage int) ([]models.User, int) {
 	offset := rowsPerPage * (page - 1)
 	rows, err := db.db.Query(GetAdSubscribers, adId, rowsPerPage, offset)
@@ -313,7 +410,7 @@ func (db *DB) GetAllAdSubscribersIDs(adId int) ([]int, error) {
 }
 
 func (db *DB) GetSubscriberIdForDeal(adId int, dealType string, params url.Values) (int, int) {
-	choicer := map[string]func(values url.Values) (int, int) {
+	choicer := map[string]func(values url.Values) (int, int){
 		"auction": func(values url.Values) (int, int) {
 			subscriberId := 0
 			err := db.db.QueryRow(GetRichest, adId).Scan(&subscriberId)

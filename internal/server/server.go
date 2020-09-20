@@ -2,6 +2,14 @@ package server
 
 import (
 	"fmt"
+	"github.com/go-vk-api/vk"
+	"log"
+	"net"
+	"net/http"
+	"os"
+	"strconv"
+	"time"
+
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/sergeychur/give_it_away/internal/auth"
@@ -9,11 +17,8 @@ import (
 	"github.com/sergeychur/give_it_away/internal/config"
 	"github.com/sergeychur/give_it_away/internal/database"
 	"github.com/sergeychur/give_it_away/internal/middlewares"
+	"golang.org/x/net/netutil"
 	"google.golang.org/grpc"
-	"log"
-	"net/http"
-	"os"
-	"strconv"
 )
 
 type Server struct {
@@ -23,6 +28,9 @@ type Server struct {
 	config             *config.Config
 	AuthClient         auth.AuthClient
 	CookieField        string
+	AntiFloodCommentMap map[int][]time.Time
+	AntiFloodAdMap map[int][]time.Time
+	VKClient *vk.Client
 }
 
 func NewServer(pathToConfig string) (*Server, error) {
@@ -36,6 +44,9 @@ func NewServer(pathToConfig string) (*Server, error) {
 	}
 	server.config = newConfig
 	server.CookieField = "token"
+
+	server.AntiFloodAdMap = make(map[int][]time.Time)
+	server.AntiFloodCommentMap = make(map[int][]time.Time)
 
 	r.Use(middleware.Logger,
 		middleware.Recoverer,
@@ -70,12 +81,9 @@ func NewServer(pathToConfig string) (*Server, error) {
 	needLogin.Get(fmt.Sprintf("/post/{ad_id:%s}/max_bid_user", idPattern), server.GetMaxBidUser)
 	needLogin.Get(fmt.Sprintf("/post/{ad_id:%s}/return_bid_size", idPattern), server.GetReturnSize)
 
-
-
 	needLogin.Post(fmt.Sprintf("/deal/{deal_id:%s}/fulfill", idPattern), server.FulfillDeal)
 	needLogin.Post(fmt.Sprintf("/deal/{deal_id:%s}/cancel", idPattern), server.CancelDeal)
 	subRouter.Get(fmt.Sprintf("/post/{ad_id:%s}/deal", idPattern), server.GetDealForAd)
-
 
 	// notifications
 	needLogin.Get("/notifications", server.GetNotifications)
@@ -86,8 +94,10 @@ func NewServer(pathToConfig string) (*Server, error) {
 	subRouter.Get(fmt.Sprintf("/user/{user_id:%s}/profile", idPattern), server.GetUserInfo)
 	subRouter.Get(fmt.Sprintf("/user/{user_id:%s}/given", idPattern), server.GetGiven)
 	subRouter.Get(fmt.Sprintf("/user/{user_id:%s}/received", idPattern), server.GetReceived)
-	needLogin.Get("/post/wanted", server.GetWanted)
+	needLogin.Get(fmt.Sprintf("/user/{user_id:%s}/nots_pm", idPattern), server.GetUserPermissionToPM)
+	needLogin.Post(fmt.Sprintf("/user/{user_id:%s}/nots_pm", idPattern), server.PostUserPermissionToPM)
 
+	needLogin.Get("/post/wanted", server.GetWanted)
 
 	// comments
 	subRouter.Get(fmt.Sprintf("/post/{ad_id:%s}/comments", idPattern), server.GetAdComments)
@@ -98,6 +108,9 @@ func NewServer(pathToConfig string) (*Server, error) {
 	// centrifugo token
 	needLogin.Get("/ws_token", server.GetCentrifugoToken)
 	subRouter.Get("/test_cent", server.TestCentrifugo)
+
+	// vk proxy
+	needLogin.Post("/proxy_to_vk/{method_name}", server.ProxyToVK)
 
 	r.Mount("/api/", subRouter)
 	subRouter.Mount("/", needLogin)
@@ -111,7 +124,21 @@ func NewServer(pathToConfig string) (*Server, error) {
 	db := database.NewDB(server.config.DBUser, server.config.DBPass,
 		server.config.DBName, server.config.DBHost, uint16(dbPort))
 	server.db = db
-	server.NotificationSender = centrifugo_client.NewClient(server.config.CentrifugoHost, server.config.CentrifugoPort, server.config.ApiKey)
+
+	server.VKClient, err = vk.NewClientWithOptions(
+		vk.WithToken(server.config.VKApiKey),
+	)
+	if err != nil {
+		log.Print("vk client init error", err)
+		return nil, err
+	}
+	server.NotificationSender = centrifugo_client.NewClient(
+		server.config.CentrifugoHost,
+		server.config.CentrifugoPort,
+		server.config.ApiKey,
+		server.VKClient,
+		db,
+	)
 	return server, nil
 }
 
@@ -139,7 +166,23 @@ func (server *Server) Run() error {
 	}()
 
 	server.AuthClient = auth.NewAuthClient(grcpAuthConn)
-
-	log.Fatal(http.ListenAndServe(":"+port, server.router))
+	srv := http.Server{
+		Addr:           ":" + port,
+		ReadTimeout:    10 * time.Second,
+		WriteTimeout:   15 * time.Second,
+		IdleTimeout:    1 * time.Second,
+		MaxHeaderBytes: 16384,
+		Handler:        server.router,
+	}
+	l, err := net.Listen("tcp", ":"+port)
+	if err != nil {
+		return err
+	}
+	l = netutil.LimitListener(l, 500)
+	err = srv.Serve(l)
+	if err != nil {
+		return err
+	}
+	//log.Fatal(http.ListenAndServe(":"+port, server.router))
 	return nil
 }

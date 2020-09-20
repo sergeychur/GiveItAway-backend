@@ -15,6 +15,6 @@ type Bid struct {
 }
 
 type BidUser struct {
-	Bid int `json:"bid"`
-	User User 	`json:"user"`
+	Bid  int  `json:"bid"`
+	User User `json:"user"`
 }

@@ -16,6 +16,7 @@ const (
 	FORBIDDEN    = 4
 	CONFLICT     = 5
 	WRONG_INPUT  = 6
+	TOO_MUCH_TIMES = 7
 )
 
 type DB struct {
@@ -25,6 +26,8 @@ type DB struct {
 	databaseName string
 	host         string
 	port         uint16
+
+	AntiFloodAdMap map[int]map[int][]time.Time
 }
 
 func NewDB(user string, password string, dataBaseName string,
@@ -35,6 +38,8 @@ func NewDB(user string, password string, dataBaseName string,
 	db.password = password
 	db.host = host
 	db.port = port
+
+	db.AntiFloodAdMap = make(map[int]map[int][]time.Time)
 	return db
 }
 
@@ -49,7 +54,7 @@ func (db *DB) Start() error {
 	poolConf := pgx.ConnPoolConfig{
 		ConnConfig:     conf,
 		MaxConnections: 80,
-		AcquireTimeout: time.Duration(7 * time.Second),
+		AcquireTimeout: time.Duration(1 * time.Second),
 	}
 	dataBase, err := pgx.NewConnPool(poolConf)
 	if err != nil {

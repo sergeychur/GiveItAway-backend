@@ -2,9 +2,14 @@ FROM golang:alpine AS builder
 
 WORKDIR /home/app/
 
+
+COPY go.mod .
+
+RUN  go mod download && go mod verify
+
 COPY . .
 
-RUN go build --mod=vendor -o ./api.out /home/app/cmd/api/main.go
+RUN go build -o ./api.out /home/app/cmd/api/main.go
 
 FROM bashell/alpine-bash AS release
 
